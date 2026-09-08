@@ -1,0 +1,19 @@
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: monthly
+    groups:
+      astro-and-ui:
+        patterns:
+          - astro
+          - '@astrojs/*'
+          - react
+          - react-dom
+          - three
+          - '@react-three/*'
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly

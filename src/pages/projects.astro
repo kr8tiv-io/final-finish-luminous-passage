@@ -1,0 +1,98 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import SiteHeader from '../components/SiteHeader.astro';
+import SiteFooter from '../components/SiteFooter.astro';
+import BeforeAfterProject from '../components/projects/BeforeAfterProject';
+import projectPhotos from '../data/project-photo-pairs.json';
+
+const assets = new Map(projectPhotos.assets.map((asset) => [asset.id, asset]));
+const projectLabels = [
+  'Edmonton garage floor',
+  'Matched-angle garage finish',
+  'Salt-worn slab, then coated',
+  'Two-day garage coating',
+  'Diamond-grind bay',
+  'Shop floor, same camera',
+];
+const comparisons = projectPhotos.curatedPairCandidates.map((pair, index) => ({
+  label: projectLabels[index] ?? `Edmonton floor ${index + 1}`,
+  before: assets.get(pair.beforeAssetIds[0])!,
+  after: assets.get(pair.afterAssetIds[0])!,
+}));
+---
+
+<BaseLayout title="Epoxy Flooring Projects Edmonton | Final Finish" description="Explore real before-and-after concrete coating projects from Final Finish Epoxy in the Edmonton area." canonicalPath="/projects" imagePath="/images/projects/generated/jpeg/img_3313.jpg">
+  <SiteHeader />
+  <main id="main-content">
+    <header class="projects-hero">
+      <div class="hero-architecture" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></div>
+      <div class="hero-copy">
+        <p class="eyebrow">The Proof Arcade · Edmonton</p>
+        <h1>The floor<br />is the <em>evidence.</em></h1>
+        <div class="hero-deck">
+          <p>Real project photographs. Similar viewpoints. No synthetic “after” images and no retouching of the work.</p>
+          <span>Drag · hover · use arrow keys</span>
+        </div>
+      </div>
+      <a class="scroll-cue" href="#transformations"><span>Enter the archive</span><i aria-hidden="true">↓</i></a>
+    </header>
+
+    <section id="transformations" class="archive" aria-labelledby="archive-title">
+      <div class="archive-intro">
+        <p class="eyebrow">Six close viewpoints</p>
+        <h2 id="archive-title">Move the threshold.<br />See the work.</h2>
+        <p>Each pairing was selected from the Final Finish project archive for a closely related point of view. The photographs are the work as shot.</p>
+      </div>
+      <div class="comparison-grid">
+        {comparisons.map((comparison) => (
+          <BeforeAfterProject before={comparison.before} after={comparison.after} label={comparison.label} client:visible />
+        ))}
+      </div>
+      <aside class="review-key" aria-label="Project photo status">
+        <span><i aria-hidden="true"></i>Real job photos</span>
+        <p>These are authentic Final Finish project images, paired by camera angle. No synthetic afters.</p>
+      </aside>
+    </section>
+
+    <section class="project-cta">
+      <p class="eyebrow">Your floor, next</p>
+      <h2>Bring us the concrete<br />you have now.</h2>
+      <div><a class="button button-primary" href="/contact#quote">Request a quote</a><a class="text-link" href="/floor-visualizer">Try 30 finishes in your room <span aria-hidden="true">↗</span></a></div>
+    </section>
+  </main>
+  <SiteFooter />
+</BaseLayout>
+
+<style>
+  .projects-hero { position: relative; display: grid; min-height: 100svh; align-items: end; overflow: hidden; padding: clamp(10rem, 18vh, 14rem) var(--gutter) clamp(5rem, 8vw, 8rem); background: #f4f0e7; }
+  .projects-hero::before { content: ''; position: absolute; inset: 0; background: radial-gradient(circle at 50% 30%, rgba(167,214,234,.72), transparent 34%), linear-gradient(180deg, #edf7fa 0%, #f4f0e7 65%); }
+  .hero-architecture { position: absolute; inset: 5rem 3vw -1px; display: flex; justify-content: center; gap: clamp(.5rem, 2vw, 2.5rem); opacity: .52; }
+  .hero-architecture i { width: min(18vw, 15rem); border: 1px solid rgba(37,83,109,.25); border-bottom: 0; border-radius: 9rem 9rem 0 0; background: linear-gradient(90deg, rgba(255,255,255,.2), rgba(255,255,255,.6), rgba(255,255,255,.12)); box-shadow: inset 0 0 0 .8rem rgba(255,255,255,.18); }
+  .hero-architecture i:nth-child(1), .hero-architecture i:nth-child(5) { transform: translateY(16%); }
+  .hero-architecture i:nth-child(2), .hero-architecture i:nth-child(4) { transform: translateY(7%); }
+  .hero-copy { position: relative; z-index: 1; width: min(100%, var(--max)); margin: auto; }
+  .hero-copy h1 { max-width: 70rem; margin: 1.3rem 0 3rem; color: #15374e; font-family: var(--serif); font-size: clamp(5rem, 12vw, 12rem); font-weight: 400; letter-spacing: -.065em; line-height: .72; }
+  .hero-copy h1 em { color: #2c7da2; font-weight: 400; }
+  .hero-deck { display: grid; grid-template-columns: minmax(0, 32rem) auto; gap: 2rem; align-items: end; }
+  .hero-deck p { margin: 0; color: #526771; font-size: clamp(1rem, 2vw, 1.25rem); line-height: 1.6; }
+  .hero-deck span { color: #60747e; font-size: .62rem; font-weight: 750; letter-spacing: .14em; text-transform: uppercase; }
+  .scroll-cue { position: absolute; z-index: 2; right: var(--gutter); bottom: 2rem; display: none; color: #183b50; }
+  .archive { padding: clamp(6rem, 12vw, 12rem) var(--gutter); background: #fbfaf6; }
+  .archive-intro, .comparison-grid, .review-key { width: min(100%, var(--max)); margin-inline: auto; }
+  .archive-intro { display: grid; grid-template-columns: 1fr 2.2fr 1fr; gap: 3vw; align-items: start; margin-bottom: clamp(5rem, 10vw, 10rem); }
+  .archive-intro h2 { margin: 0; font-family: var(--serif); font-size: clamp(3.8rem, 7.5vw, 8rem); font-weight: 400; letter-spacing: -.055em; line-height: .83; }
+  .archive-intro > p:last-child { margin: .25rem 0 0; color: var(--muted); font-size: .86rem; line-height: 1.7; }
+  .comparison-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: clamp(5rem, 8vw, 9rem) clamp(2rem, 5vw, 6rem); }
+  .comparison-grid :global(.project-comparison:nth-child(even)) { margin-top: 8rem; }
+  .review-key { display: grid; grid-template-columns: 1fr 2fr; gap: 2rem; margin-top: 8rem; padding: 2rem 0; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); color: var(--muted); font-size: .75rem; }
+  .review-key span { display: flex; align-items: center; gap: .55rem; color: #475b65; font-weight: 750; letter-spacing: .1em; text-transform: uppercase; }
+  .review-key i { width: .5rem; height: .5rem; border-radius: 50%; background: #d5a94a; }
+  .review-key p { max-width: 45rem; margin: 0; line-height: 1.65; }
+  .project-cta { padding: clamp(6rem, 12vw, 12rem) var(--gutter); background: radial-gradient(circle at 78% 25%, rgba(130,205,232,.26), transparent 30%), #153d58; color: white; }
+  .project-cta > * { width: min(100%, var(--max)); margin-inline: auto; }
+  .project-cta .eyebrow { color: #a9d9ec; }
+  .project-cta h2 { margin-top: 1rem; font-family: var(--serif); font-size: clamp(4.2rem, 9vw, 9rem); font-weight: 400; letter-spacing: -.055em; line-height: .82; }
+  .project-cta > div { display: flex; gap: 2rem; align-items: center; margin-top: 3rem; }
+  .project-cta .text-link { color: white; font-size: .7rem; font-weight: 750; letter-spacing: .1em; text-transform: uppercase; }
+  @media (max-width: 800px) { .hero-deck, .archive-intro, .review-key { grid-template-columns: 1fr; } .hero-deck span { display: none; } .comparison-grid { grid-template-columns: 1fr; } .comparison-grid :global(.project-comparison:nth-child(even)) { margin-top: 0; } .hero-architecture { inset-inline: -25vw; } .project-cta > div { align-items: flex-start; flex-direction: column; } }
+</style>

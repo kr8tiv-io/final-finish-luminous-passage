@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" fill="none">
+  <g id="flake-chip">
+    <path d="M18 14 L34 10 L46 22 L40 38 L22 36 L12 24 Z" />
+    <path d="M52 16 L63 20 L60 32 L48 28 Z" />
+    <path d="M28 44 L41 40 L47 52 L33 56 Z" />
+  </g>
+  <g id="cove-profile">
+    <path d="M14 78 L14 52 C14 34 34 28 52 28 L86 28" stroke-width="1.6" />
+    <path d="M14 78 L86 78" stroke-width="0.8" />
+  </g>
+  <g id="grind-ring">
+    <circle cx="92" cy="28" r="16" stroke-width="1.2" />
+    <circle cx="92" cy="28" r="9" stroke-width="0.8" />
+    <path d="M92 12 V18 M92 38 V44 M76 28 H82 M102 28 H108" stroke-width="0.9" />
+  </g>
+  <g id="pour-ribbon">
+    <path d="M18 104 C34 96 38 88 52 90 C68 92 70 78 86 82 C96 85 104 92 110 88" stroke-width="1.8" />
+  </g>
+</svg>

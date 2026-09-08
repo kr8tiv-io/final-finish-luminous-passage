@@ -1,0 +1,86 @@
+---
+import reviews from '../../data/google-reviews.json';
+const maps = 'https://www.google.com/maps?cid=7470239776211762202';
+const featured = reviews[0];
+const rest = reviews.slice(1);
+---
+<section class="proof-band" aria-labelledby="proof-quote">
+  <p class="proof-score"><a href={maps}>5.0 from 30</a></p>
+  <blockquote class="proof-voice">
+    <p id="proof-quote">{featured.reviewBody}</p>
+    <footer>
+      <cite>{featured.name}</cite>
+      <span>Google review</span>
+    </footer>
+  </blockquote>
+  <ol class="proof-rest">
+    {rest.map((review) => (
+      <li>
+        <blockquote>
+          <p class="proof-sr">{review.reviewBody}</p>
+          <footer>
+            <cite>{review.name}</cite>
+            <span class="proof-sr">Google review</span>
+          </footer>
+        </blockquote>
+      </li>
+    ))}
+  </ol>
+  <div class="button-row">
+    <a class="button button-primary" href="/contact#quote">Talk to Denis</a>
+  </div>
+</section>
+<style>
+  .proof-band {
+    position: relative;
+    z-index: 2;
+    display: grid;
+    gap: 2.4rem;
+    min-height: 88svh;
+    align-content: center;
+    padding: clamp(7rem, 16vh, 12rem) var(--gutter);
+    background: #fff;
+  }
+  .proof-band > * { width: min(100%, 46rem); margin-inline: auto; }
+  .proof-score { margin: 0; font-size: 0.7rem; letter-spacing: 0.18em; text-transform: uppercase; color: var(--muted); }
+  .proof-score a { color: inherit; text-decoration: none; }
+  .proof-voice { margin: 0; }
+  .proof-voice p {
+    margin: 0;
+    font-family: var(--serif);
+    font-size: clamp(1.6rem, 3.2vw, 2.35rem);
+    line-height: 1.22;
+    color: var(--ink);
+  }
+  .proof-voice footer, .proof-rest footer {
+    display: flex;
+    gap: 0.75rem;
+    align-items: baseline;
+    margin-top: 1.1rem;
+    color: var(--muted);
+    font-size: 0.72rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+  .proof-voice cite, .proof-rest cite { font-style: normal; color: var(--ink); font-weight: 700; }
+  .proof-rest {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem 1.4rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  .proof-rest blockquote { margin: 0; }
+  .proof-sr {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+  }
+</style>

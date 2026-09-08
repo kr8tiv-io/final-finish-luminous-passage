@@ -1,0 +1,50 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import SiteHeader from '../../components/SiteHeader.astro';
+import SiteFooter from '../../components/SiteFooter.astro';
+import InteriorHero from '../../components/InteriorHero.astro';
+import SectionShell from '../../components/SectionShell.astro';
+
+const faq = {
+  '@context': 'https://schema.org',
+  '@type': 'FAQPage',
+  mainEntity: [
+    { '@type': 'Question', name: 'What areas do you serve?', acceptedAnswer: { '@type': 'Answer', text: 'Edmonton and the capital region including Sherwood Park, St. Albert, Leduc, Fort Saskatchewan, Spruce Grove, and Beaumont.' } },
+    { '@type': 'Question', name: 'When can I use the floor?', acceptedAnswer: { '@type': 'Answer', text: 'Walk-on and drive-on windows depend on the coating system and the weather that week. They are written into the quote.' } },
+    { '@type': 'Question', name: 'Can you coat in winter?', acceptedAnswer: { '@type': 'Answer', text: 'Salt, meltwater, and cold slabs change preparation. Timing is confirmed for the job, not guessed on the website.' } },
+  ],
+};
+---
+<BaseLayout title="Epoxy Flooring Services Edmonton | Final Finish" description="Residential, commercial and concrete-preparation services from Final Finish Epoxy in Edmonton." canonicalPath="/services">
+  <script slot="head" is:inline type="application/ld+json" set:html={JSON.stringify(faq)} />
+  <SiteHeader />
+  <main id="main-content">
+    <InteriorHero eyebrow="Residential · Commercial · Concrete" title="Epoxy flooring services, built around the slab." lead="Final Finish works across garages, barns, workshops, residential rooms, warehouses, showrooms and industrial facilities—with the preparation matched to the concrete in front of us." />
+    <SectionShell>
+      <div class="card-grid">
+        <article class="editorial-card"><h2>Residential epoxy</h2><p>Garage, barn, workshop and other residential floors in decorative flake, solid and metallic finishes.</p><a href="/services/residential-epoxy-flooring">Residential flooring</a></article>
+        <article class="editorial-card"><h2>Commercial epoxy</h2><p>Coating options for warehouses, showrooms and industrial facilities where presentation and cleanability matter.</p><a href="/services/commercial-epoxy-flooring">Commercial flooring</a></article>
+        <article class="editorial-card"><h2>Concrete solutions</h2><p>Diamond grinding, concrete repair, surface levelling, preparation and anti-slip coating options.</p><a href="/services/concrete-solutions">Concrete preparation</a></article>
+      </div>
+      <p class="section-lead" style="margin-top:2.5rem">Polyaspartic and epoxy are different systems. Read the <a href="/resources/polyaspartic-flooring-neutral-guide">neutral polyaspartic guide</a> before you pick a topcoat, then confirm what Final Finish will actually install on the quote.</p>
+    </SectionShell>
+    <SectionShell tone="stone">
+      <p class="section-kicker">Common questions</p>
+      <h2 class="section-title">What people ask before a grind.</h2>
+      <dl class="faq-list">
+        <dt>What areas do you serve?</dt>
+        <dd>Edmonton and the capital region: Sherwood Park, St. Albert, Leduc, Fort Saskatchewan, Spruce Grove, and Beaumont. <a href="/areas/edmonton/">See area pages</a>.</dd>
+        <dt>When can I use the floor?</dt>
+        <dd>Walk-on and drive-on windows depend on the system and the weather that week. They are written into the quote, not guessed here. The <a href="/resources/how-epoxy-floor-coatings-cure">cure guide</a> explains the chemistry.</dd>
+        <dt>Can you coat in winter?</dt>
+        <dd>Salt, meltwater, and cold slabs change prep. Read <a href="/resources/cold-weather-floor-coating-edmonton">cold-weather coating in Edmonton</a>, then send photos.</dd>
+      </dl>
+    </SectionShell>
+  </main>
+  <SiteFooter />
+</BaseLayout>
+<style>
+  .faq-list { display: grid; gap: 1.4rem; max-width: 42rem; margin: 2rem 0 0; }
+  .faq-list dt { font-family: var(--serif); font-size: 1.8rem; }
+  .faq-list dd { margin: 0.4rem 0 0; color: var(--muted); }
+</style>

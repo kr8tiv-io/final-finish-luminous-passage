@@ -1,0 +1,111 @@
+---
+import '../projects/before-after-project.css';
+import FloorMix from '../motion/FloorMix';
+
+const pairs = [
+  {
+    id: 'curated-1',
+    eyebrow: 'A tired garage',
+    title: 'The garage before Denis.',
+    lead: 'Tired concrete. Then the finish.',
+    before: {
+      avif: '/images/projects/generated/avif/img_3300.avif',
+      webp: '/images/projects/generated/webp/img_3300.webp',
+      jpeg: '/images/projects/generated/jpeg/img_3300.jpg',
+      alt: 'Edmonton garage concrete before epoxy, standing height, same camera as the finished floor',
+    },
+    after: {
+      avif: '/images/projects/generated/avif/img_3313.avif',
+      webp: '/images/projects/generated/webp/img_3313.webp',
+      jpeg: '/images/projects/generated/jpeg/img_3313.jpg',
+      alt: 'Finished epoxy floor in the same Edmonton garage, same camera as the before plate',
+    },
+  },
+  {
+    id: 'curated-3',
+    eyebrow: 'Salt and peel',
+    title: 'Salt, peel, a garage that looks tired.',
+    lead: 'The slab they parked on. Then Denis’s floor.',
+    before: {
+      avif: '/images/projects/generated/avif/photo+2025-07-14,+12+24+07+pm.avif',
+      webp: '/images/projects/generated/webp/photo+2025-07-14,+12+24+07+pm.webp',
+      jpeg: '/images/projects/generated/jpeg/photo+2025-07-14,+12+24+07+pm.jpg',
+      alt: 'Concrete floor before coating, matched standing-height camera',
+    },
+    after: {
+      avif: '/images/projects/generated/avif/photo+2025-07-15,+10+46+33+am.avif',
+      webp: '/images/projects/generated/webp/photo+2025-07-15,+10+46+33+am.webp',
+      jpeg: '/images/projects/generated/jpeg/photo+2025-07-15,+10+46+33+am.jpg',
+      alt: 'Finished coated floor from the same camera as the before plate',
+    },
+  },
+  {
+    id: 'curated-5',
+    eyebrow: 'Diamond grind',
+    title: 'Diamond grinding in the bay.',
+    lead: 'The grinder on Denis’s slab, then the finished floor from that same camera.',
+    before: {
+      avif: '/images/projects/generated/avif/img_3185.avif',
+      webp: '/images/projects/generated/webp/img_3185.webp',
+      jpeg: '/images/projects/generated/jpeg/img_3185.jpg',
+      alt: 'Diamond grinder on an Edmonton garage slab, standing height',
+    },
+    after: {
+      avif: '/images/projects/generated/avif/img_3188.avif',
+      webp: '/images/projects/generated/webp/img_3188.webp',
+      jpeg: '/images/projects/generated/jpeg/img_3188.jpg',
+      alt: 'Finished floor after grinding, same camera as the grinder plate',
+    },
+  },
+];
+---
+
+
+{pairs.map((pair) => (
+  <section class="dissolve-chapter" data-scroll-dissolve={pair.id} aria-labelledby={`${pair.id}-title`}>
+    <figure class="project-comparison project-comparison--film" data-project-comparison style="--reveal: 8%; --floor-warp: 0;">
+      <div class="comparison-stage" data-comparison-stage>
+        <picture class="comparison-picture comparison-before">
+          <source type="image/avif" srcset={pair.before.avif} />
+          <source type="image/webp" srcset={pair.before.webp} />
+          <img src={pair.before.jpeg} alt={pair.before.alt} width="2500" height="1875" loading="lazy" decoding="async" />
+        </picture>
+        <picture class="comparison-picture comparison-after">
+          <source type="image/avif" srcset={pair.after.avif} />
+          <source type="image/webp" srcset={pair.after.webp} />
+          <img src={pair.after.jpeg} alt={pair.after.alt} width="2500" height="1875" loading="lazy" decoding="async" />
+        </picture>
+        <span class="comparison-tag comparison-tag--before">Before</span>
+        <span class="comparison-tag comparison-tag--after">After</span>
+        <span class="comparison-rule" aria-hidden="true"><i></i></span>
+        <FloorMix client:only="react" beforeUrl={pair.before.jpeg} afterUrl={pair.after.jpeg} />
+        <input class="comparison-range" type="range" min="0" max="100" value="8" aria-label={`Reveal the finished floor for ${pair.title}`} />
+      </div>
+    </figure>
+    <div class="chapter-content">
+      <p class="eyebrow">{pair.eyebrow}</p>
+      <h2 id={`${pair.id}-title`} class="chapter-title">{pair.title}</h2>
+      <p class="lead">{pair.lead}</p>
+      <a class="chapter-link" href="/projects">More matched pairs <span aria-hidden="true">↗</span></a>
+    </div>
+  </section>
+))}
+
+<style>
+  .proof-band { position: relative; z-index: 2; display: grid; gap: 1.2rem; min-height: 70svh; align-content: center; padding: clamp(6rem, 12vh, 10rem) var(--gutter); background: #fbfaf6; }
+  .proof-band > * { width: min(100%, var(--max)); margin-inline: auto; }
+  .dissolve-chapter { position: relative; display: grid; min-height: 100svh; align-items: end; padding: clamp(6rem, 10vh, 9rem) var(--gutter) 3rem; background: #f4f0e7; }
+  .dissolve-chapter .project-comparison { position: absolute; inset: 0; width: 100%; --floor-warp: 0; }
+  .dissolve-chapter .comparison-stage { height: 100%; aspect-ratio: auto; }
+  .dissolve-chapter .chapter-content { position: relative; z-index: 2; width: min(100%, var(--max)); padding: 2rem 0 1rem; }
+  .dissolve-chapter .chapter-title, .dissolve-chapter .lead, .dissolve-chapter .eyebrow { color: #fbfaf6; text-shadow: 0 1rem 3rem rgba(0,0,0,.35); }
+  .dissolve-chapter .chapter-link { color: #dceaf1; }
+  .dissolve-chapter .comparison-after, .dissolve-chapter .comparison-rule { transition: none; }
+  .dissolve-chapter .comparison-rule i { display: none; }
+  .dissolve-chapter :global(.floor-mix) { position: absolute; inset: 0; z-index: 3; pointer-events: none; }
+  .dissolve-chapter :global(.floor-mix canvas) { display: block; width: 100%; height: 100%; }
+  .dissolve-chapter .project-comparison[data-floor-mix='on'] .comparison-before,
+  .dissolve-chapter .project-comparison[data-floor-mix='on'] .comparison-after,
+  .dissolve-chapter .project-comparison[data-floor-mix='on'] .comparison-rule { opacity: 0; }
+  .dissolve-chapter .comparison-range { opacity: 0; pointer-events: none; }
+</style>

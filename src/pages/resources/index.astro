@@ -1,0 +1,52 @@
+---
+import { getCollection } from 'astro:content';
+import type { CollectionEntry } from 'astro:content';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import SiteHeader from '../../components/SiteHeader.astro';
+import SiteFooter from '../../components/SiteFooter.astro';
+import InteriorHero from '../../components/InteriorHero.astro';
+import SectionShell from '../../components/SectionShell.astro';
+import { resourcePath, resourcesForDeployment } from '../../lib/publishing.js';
+
+const deployment = import.meta.env.SITE_ENV;
+const resources = (resourcesForDeployment(await getCollection('resources'), deployment) as CollectionEntry<'resources'>[])
+  .sort((a, b) => b.data.updatedAt.valueOf() - a.data.updatedAt.valueOf());
+const description = 'Clear, sourced guides to garage floor coatings, concrete preparation, Edmonton winters, design and project decisions.';
+---
+
+<BaseLayout title="Epoxy Flooring Resources Edmonton | Final Finish" description={description} canonicalPath="/resources">
+  <SiteHeader />
+  <main id="main-content">
+    <InteriorHero eyebrow="The Edmonton floor library" title="Clear answers before you coat a floor." lead="Fifty practical guides covering preparation, winter conditions, finish choices, ownership, costs and contractor conversations." />
+    <SectionShell>
+      <p class="section-kicker">Fifty launch resources</p>
+      <h2 class="section-title">Useful enough to make the next decision easier.</h2>
+      <p class="section-lead">Use these sourced guides to frame the right questions for a site assessment. They do not replace a written scope or current product documentation.</p>
+      <div class="resource-grid">
+        {resources.map((resource, index) => (
+          <article class="resource-card">
+            <p><span>{String(index + 1).padStart(2, '0')}</span>{resource.data.category.replace('-', ' ')}</p>
+            <h3><a href={resourcePath(resource)}>{resource.data.title}</a></h3>
+            <div>{resource.data.description}</div>
+          </article>
+        ))}
+      </div>
+    </SectionShell>
+  </main>
+  <SiteFooter />
+</BaseLayout>
+
+<style>
+  .review-note { margin: 0 0 3rem; padding: 1rem 1.2rem; border-left: 3px solid var(--cobalt); background: #eef3f5; color: var(--muted); font-size: .82rem; }
+  .resource-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1px; margin-top: 4rem; border: 1px solid var(--line); background: var(--line); }
+  .resource-card { position: relative; min-height: 22rem; padding: clamp(1.5rem, 3vw, 3rem); background: #fbfaf5; }
+  .resource-card > p { display: flex; gap: 1rem; margin: 0 0 3rem; color: var(--cobalt); font-size: .64rem; font-weight: 780; letter-spacing: .12em; text-transform: uppercase; }
+  .resource-card > p span { color: var(--muted); }
+  .resource-card h3 { margin: 0; font-family: var(--serif); font-size: clamp(2rem, 3vw, 3.35rem); font-weight: 400; line-height: .98; }
+  .resource-card h3 a { color: inherit; text-decoration: none; }
+  .resource-card h3 a::after { content: ''; position: absolute; inset: 0; }
+  .resource-card div { max-width: 33rem; margin-top: 1.4rem; color: var(--muted); font-size: .83rem; }
+  .resource-card small { position: absolute; right: 1.25rem; bottom: 1.25rem; color: var(--muted); font-size: .58rem; letter-spacing: .08em; text-transform: uppercase; }
+  .resource-card:hover { background: #f0eee7; }
+  @media (max-width: 760px) { .resource-grid { grid-template-columns: 1fr; } .resource-card { min-height: 19rem; } }
+</style>

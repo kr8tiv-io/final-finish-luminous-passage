@@ -1,0 +1,99 @@
+---
+import type { CollectionEntry } from 'astro:content';
+import BaseLayout from '../layouts/BaseLayout.astro';
+import SiteHeader from './SiteHeader.astro';
+import SiteFooter from './SiteFooter.astro';
+import { resourcePath } from '../lib/publishing.js';
+import { deploymentSettings } from '../lib/deployment.js';
+
+type Resource = CollectionEntry<'resources'>;
+interface Props { entry: Resource; Content: any; related: Resource[]; }
+const { entry, Content, related } = Astro.props as Props;
+const { data } = entry;
+const path = resourcePath(entry);
+const deployment = deploymentSettings(import.meta.env.SITE_ENV, Astro.site);
+const canonical = new URL(path, deployment.canonicalOrigin).toString();
+const serviceTurn = {
+  'epoxy-flooring': { href: '/services/residential-epoxy-flooring', label: 'Residential epoxy flooring' },
+  'garage-floor-coatings': { href: '/services/residential-epoxy-flooring', label: 'Residential epoxy flooring' },
+  'commercial-flooring': { href: '/services/commercial-epoxy-flooring', label: 'Commercial epoxy flooring' },
+  'floor-repair': { href: '/services/concrete-solutions', label: 'Concrete preparation' },
+  'concrete-polishing': { href: '/services/concrete-solutions', label: 'Concrete preparation' },
+  'neutral-material-education': { href: '/finishes', label: 'Finish families we actually install' },
+}[data.primaryService];
+const schema = {
+  '@context': 'https://schema.org', '@type': 'BlogPosting', headline: data.title,
+  description: data.description, dateModified: data.updatedAt.toISOString(), mainEntityOfPage: canonical,
+  author: { '@type': 'Organization', name: 'Final Finish Epoxy' },
+  publisher: { '@type': 'Organization', name: 'Final Finish Epoxy' }, isAccessibleForFree: true,
+};
+const breadcrumb = {
+  '@context': 'https://schema.org', '@type': 'BreadcrumbList', itemListElement: [
+    { '@type': 'ListItem', position: 1, name: 'Home', item: new URL('/', deployment.canonicalOrigin).toString() },
+    { '@type': 'ListItem', position: 2, name: 'Resources', item: new URL('/resources/', deployment.canonicalOrigin).toString() },
+    { '@type': 'ListItem', position: 3, name: data.title, item: canonical },
+  ],
+};
+---
+
+<BaseLayout title={`${data.title} | Final Finish Epoxy`} description={data.description} canonicalPath={path}>
+  <script slot="head" is:inline type="application/ld+json" set:html={JSON.stringify(schema)} />
+  <script slot="head" is:inline type="application/ld+json" set:html={JSON.stringify(breadcrumb)} />
+  <SiteHeader />
+  <main id="main-content">
+    <header class="article-hero">
+      <nav aria-label="Breadcrumb"><a href="/">Home</a><span>/</span><a href="/resources/">Resources</a><span>/</span><strong>{data.category.replace('-', ' ')}</strong></nav>
+      <p class="eyebrow">{data.category.replace('-', ' ')} · Edmonton floor library</p>
+      <h1>{data.title}</h1>
+      <p class="deck">{data.description}</p>
+    </header>
+    <div class="article-grid">
+      <aside class="article-rail">
+        <p>Updated<br /><time datetime={data.updatedAt.toISOString()}>{data.updatedAt.toLocaleDateString('en-CA', { dateStyle: 'long' })}</time></p>
+        <a href="/contact#quote">Ask Denis about your floor</a>
+      </aside>
+      <article class="article-body"><Content />{serviceTurn && <p class="service-turn"><a href={serviceTurn.href}>{serviceTurn.label}</a></p>}</article>
+      <aside class="source-panel" aria-labelledby="sources">
+        <p class="eyebrow">Primary references</p>
+        <h2 id="sources">Sources and further reading</h2>
+        <ul>{data.sources.map((source) => <li><a href={source.url} rel="noopener">{source.name}</a><span>{source.publisher}{source.note && ` · ${source.note}`}</span></li>)}</ul>
+      </aside>
+    </div>
+    {related.length > 0 && <section class="related" aria-labelledby="related"><p class="eyebrow">Keep exploring</p><h2 id="related">Related floor guides</h2><div>{related.map((item) => <a href={resourcePath(item)}>{item.data.title}<span aria-hidden="true">↗</span></a>)}</div></section>}
+  </main>
+  <SiteFooter />
+</BaseLayout>
+
+<style>
+  .article-hero { padding: clamp(9rem, 16vh, 13rem) var(--gutter) clamp(4rem, 8vw, 8rem); background: radial-gradient(circle at 78% 16%, rgba(126,178,204,.22), transparent 28%), #f7f4ec; }
+  .article-hero > * { width: min(100%, 68rem); margin-inline: auto; }
+  nav { display: flex; flex-wrap: wrap; gap: .55rem; margin-bottom: 5rem !important; color: var(--muted); font-size: .68rem; letter-spacing: .08em; text-transform: uppercase; }
+  nav a { color: inherit; }
+  .article-hero h1 { margin: .8rem 0 1.6rem; font-family: var(--serif); font-size: clamp(3.8rem, 8vw, 8.5rem); font-weight: 400; letter-spacing: -.05em; line-height: .88; }
+  .deck { max-width: 48rem; margin-left: 0; color: var(--muted); font-size: clamp(1.05rem, 2vw, 1.35rem); }
+  .article-grid { display: grid; grid-template-columns: minmax(12rem, .42fr) minmax(0, 1fr); gap: 3rem 6vw; width: min(calc(100% - 2 * var(--gutter)), var(--max)); margin: 0 auto; padding: clamp(4rem, 9vw, 9rem) 0; }
+  .article-rail { position: sticky; top: 7rem; align-self: start; }
+  .review-note { display: grid; gap: .55rem; padding: 1.15rem; border: 1px solid #e3d5aa; background: #fff8e3; color: #645a3d; font-size: .72rem; }
+  .article-rail > p { margin: 2rem 0; color: var(--muted); font-size: .7rem; line-height: 1.7; text-transform: uppercase; }
+  .article-rail > a { color: var(--cobalt); font-size: .68rem; font-weight: 780; letter-spacing: .08em; text-underline-offset: .35rem; text-transform: uppercase; }
+  .article-body { max-width: 48rem; font-size: 1.05rem; line-height: 1.78; }
+  .article-body :global(h2) { margin: 4rem 0 1rem; font-family: var(--serif); font-size: clamp(2.4rem, 4vw, 4.2rem); font-weight: 400; letter-spacing: -.035em; line-height: .98; }
+  .article-body :global(h3) { margin: 2.8rem 0 .8rem; font-size: 1.2rem; }
+  .article-body :global(p), .article-body :global(li) { color: #3f4a50; }
+  .article-body :global(a) { color: var(--cobalt-dark); text-underline-offset: .22rem; }
+  .article-body :global(blockquote) { margin: 2rem 0; padding: 1rem 1.5rem; border-left: 3px solid var(--cobalt); background: #eef3f5; }
+  .service-turn { margin-top: 3rem; }
+  .service-turn a { color: var(--cobalt-dark); font-size: .78rem; font-weight: 760; letter-spacing: .09em; text-transform: uppercase; }
+  .source-panel { grid-column: 2; margin-top: 3rem; padding: clamp(1.5rem, 4vw, 3.5rem); border: 1px solid var(--line); background: #f2efe7; }
+  .source-panel h2, .related h2 { margin: .6rem 0 2rem; font-family: var(--serif); font-size: clamp(2.4rem, 4vw, 4.4rem); font-weight: 400; line-height: .95; }
+  .source-panel ul { display: grid; gap: 1rem; padding: 0; list-style: none; }
+  .source-panel li { display: grid; gap: .2rem; }
+  .source-panel li a { color: var(--cobalt-dark); font-weight: 700; }
+  .source-panel li span { color: var(--muted); font-size: .72rem; }
+  .related { padding: clamp(4rem, 8vw, 8rem) var(--gutter); background: #173d59; color: white; }
+  .related > * { width: min(100%, var(--max)); margin-inline: auto; }
+  .related .eyebrow { color: #a7d2e8; }
+  .related div { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1px; background: rgba(255,255,255,.2); }
+  .related div a { display: flex; justify-content: space-between; min-height: 11rem; padding: 1.5rem; background: #173d59; color: white; font-family: var(--serif); font-size: 1.7rem; line-height: 1; text-decoration: none; }
+  @media (max-width: 800px) { .article-grid { grid-template-columns: 1fr; } .article-rail { position: static; } .source-panel { grid-column: 1; } .related div { grid-template-columns: 1fr; } }
+</style>

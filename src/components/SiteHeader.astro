@@ -1,0 +1,69 @@
+---
+const currentPath = Astro.url.pathname;
+const links = [
+  { href: '/services', label: 'Services' },
+  { href: '/projects', label: 'Projects' },
+  { href: '/finishes', label: 'Finishes' },
+  { href: '/floor-visualizer', label: 'See your floor' },
+  { href: '/resources', label: 'Resources' },
+  { href: '/about', label: 'About' },
+];
+---
+
+<header class="site-header" data-site-header>
+  <a class="brand" href="/" aria-label="Final Finish Epoxy home">
+    <img class="brand-mark" src="/images/brand/final-finish-epoxy-mark.png" alt="" width="67" height="52" />
+  </a>
+
+  <button class="menu-toggle" type="button" aria-expanded="false" aria-controls="primary-navigation" data-menu-toggle>
+    <span class="sr-only">Open primary menu</span>
+    <span aria-hidden="true">Menu</span>
+  </button>
+
+  <nav id="primary-navigation" aria-label="Primary navigation" data-primary-navigation>
+    <ul>
+      {links.map((link) => (
+        <li>
+          <a href={link.href} aria-current={currentPath.startsWith(link.href) ? 'page' : undefined}>
+            {link.label}
+          </a>
+        </li>
+      ))}
+    </ul>
+  </nav>
+
+  <a class="header-phone" href="tel:+17809911651">Call (780) 991-1651</a>
+  <a class="header-cta" href="/contact#quote">Talk to Denis</a>
+</header>
+
+<script>
+  const header = document.querySelector<HTMLElement>('[data-site-header]');
+  const toggle = header?.querySelector<HTMLButtonElement>('[data-menu-toggle]');
+  const navigation = header?.querySelector<HTMLElement>('[data-primary-navigation]');
+
+  if (header && toggle && navigation) {
+    const setOpen = (open: boolean) => {
+      toggle.setAttribute('aria-expanded', String(open));
+      toggle.querySelector('.sr-only')!.textContent = open ? 'Close primary menu' : 'Open primary menu';
+      header.toggleAttribute('data-menu-open', open);
+    };
+
+    toggle.addEventListener('click', () => {
+      const open = toggle.getAttribute('aria-expanded') === 'true';
+      setOpen(!open);
+      if (!open) navigation.querySelector<HTMLAnchorElement>('a')?.focus();
+    });
+    document.addEventListener('keydown', (event) => {
+      if (event.key === 'Escape') {
+        setOpen(false);
+        toggle.focus();
+      }
+    });
+    document.addEventListener('click', (event) => {
+      if (!header.contains(event.target as Node)) setOpen(false);
+    });
+    navigation.addEventListener('click', (event) => {
+      if ((event.target as HTMLElement).closest('a')) setOpen(false);
+    });
+  }
+</script>

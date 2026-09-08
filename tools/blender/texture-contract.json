@@ -1,0 +1,14 @@
+{
+  "roles": ["baseColor", "roughness", "normal"],
+  "surfaces": [
+    "alabaster-snow", "dove-terrazzo", "linen-aggregate", "smoked-oat",
+    "river-pebble", "graphite-chip", "night-slate", "harbor-blue-chip",
+    "sage-fleck", "clay-confetti", "ember-speck", "eclipse-flake",
+    "chambray-stone", "warm-cinder", "limestone-floor"
+  ],
+  "flakeLibraryOutput": "luminous-passage-material-library.glb",
+  "limestoneBoundOutputs": [
+    "luminous-passage-entry.glb", "luminous-passage-gallery.glb",
+    "luminous-passage-court.glb", "luminous-passage-finish-alcove.glb"
+  ]
+}

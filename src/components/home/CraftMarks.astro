@@ -1,0 +1,48 @@
+---
+interface Props {
+  motif?: 'flake' | 'cove' | 'grind' | 'pour';
+}
+
+const { motif = 'flake' } = Astro.props;
+---
+
+<svg class={`craft-mark craft-mark--${motif}`} viewBox="0 0 120 120" aria-hidden="true">
+  {motif === 'flake' && (
+    <g fill="currentColor">
+      <path d="M18 14 L34 10 L46 22 L40 38 L22 36 L12 24 Z" opacity="0.9" />
+      <path d="M52 16 L63 20 L60 32 L48 28 Z" opacity="0.55" />
+      <path d="M28 44 L41 40 L47 52 L33 56 Z" opacity="0.4" />
+    </g>
+  )}
+  {motif === 'cove' && (
+    <g fill="none" stroke="currentColor" stroke-linecap="square">
+      <path d="M14 78 L14 52 C14 34 34 28 52 28 L86 28" stroke-width="1.6" />
+      <path d="M14 78 L86 78" stroke-width="0.8" />
+    </g>
+  )}
+  {motif === 'grind' && (
+    <g fill="none" stroke="currentColor">
+      <circle cx="60" cy="60" r="28" stroke-width="1.2" />
+      <circle cx="60" cy="60" r="16" stroke-width="0.8" />
+      <path d="M60 24 V34 M60 86 V96 M24 60 H34 M86 60 H96" stroke-width="0.9" />
+    </g>
+  )}
+  {motif === 'pour' && (
+    <g fill="none" stroke="currentColor" stroke-linecap="round">
+      <path d="M16 78 C34 66 40 54 58 58 C78 62 80 42 98 48" stroke-width="1.8" />
+    </g>
+  )}
+</svg>
+
+<style>
+  .craft-mark {
+    display: block;
+    width: 4.2rem;
+    height: 4.2rem;
+    margin: 0 0 1.4rem;
+    color: var(--cobalt);
+    opacity: 0.72;
+    pointer-events: none;
+  }
+  .craft-mark--cove { width: 5.2rem; }
+</style>

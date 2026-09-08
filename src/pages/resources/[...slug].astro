@@ -1,0 +1,17 @@
+---
+import { getCollection, render } from 'astro:content';
+import type { CollectionEntry } from 'astro:content';
+import ResourceLayout from '../../components/ResourceLayout.astro';
+import { relatedEntries, resourcesForDeployment } from '../../lib/publishing.js';
+import { requireSiteEnvironment } from '../../lib/deployment.js';
+
+export async function getStaticPaths() {
+  const environment = requireSiteEnvironment(import.meta.env.SITE_ENV);
+  return (resourcesForDeployment(await getCollection('resources'), environment) as CollectionEntry<'resources'>[]).map((entry) => ({ params: { slug: entry.id }, props: { entry } }));
+}
+const { entry } = Astro.props as { entry: CollectionEntry<'resources'> };
+const { Content } = await render(entry);
+const deployment = requireSiteEnvironment(import.meta.env.SITE_ENV);
+const related = relatedEntries(entry, await getCollection('resources'), deployment) as CollectionEntry<'resources'>[];
+---
+<ResourceLayout {entry} {Content} {related} />

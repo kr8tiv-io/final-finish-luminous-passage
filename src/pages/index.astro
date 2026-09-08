@@ -1,0 +1,688 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import SiteFooter from '../components/SiteFooter.astro';
+import SiteHeader from '../components/SiteHeader.astro';
+import JourneyMotionLoader from '../components/motion/JourneyMotionLoader';
+import FilmVeilLoader from '../components/motion/FilmVeilLoader';
+import CraftMarks from '../components/home/CraftMarks.astro';
+import FinishOrbit from '../components/motion/FinishOrbit.astro';
+import BeforeAfterProject from '../components/projects/BeforeAfterProject';
+import projectPhotos from '../data/project-photo-pairs.json';
+import reviews from '../data/google-reviews.json';
+
+const title = 'Final Finish Epoxy | Edmonton Epoxy Floor Coatings';
+const description = 'Edmonton epoxy floor coatings for garages, homes, and commercial rooms. Denis and Final Finish prepare the slab, then build a flake, solid, or metallic finish that is easier to live with.';
+const projectAssets = new Map(projectPhotos.assets.map((asset) => [asset.id, asset]));
+const featuredPair = projectPhotos.curatedPairCandidates[0];
+const featuredBefore = projectAssets.get(featuredPair.beforeAssetIds[0])!;
+const featuredAfter = projectAssets.get(featuredPair.afterAssetIds[0])!;
+const reviewCount = String(reviews.length);
+const maps = 'https://www.google.com/maps?cid=7470239776211762202';
+const writeReview = 'https://search.google.com/local/writereview?cid=7470239776211762202';
+const facebook = 'https://www.facebook.com/profile.php?id=61573826827114';
+const marqueeReviews = [...reviews, ...reviews];
+const proofSchema = {
+  '@context': 'https://schema.org',
+  '@type': 'HomeAndConstructionBusiness',
+  name: 'Final Finish Epoxy',
+  telephone: '+1-780-991-1651',
+  url: 'https://www.finalfinishepoxy.ca/',
+  sameAs: [maps, 'https://www.facebook.com/profile.php?id=61573826827114', 'https://www.instagram.com/final_finish_epoxy/'],
+  aggregateRating: {
+    '@type': 'AggregateRating',
+    ratingValue: '5.0',
+    reviewCount,
+    bestRating: '5',
+    worstRating: '1',
+  },
+  review: reviews.map((review) => ({
+    '@type': 'Review',
+    author: { '@type': 'Person', name: review.name },
+    reviewBody: review.reviewBody,
+    itemReviewed: { '@type': 'LocalBusiness', name: 'Final Finish Epoxy' },
+  })),
+};
+---
+
+<BaseLayout title={title} description={description}>
+  <script slot="head" is:inline type="application/ld+json" set:html={JSON.stringify(proofSchema)} />
+  <SiteHeader />
+
+  <main id="main-content" class="journey" data-room="portico">
+    <JourneyMotionLoader client:only="react" />
+    <FilmVeilLoader client:only="react" />
+    <svg class="journey-draw" viewBox="0 0 24 100" preserveAspectRatio="xMidYMin meet" aria-hidden="true">
+      <path class="journey-draw-path" d="M12 4 C13.2 50 12 96 12 96" />
+      <g class="journey-draw-stations" fill="none">
+        <path d="M9.4 8 H14.6" />
+        <path d="M9.4 20 H14.6" />
+        <path d="M9.4 32 H14.6" />
+        <path d="M9.4 44 H14.6" />
+        <path d="M9.4 56 H14.6" />
+        <path d="M9.4 68 H14.6" />
+        <path d="M9.4 80 H14.6" />
+        <path d="M9.4 92 H14.6" />
+      </g>
+      <path class="journey-draw-bead" d="M12 4 L13.4 5.9 12 7.8 10.6 5.9 Z" />
+    </svg>
+    <nav class="journey-rail" aria-label="Passage rooms">
+      <span class="rail-pill" aria-hidden="true"></span>
+      <button type="button" aria-current="true">Open</button>
+      <button type="button">Walk</button>
+      <button type="button">Garage</button>
+      <button type="button">Vault</button>
+      <button type="button">Hall</button>
+      <button type="button">Mall</button>
+      <button type="button">Proof</button>
+      <button type="button">Quote</button>
+    </nav>
+    <section class="journey-chapter hero-chapter" data-journey-chapter="portico" aria-labelledby="hero-title">
+      <picture class="hero-frame">
+        <source type="image/avif" srcset="/images/brand/luminous-passage-keyframe.avif" />
+        <source type="image/webp" srcset="/images/brand/luminous-passage-keyframe.webp" />
+        <img
+          src="/images/brand/luminous-passage-keyframe.jpg"
+          alt="A luminous architectural passage with a premium full-flake epoxy floor"
+          width="1680"
+          height="941"
+          loading="eager"
+          fetchpriority="high"
+          decoding="async"
+        />
+      </picture>
+      <div class="pour-stage" aria-hidden="true">
+        <img
+          class="pour-poster"
+          src="/images/brand/epoxy-pour-poster.jpg"
+          alt=""
+          width="1280"
+          height="720"
+          decoding="async"
+        />
+        <video
+          class="pour-film"
+          muted
+          playsinline
+          disablepictureinpicture
+          preload="none"
+          poster="/images/brand/epoxy-pour-poster.jpg"
+        >
+          <source src="/videos/epoxy-pour.mp4" type="video/mp4" />
+        </video>
+      </div>
+      <div class="hero-light" aria-hidden="true"></div>
+      <div class="chapter-content hero-content">
+        <p class="eyebrow">Final Finish · Edmonton, Alberta</p>
+        <h1 id="hero-title" class="display-title">Epoxy floors, finished properly.</h1>
+        <p class="lead">Residential and commercial epoxy floor coatings built on careful concrete preparation—and a finish that makes the whole space feel considered.</p>
+        <div class="button-row">
+          <a class="button button-primary" href="/floor-visualizer"><span>Visualize your floor</span></a>
+          <a class="button button-secondary" href="/contact#quote"><span>Request a quote</span></a>
+          <a class="text-call" href="tel:+17809911651">Call Denis <span>(780) 991-1651</span></a>
+        </div>
+      </div>
+      <p class="chapter-index" aria-hidden="true">01 — The Daylit Portico</p>
+    </section>
+
+    <section class="journey-interlude" aria-labelledby="homeowner-title">
+      <CraftMarks motif="flake" />
+      <p class="eyebrow">For Edmonton homeowners</p>
+      <h2 id="homeowner-title" class="interlude-title">The garage is the room you use in winter boots.</h2>
+      <div class="interlude-grid">
+        <p>Road salt, hot tires, and tracked-in grit chew at bare concrete. A coated floor is easier to live with: sweep it, wash it, and the space stops looking unfinished.</p>
+        <p>Denis works residential slabs across Edmonton, Sherwood Park, St. Albert, Leduc, and the rest of the capital region—prep first, then a finish that belongs in the house attached to it.</p>
+      </div>
+    </section>
+
+    <div class="journey-breath" data-hall-from="portico" data-hall-to="foundation" aria-hidden="true"></div>
+
+    <section class="journey-chapter foundation-chapter" data-journey-chapter="foundation" aria-labelledby="foundation-title">
+      <picture class="chapter-frame" data-chapter-frame aria-hidden="true">
+        <source type="image/avif" srcset="/images/brand/foundation-chamber.avif" />
+        <source type="image/webp" srcset="/images/brand/foundation-chamber.webp" />
+        <img src="/images/brand/foundation-chamber.jpg" alt="" width="1680" height="941" loading="lazy" decoding="async" />
+      </picture>
+      <div class="floor-film" aria-hidden="true">
+        <img class="floor-film-poster" src="/images/brand/epoxy-walkway-poster.jpg" alt="" width="1280" height="720" decoding="async" />
+        <video class="floor-film-video" muted playsinline disablepictureinpicture preload="none" poster="/images/brand/epoxy-walkway-poster.jpg">
+          <source src="/videos/epoxy-walkway.mp4" type="video/mp4" />
+        </video>
+      </div>
+      <div class="chapter-content offset-content">
+        <p class="eyebrow">Preparation, repair, precision</p>
+        <h2 id="foundation-title" class="chapter-title">The finish begins below the surface.</h2>
+        <p class="lead">Grinding, surface levelling, concrete repair, and thoughtful preparation create the conditions the finished floor depends on—so a walkway, a mudroom, or a garage can take a high-gloss flake system and keep it.</p>
+        <a class="chapter-link" href="/services/concrete-solutions">Explore concrete preparation <span aria-hidden="true">↗</span></a>
+      </div>
+      <div class="material-note" aria-label="Floor system principle">
+        <span>01</span>
+        <p>Inspect the slab.</p>
+        <span>02</span>
+        <p>Prepare the surface.</p>
+        <span>03</span>
+        <p>Build the finish.</p>
+      </div>
+      <p class="chapter-index" aria-hidden="true">02 — The Walk</p>
+    </section>
+
+    <section class="journey-interlude" aria-labelledby="prep-title">
+      <CraftMarks motif="grind" />
+      <p class="eyebrow">Why the floor lasts</p>
+      <h2 id="prep-title" class="interlude-title">Alberta weather shows up on the slab first.</h2>
+      <div class="interlude-grid">
+        <p>Hot-tire pickup, freeze–thaw, and moisture in the concrete are the usual reasons a coating fails. The work underneath—diamond grinding, crack repair, the right profile—is what the glossy surface is standing on.</p>
+        <p>If you are comparing quotes, ask what happens to oil stains, spalling, and joints before anyone talks colour. That is the conversation that decides whether the floor still looks considered in five winters.</p>
+      </div>
+    </section>
+
+    <div class="journey-breath" data-hall-from="foundation" data-hall-to="garage" aria-hidden="true"></div>
+
+    <section class="journey-chapter garage-chapter" data-journey-chapter="garage" aria-labelledby="garage-title">
+      <div class="floor-film" aria-hidden="true">
+        <img class="floor-film-poster" src="/images/brand/epoxy-garage-poster.jpg" alt="" width="1280" height="720" decoding="async" />
+        <video class="floor-film-video" muted playsinline disablepictureinpicture preload="none" poster="/images/brand/epoxy-garage-poster.jpg">
+          <source src="/videos/epoxy-garage.mp4" type="video/mp4" />
+        </video>
+      </div>
+      <div class="chapter-content">
+        <p class="eyebrow">Residential garages</p>
+        <h2 id="garage-title" class="chapter-title">A garage floor that looks like it was meant to be seen.</h2>
+        <p class="lead">Full-flake systems with a clear topcoat are the finish most Edmonton garages actually want: dense vinyl chips, a washable gloss, and a cove that turns the slab into one clean plane.</p>
+        <a class="chapter-link" href="/services/residential-epoxy-flooring">Residential epoxy flooring <span aria-hidden="true">↗</span></a>
+      </div>
+      <p class="chapter-index" aria-hidden="true">03 — The Garage</p>
+    </section>
+
+    <section class="journey-interlude" aria-labelledby="workshop-title">
+      <CraftMarks motif="cove" />
+      <p class="eyebrow">Workshops, studios, and the house attached</p>
+      <h2 id="workshop-title" class="interlude-title">The floor should work as hard as the room.</h2>
+      <div class="interlude-grid">
+        <p>Home gyms, hobby shops, and walk-outs collect dust and rubber marks. A coated slab is simpler to keep, and it changes how the room photographs, rents, and feels at 7 a.m.</p>
+        <p>Bring the square footage, photos of the cracks, and how you use the space. Denis will tell you what the slab can take, and what it cannot.</p>
+      </div>
+    </section>
+
+    <div class="journey-breath" data-hall-from="garage" data-hall-to="vault" aria-hidden="true"></div>
+
+    <section class="journey-chapter vault-chapter" data-journey-chapter="vault" aria-labelledby="vault-title">
+      <div class="floor-film" aria-hidden="true">
+        <img class="floor-film-poster" src="/images/brand/epoxy-mancave-poster.jpg" alt="" width="1280" height="720" decoding="async" />
+        <video class="floor-film-video" muted playsinline disablepictureinpicture preload="none" poster="/images/brand/epoxy-mancave-poster.jpg">
+          <source src="/videos/epoxy-mancave.mp4" type="video/mp4" />
+        </video>
+      </div>
+      <div class="chapter-content light-content">
+        <p class="eyebrow">Collectors, shops, and man caves</p>
+        <h2 id="vault-title" class="chapter-title">The room under the house deserves a finished floor.</h2>
+        <p class="lead">Glass, cars, and low light make the coating do the talking. A flake system with a wet-look topcoat reads as architecture, not as a leftover slab.</p>
+      </div>
+      <p class="chapter-index light-index" aria-hidden="true">04 — The Vault</p>
+    </section>
+
+    <div class="journey-breath" data-hall-from="vault" data-hall-to="finish-hall" aria-hidden="true"></div>
+
+    <section class="journey-chapter finish-chapter" data-journey-chapter="finish-hall" aria-labelledby="finish-title">
+      <picture class="chapter-frame" data-chapter-frame aria-hidden="true">
+        <source type="image/avif" srcset="/images/brand/luminous-finish-hall.avif" />
+        <source type="image/webp" srcset="/images/brand/luminous-finish-hall.webp" />
+        <img src="/images/brand/luminous-finish-hall.jpg" alt="" width="1680" height="941" loading="lazy" decoding="async" />
+      </picture>
+      <div class="floor-film" aria-hidden="true">
+        <img class="floor-film-poster" src="/images/brand/epoxy-finish-poster.jpg" alt="" width="1280" height="720" decoding="async" />
+        <video class="floor-film-video" muted playsinline disablepictureinpicture preload="none" poster="/images/brand/epoxy-finish-poster.jpg">
+          <source src="/videos/epoxy-finish.mp4" type="video/mp4" />
+        </video>
+      </div>
+      <div class="finish-sheen" aria-hidden="true"></div>
+      <div class="chapter-content light-content">
+        <p class="eyebrow">Flake · Solid · Metallic</p>
+        <h2 id="finish-title" class="chapter-title">A room changes when the floor feels intentional.</h2>
+        <p class="lead">Move through finish families designed to make garages, workshops, residential spaces, and commercial floors feel cleaner and brighter.</p>
+        <div class="button-row">
+          <a class="button button-secondary" href="/finishes"><span>Explore finishes</span></a>
+          <a class="button button-secondary" href="/services"><span>View services</span></a>
+        </div>
+      </div>
+      <FinishOrbit placed="chapter" />
+      <p class="chapter-index light-index" aria-hidden="true">05 — The Finish Hall</p>
+    </section>
+
+    <section class="journey-interlude" aria-labelledby="commercial-copy-title">
+      <CraftMarks motif="pour" />
+      <p class="eyebrow">Retail, washrooms, and working floors</p>
+      <h2 id="commercial-copy-title" class="interlude-title">Downtime is the real commercial cost.</h2>
+      <div class="interlude-grid">
+        <p>Campground washrooms, shop floors, and public corridors cannot sit open to the weather. A coating has to be planned around access, odour, and when people can walk on it again.</p>
+        <p>Glenda’s review of the campground bathrooms is the brief: more layers to remove than expected, the prep done properly, and a floor that will take years of use. That is the commercial conversation.</p>
+      </div>
+    </section>
+
+    <div class="journey-breath" data-hall-from="finish-hall" data-hall-to="commercial" aria-hidden="true"></div>
+
+    <section class="journey-chapter commercial-chapter" data-journey-chapter="commercial" aria-labelledby="commercial-title">
+      <div class="floor-film" aria-hidden="true">
+        <img class="floor-film-poster" src="/images/brand/epoxy-commercial-poster.jpg" alt="" width="1280" height="720" decoding="async" />
+      </div>
+      <div class="chapter-content">
+        <p class="eyebrow">Commercial epoxy flooring</p>
+        <h2 id="commercial-title" class="chapter-title">A public floor that still looks intentional.</h2>
+        <p class="lead">Seamless flake systems in corridors, washrooms, and light industrial rooms keep traffic moving and stay easier to clean than tile grout or painted concrete.</p>
+        <a class="chapter-link" href="/services/commercial-epoxy-flooring">Commercial epoxy flooring <span aria-hidden="true">↗</span></a>
+      </div>
+      <p class="chapter-index" aria-hidden="true">06 — The Concourse</p>
+    </section>
+
+    <div class="journey-breath" data-hall-from="commercial" data-hall-to="proof" aria-hidden="true"></div>
+
+    <section class="journey-chapter proof-chapter" data-journey-chapter="proof" aria-labelledby="proof-title">
+      <BeforeAfterProject before={featuredBefore} after={featuredAfter} label="Featured Final Finish transformation" featured stage client:visible />
+      <div class="chapter-content proof-copy">
+        <p class="eyebrow">The work, from the same point of view</p>
+        <h2 id="proof-title" class="chapter-title">Real floors. Revealed honestly.</h2>
+        <p class="lead">This pair is the same basement, same camera: open joints and repair on the left, full-flake epoxy on the right. Drag to compare. More pairs live on the projects page and on Facebook.</p>
+        <a class="chapter-link" href="/projects">Walk through completed projects <span aria-hidden="true">↗</span></a>
+      </div>
+      <p class="chapter-index light-index" aria-hidden="true">07 — The Proof</p>
+    </section>
+
+    <section class="journey-interlude social-interlude" aria-labelledby="social-title">
+      <div class="social-head">
+        <span class="google-mark" aria-hidden="true">
+          <svg viewBox="0 0 24 24" width="36" height="36">
+            <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.27-4.74 3.27-8.1z"/>
+            <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+            <path fill="#FBBC05" d="M5.84 14.09A6.97 6.97 0 0 1 5.48 12c0-.72.13-1.41.36-2.09V7.07H2.18A10.96 10.96 0 0 0 1 12c0 1.77.42 3.45 1.18 4.93l3.66-2.84z"/>
+            <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+          </svg>
+        </span>
+        <div>
+          <p class="eyebrow">Google reviews · {reviewCount} on this page</p>
+          <h2 id="social-title" class="interlude-title">Five stars on Google. The work holds up in person.</h2>
+        </div>
+        <div class="social-actions">
+          <a class="button button-primary" href={maps}>Read reviews</a>
+          <a class="button button-secondary" href={writeReview}>Write a review</a>
+          <a class="text-call" href={facebook}>Facebook</a>
+        </div>
+      </div>
+      <div class="review-marquee" aria-label="Recent Google reviews">
+        <div class="review-marquee-track">
+          {marqueeReviews.map((review) => (
+            <blockquote>
+              <p>{review.reviewBody}</p>
+              <footer>{review.name} · Google</footer>
+            </blockquote>
+          ))}
+        </div>
+      </div>
+    </section>
+
+    <div class="journey-breath" data-hall-from="proof" data-hall-to="consultation" aria-hidden="true"></div>
+
+    <section class="journey-chapter consultation-chapter" data-journey-chapter="consultation" aria-labelledby="consultation-title">
+      <picture class="chapter-frame" data-chapter-frame aria-hidden="true">
+        <source type="image/avif" srcset="/images/brand/consultation-court.avif" />
+        <source type="image/webp" srcset="/images/brand/consultation-court.webp" />
+        <img src="/images/brand/consultation-court.jpg" alt="" width="1680" height="941" loading="lazy" decoding="async" />
+      </picture>
+      <div class="floor-film" aria-hidden="true">
+        <img class="floor-film-poster" src="/images/brand/epoxy-consultation-poster.jpg" alt="" width="1280" height="720" decoding="async" />
+        <video class="floor-film-video" muted playsinline disablepictureinpicture preload="none" poster="/images/brand/epoxy-consultation-poster.jpg">
+          <source src="/videos/epoxy-consultation.mp4" type="video/mp4" />
+        </video>
+      </div>
+      <div class="chapter-content consultation-content">
+        <p class="eyebrow">The Consultation Court</p>
+        <h2 id="consultation-title" class="chapter-title">Bring us the floor you have.</h2>
+        <p class="lead">See thirty finish inspirations in your own photo, then send Denis the space, condition, timing, and look you have in mind.</p>
+        <div class="button-row">
+          <a class="button button-primary" href="/floor-visualizer"><span>Enter the finish alcove</span></a>
+          <a class="button button-secondary" href="/contact#quote"><span>Request a quote</span></a>
+        </div>
+        <div class="trust-line">
+          <span class="rating" aria-hidden="true">Proof</span>
+          <p>Google reviews, {reviewCount} on this page · <a href="/projects">Browse real transformations</a></p>
+        </div>
+      </div>
+      <p class="chapter-index" aria-hidden="true">08 — The Court</p>
+    </section>
+
+    <div class="journey-breath journey-breath--end" aria-hidden="true"></div>
+  </main>
+
+  <SiteFooter />
+</BaseLayout>
+
+<style>
+  .journey { --dissolve: 0; --dissolve-from: 0; --dissolve-to: 1; overflow: clip; }
+  .journey-chapter { --chapter-in: 1; }
+  .journey-chapter .chapter-content,
+  .journey-chapter .material-note,
+  .journey-chapter .chapter-index,
+  .journey-chapter :global(.project-comparison) {
+    opacity: var(--chapter-in, 1);
+    transform: translate3d(calc((1 - var(--chapter-in, 1)) * -1.8rem), 0, 0);
+  }
+  .hero-content { clip-path: none; }
+  .journey-breath {
+    position: relative;
+    z-index: 0;
+    min-height: 80svh;
+    background: transparent;
+    pointer-events: none;
+  }
+  .journey-breath--end { min-height: 36svh; }
+  .film-veil {
+    position: fixed;
+    inset: 0;
+    z-index: 2;
+    pointer-events: none;
+  }
+  .film-veil :global(canvas) {
+    display: block;
+    width: 100%;
+    height: 100%;
+  }
+  .journey-draw {
+    position: fixed;
+    z-index: 36;
+    left: 1.1rem;
+    top: 14vh;
+    width: 36px;
+    height: 72vh;
+    color: var(--cobalt);
+    pointer-events: none;
+    opacity: 0.72;
+  }
+  .journey-draw-path { fill: none; stroke: currentColor; stroke-width: 1; }
+  .journey-draw-stations path { stroke: currentColor; stroke-width: 0.7; }
+  .journey-draw-bead { fill: var(--cobalt); }
+  .journey-rail {
+    position: fixed;
+    z-index: 40;
+    right: var(--gutter);
+    top: 50%;
+    display: grid;
+    gap: 0.85rem;
+    transform: translateY(-50%);
+  }
+  .rail-pill {
+    position: absolute;
+    z-index: 0;
+    left: -0.45rem;
+    width: 2px;
+    height: 1.6rem;
+    background: var(--cobalt);
+    pointer-events: none;
+  }
+  .journey-rail button {
+    min-height: 1.8rem;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: var(--muted);
+    font-size: 0.58rem;
+    font-weight: 760;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    writing-mode: vertical-rl;
+  }
+  .journey-rail button[aria-current='true'] { color: var(--cobalt); }
+  .journey-chapter { position: relative; z-index: auto; display: grid; align-items: end; min-height: 100svh; padding: clamp(10rem, 22vh, 18rem) var(--gutter) clamp(7rem, 16vh, 12rem); }
+  .chapter-content { position: relative; z-index: 3; width: min(100%, var(--max)); margin: 0 auto; }
+  .chapter-content .lead { margin-top: 2.6rem; }
+  .chapter-frame { position: absolute; z-index: 0; inset: 0; display: block; overflow: hidden; }
+  .chapter-frame img { width: 100%; height: 100%; object-fit: cover; }
+  .hero-chapter { align-items: center; overflow: hidden; background: #8d8882; }
+  .hero-chapter::after { content: ''; position: absolute; inset: 0; z-index: 1; background: linear-gradient(90deg, rgba(247,243,233,.9) 0 10%, rgba(247,243,233,.48) 28%, rgba(247,243,233,.12) 48%, transparent 66%), linear-gradient(0deg, rgba(23,34,42,.22), transparent 44%); pointer-events: none; }
+  .hero-frame { position: absolute; inset: 0; z-index: 0; display: block; opacity: 1; transition: opacity 1.6s cubic-bezier(.22,.7,.2,1); }
+  .hero-frame img { width: 100%; height: 100%; object-fit: cover; object-position: center; }
+  .pour-stage,
+  .floor-film {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    overflow: hidden;
+    pointer-events: none;
+    background: #8d8882;
+  }
+  .pour-stage img,
+  .pour-stage video,
+  .floor-film img,
+  .floor-film video {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: 52% 58%;
+  }
+  .pour-stage video,
+  .floor-film video { z-index: 1; }
+  .floor-film-poster,
+  .pour-poster { transform-origin: 50% 60%; will-change: transform; }
+  .hero-chapter:has(.pour-stage) .hero-light { display: none; }
+  .finish-chapter:has(.floor-film) .finish-sheen { display: none; }
+  .hero-light { position: absolute; z-index: 1; top: 8%; right: 3%; width: min(53vw, 54rem); aspect-ratio: 0.86; border: 1px solid rgba(22, 79, 131, 0.12); border-radius: 48% 48% 2rem 2rem; box-shadow: inset 0 -3rem 8rem rgba(24, 75, 112, 0.04); pointer-events: none; }
+  .hero-content { padding-right: min(36vw, 34rem); }
+  .text-call { display: inline-flex; align-items: center; gap: .6rem; padding: .75rem .5rem; color: var(--cobalt-dark); font-size: .8rem; font-weight: 760; letter-spacing: .05em; text-decoration: none; text-transform: uppercase; }
+  .text-call span { color: var(--muted); font-size: .7rem; }
+  .chapter-index { position: absolute; z-index: 3; right: var(--gutter); bottom: 3.2rem; margin: 0; color: var(--muted); font-size: .66rem; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; writing-mode: vertical-rl; }
+  .foundation-chapter { grid-template-columns: minmax(0, 1.4fr) minmax(16rem, .6fr); gap: 6.5rem; background: #12151a; color: #f4f1e9; }
+  .foundation-chapter::after { content: ''; position: absolute; z-index: 1; inset: 0; background: linear-gradient(90deg, rgba(8,12,18,.82) 0 20%, rgba(8,12,18,.32) 46%, transparent 70%); pointer-events: none; }
+  .foundation-chapter .eyebrow, .foundation-chapter .lead, .foundation-chapter .chapter-link, .foundation-chapter .chapter-index { color: rgba(244,241,233,.78); }
+  .offset-content { margin-left: clamp(0rem, 7vw, 8rem); }
+  .material-note { position: relative; z-index: 3; align-self: center; display: grid; grid-template-columns: 2.5rem 1fr; gap: 1.1rem 1.4rem; max-width: 24rem; padding: 2.8rem; border: 1px solid rgba(23,34,42,.16); background: rgba(255,255,255,.36); backdrop-filter: blur(12px); }
+  .material-note span { color: var(--cobalt); font-size: .66rem; font-weight: 760; letter-spacing: .1em; }
+  .material-note p { margin: 0; font-family: var(--serif); font-size: 1.55rem; line-height: 1; }
+  .chapter-link { display: inline-block; margin-top: 3rem; color: var(--cobalt-dark); font-family: var(--sans); font-size: .88rem; font-weight: 600; letter-spacing: .02em; text-decoration-thickness: 1px; text-underline-offset: .5rem; }
+  .finish-chapter {
+    display: grid;
+    grid-template-rows: 1fr auto;
+    align-items: stretch;
+    align-content: stretch;
+    background: #173d59;
+    color: #fffdf6;
+    padding-top: clamp(8.5rem, 14vh, 11rem);
+    padding-bottom: clamp(5.5rem, 9vh, 7.5rem);
+  }
+  .finish-sheen { position: absolute; inset: 0; z-index: -1; background: radial-gradient(ellipse at 70% 78%, rgba(109, 171, 206, .52), transparent 35%), linear-gradient(165deg, transparent 42%, rgba(255,255,255,.12) 43%, rgba(255,255,255,.03) 71%), linear-gradient(135deg, #0e2b42, #245d7e 56%, #8fb5c9); }
+  .finish-chapter::after { content: ''; position: absolute; z-index: 1; inset: 0; background: linear-gradient(90deg, rgba(12,31,45,.88) 0 28%, rgba(12,31,45,.55) 46%, rgba(12,31,45,.08) 72%); pointer-events: none; }
+  .light-content {
+    position: relative;
+    z-index: 3;
+    align-self: center;
+    width: min(100%, 38rem);
+    margin-left: max(0px, calc((100vw - var(--max)) / 2));
+    padding-right: 1.5rem;
+    padding-bottom: 2rem;
+  }
+  .light-content .chapter-title { max-width: 10ch; font-size: clamp(3rem, 5.6vw, 6.1rem); line-height: 0.92; }
+  .light-content .lead { max-width: 28rem; margin-top: 1.8rem; }
+  .light-content .button-row { margin-top: 2.4rem; }
+  .light-content .eyebrow, .light-content .lead { color: rgba(255,255,255,.76); }
+  .light-content .button { border-color: rgba(255,255,255,.7); background: rgba(255,255,255,.06); color: white; }
+  .light-index { color: rgba(255,255,255,.62); }
+  .finish-chapter :global(.finish-orbit--chapter) {
+    position: relative;
+    z-index: 2;
+    grid-row: 2;
+    width: min(100%, calc(var(--max) - 2rem));
+    margin: 0 0 0 max(0px, calc((100vw - var(--max)) / 2));
+    padding-left: min(38rem, 42vw);
+    box-sizing: border-box;
+  }
+  .journey-interlude {
+    --rule: 0;
+    position: relative;
+    z-index: 3;
+    width: min(100%, var(--max));
+    margin: 0 auto;
+    padding: clamp(6rem, 14vh, 10rem) var(--gutter);
+    background: color-mix(in srgb, var(--paper) 58%, transparent);
+  }
+  .journey-interlude::after {
+    content: '';
+    display: block;
+    width: min(14rem, 42%);
+    height: 1px;
+    margin: 2.4rem 0 0;
+    background: var(--cobalt);
+    transform: scaleX(var(--rule));
+    transform-origin: left;
+  }
+  .social-interlude::after { display: none; }
+  .interlude-title {
+    max-width: 16ch;
+    margin: 0 0 2.4rem;
+    font-family: var(--serif);
+    font-size: clamp(2.8rem, 5.4vw, 5.6rem);
+    font-weight: 400;
+    letter-spacing: -0.04em;
+    line-height: 0.94;
+  }
+  .interlude-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: clamp(1.5rem, 4vw, 4rem);
+    max-width: 58rem;
+  }
+  .interlude-grid p {
+    margin: 0;
+    color: var(--muted);
+    font-size: clamp(1.05rem, 1.5vw, 1.22rem);
+    line-height: 1.6;
+  }
+  .garage-chapter .chapter-title,
+  .commercial-chapter .chapter-title,
+  .vault-chapter .chapter-title { max-width: 14ch; }
+  .garage-chapter { background: #1c1f22; color: #f7f4ec; }
+  .garage-chapter::after { content: ''; position: absolute; z-index: 1; inset: 0; background: linear-gradient(90deg, rgba(12,14,16,.78) 0 28%, rgba(12,14,16,.2) 58%, transparent 78%); pointer-events: none; }
+  .garage-chapter .eyebrow, .garage-chapter .lead, .garage-chapter .chapter-link, .garage-chapter .chapter-index { color: rgba(247,244,236,.78); }
+  .vault-chapter { background: #121314; color: #f7f4ec; }
+  .vault-chapter::after { content: ''; position: absolute; z-index: 1; inset: 0; background: linear-gradient(90deg, rgba(10,10,12,.82) 0 26%, rgba(10,10,12,.28) 52%, transparent 74%); pointer-events: none; }
+  .commercial-chapter { background: #d9d3c8; }
+  .commercial-chapter::after { content: ''; position: absolute; z-index: 1; inset: 0; background: linear-gradient(90deg, rgba(247,243,233,.88) 0 24%, rgba(247,243,233,.28) 52%, transparent 72%); pointer-events: none; }
+  .proof-chapter { display: grid; align-items: end; background: #111; color: #f7f4ec; overflow: hidden; }
+  .proof-chapter::after { content: ''; position: absolute; z-index: 1; inset: 0; background: linear-gradient(90deg, rgba(8,10,12,.72) 0 32%, rgba(8,10,12,.18) 58%, transparent 78%); pointer-events: none; }
+  .proof-copy { position: relative; z-index: 3; padding-bottom: 2rem; }
+  .proof-copy .eyebrow, .proof-copy .lead, .proof-copy .chapter-link { color: rgba(247,244,236,.82); }
+  .social-interlude {
+    width: 100%;
+    max-width: none;
+    padding: clamp(2.2rem, 5vh, 3.4rem) 0 clamp(3rem, 7vh, 4.5rem);
+    overflow: hidden;
+  }
+  .social-head {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    gap: 1.4rem 1.8rem;
+    align-items: end;
+    width: min(100%, var(--max));
+    margin: 0 auto 1.6rem;
+    padding-inline: var(--gutter);
+  }
+  .google-mark {
+    display: grid;
+    place-items: center;
+    width: 3.4rem;
+    height: 3.4rem;
+    border: 1px solid var(--line);
+    background: var(--paper-bright);
+  }
+  .social-head .interlude-title { margin: 0; max-width: 18ch; font-size: clamp(2.2rem, 4vw, 3.6rem); }
+  .social-head .eyebrow { margin-bottom: 0.55rem; }
+  .social-actions { display: flex; flex-wrap: wrap; gap: 0.7rem; align-items: center; justify-content: flex-end; }
+  .review-marquee { overflow: hidden; }
+  .review-marquee-track { display: flex; width: max-content; gap: 1rem; padding-inline: var(--gutter); }
+  .review-marquee blockquote {
+    flex: 0 0 min(28rem, 78vw);
+    margin: 0;
+    padding: 1.25rem 1.4rem 1.15rem;
+    border: 1px solid var(--line);
+    background: color-mix(in srgb, var(--paper-bright) 78%, transparent);
+  }
+  .review-marquee p {
+    display: -webkit-box;
+    margin: 0 0 0.85rem;
+    overflow: hidden;
+    color: var(--ink);
+    font-size: 0.98rem;
+    line-height: 1.5;
+    -webkit-line-clamp: 4;
+    -webkit-box-orient: vertical;
+  }
+  .review-marquee footer {
+    font-family: var(--sans);
+    font-size: 0.72rem;
+    font-weight: 600;
+    color: var(--cobalt);
+  }
+  .consultation-chapter { align-items: center; background: #ded8cc; }
+  .consultation-chapter::after { content: ''; position: absolute; z-index: 1; inset: 0; background: linear-gradient(180deg, rgba(250,248,242,.06) 0 42%, rgba(250,248,242,.58) 66%, rgba(250,248,242,.9) 100%); pointer-events: none; }
+  .consultation-content { width: min(100%, 70rem); text-align: center; }
+  .consultation-content .chapter-title, .consultation-content .lead { margin-inline: auto; }
+  .consultation-content .button-row { justify-content: center; }
+  .trust-line { display: flex; justify-content: center; align-items: baseline; gap: 1.4rem; margin-top: 4.5rem; color: var(--muted); }
+  .rating { color: var(--cobalt); font-family: var(--serif); font-size: 3.2rem; line-height: 1; }
+  .trust-line p { margin: 0; font-size: .8rem; }
+
+  @media (max-width: 1440px) {
+    .journey-chapter { padding: clamp(6.25rem, 11vh, 8.5rem) var(--gutter) clamp(3.5rem, 7vh, 5.5rem); }
+    .hero-content { padding-right: min(26vw, 20rem); }
+    .light-content { width: min(100%, 30rem); }
+    .light-content .chapter-title { font-size: clamp(2.3rem, 4.2vw, 4.2rem); }
+    .light-content .lead { margin-top: 1.2rem; }
+    .finish-chapter { padding-top: 6.25rem; padding-bottom: 3.5rem; }
+    .finish-chapter :global(.finish-orbit--chapter) { padding-left: min(30rem, 36vw); }
+    .foundation-chapter { gap: 2.4rem; }
+    .interlude-grid { grid-template-columns: 1fr; }
+    .social-head { grid-template-columns: auto minmax(0, 1fr); }
+    .social-actions { grid-column: 1 / -1; justify-content: flex-start; }
+    .interlude-title { font-size: clamp(2.2rem, 4vw, 3.4rem); }
+    .material-note { padding: 1.4rem; max-width: 18rem; }
+    .material-note p { font-size: 1.25rem; }
+    .journey-rail { gap: 0.45rem; }
+    .journey-rail button { font-size: 0.52rem; }
+    .journey-breath { min-height: 56svh; }
+    .trust-line { margin-top: 2rem; }
+    .rating { font-size: 2.4rem; }
+  }
+
+  @media (max-height: 900px) and (min-width: 901px) {
+    .journey-chapter { padding-top: 5.8rem; padding-bottom: 3rem; }
+    .hero-content { padding-right: min(22vw, 16rem); }
+  }
+
+  @media (max-width: 900px) {
+    .hero-content { padding-right: 0; padding-top: 28vh; }
+    .hero-light { top: 11%; right: -12%; width: 76vw; }
+    .journey-rail { display: none; }
+    .foundation-chapter { grid-template-columns: 1fr; align-content: end; }
+    .garage-chapter .chapter-title, .commercial-chapter .chapter-title { max-width: 14ch; }
+    .material-note { display: none; }
+    .journey-draw { display: none; }
+    .journey-breath { min-height: 50svh; }
+    .light-content { width: min(100%, 36rem); align-self: end; padding-bottom: 1.5rem; }
+    .finish-chapter :global(.finish-orbit--chapter) { padding-left: 0; margin-left: 0; width: 100%; }
+  }
+
+  @media (max-width: 560px) {
+    .journey-chapter { min-height: 92svh; padding: 8.5rem var(--gutter) 5.5rem; }
+    .hero-content { padding-top: 26vh; }
+    .hero-light { width: 94vw; }
+    .chapter-index { right: .6rem; }
+    .trust-line { align-items: center; }
+    .journey-breath { min-height: 42svh; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .hero-frame { transition: none; }
+    .pour-stage video,
+    .floor-film video { display: none; }
+    .journey-chapter .chapter-content,
+    .journey-chapter .material-note,
+    .journey-chapter .chapter-index { transform: none; }
+  }
+</style>

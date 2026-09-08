@@ -1,0 +1,21 @@
+---
+import { finishPresets } from '../../lib/visualizer/finishes';
+
+interface Props {
+  placed?: 'chapter' | 'page';
+}
+
+const { placed = 'page' } = Astro.props;
+const loop = [...finishPresets, ...finishPresets];
+---
+
+<div class={`finish-orbit finish-orbit--${placed}`} aria-hidden="true">
+  <div class="finish-orbit-track">
+    {loop.map((finish) => (
+      <span
+        class="finish-orbit-chip"
+        style={`background: linear-gradient(135deg, ${finish.colors[0]}, ${finish.colors[1]} 55%, ${finish.colors[2]})`}
+      />
+    ))}
+  </div>
+</div>

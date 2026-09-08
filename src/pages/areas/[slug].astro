@@ -1,0 +1,38 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import SiteHeader from '../../components/SiteHeader.astro';
+import SiteFooter from '../../components/SiteFooter.astro';
+import InteriorHero from '../../components/InteriorHero.astro';
+import SectionShell from '../../components/SectionShell.astro';
+import { serviceAreas } from '../../data/areas';
+
+export function getStaticPaths() {
+  return serviceAreas.map((area) => ({ params: { slug: area.slug }, props: { area } }));
+}
+
+const { area } = Astro.props;
+const title = `Epoxy Flooring ${area.name} | Final Finish`;
+const description = `Final Finish Epoxy coats garages, shops, and commercial floors in ${area.name} and the Edmonton region. Call Denis at (780) 991-1651.`;
+---
+
+<BaseLayout title={title} description={description} canonicalPath={`/areas/${area.slug}/`} imagePath="/images/brand/luminous-passage-keyframe.jpg">
+  <SiteHeader />
+  <main id="main-content">
+    <InteriorHero
+      eyebrow={`${area.name} · ${area.region}`}
+      title={`Epoxy floors in ${area.name}, finished properly.`}
+      lead={`Denis and the Final Finish crew coat residential and commercial concrete across ${area.name} and the greater Edmonton capital region. Prep first. Then the finish.`}
+    />
+    <SectionShell>
+      <p class="section-kicker">Local coating work</p>
+      <h2 class="section-title">The same slab questions, wherever you park.</h2>
+      <p class="section-lead">Oil, salt, old coating, moisture, and cove details travel with the vehicle. A quote starts with the room you have in {area.name}—photos help, a phone call is faster.</p>
+      <div class="button-row">
+        <a class="button button-primary" href="/contact#quote">Request a quote</a>
+        <a class="button button-secondary" href="tel:+17809911651">Call (780) 991-1651</a>
+        <a class="button button-secondary" href="/floor-visualizer">See a finish on your photo</a>
+      </div>
+    </SectionShell>
+  </main>
+  <SiteFooter />
+</BaseLayout>

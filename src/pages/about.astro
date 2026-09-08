@@ -1,0 +1,45 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import SiteHeader from '../components/SiteHeader.astro';
+import SiteFooter from '../components/SiteFooter.astro';
+import InteriorHero from '../components/InteriorHero.astro';
+import SectionShell from '../components/SectionShell.astro';
+
+const personSchema = {
+  '@context': 'https://schema.org',
+  '@type': 'Person',
+  name: 'Denis Tadic',
+  jobTitle: 'Owner',
+  worksFor: { '@type': 'HomeAndConstructionBusiness', name: 'Final Finish Epoxy' },
+  telephone: '+1-780-991-1651',
+  email: 'finalfinishepoxy@gmail.com',
+  address: { '@type': 'PostalAddress', addressLocality: 'Edmonton', addressRegion: 'AB', addressCountry: 'CA' },
+};
+---
+<BaseLayout title="About Final Finish Epoxy | Edmonton" description="Meet Denis Tadic and Final Finish Epoxy Coatings in Edmonton." canonicalPath="/about">
+  <script slot="head" is:inline type="application/ld+json" set:html={JSON.stringify(personSchema)} />
+  <SiteHeader />
+  <main id="main-content">
+    <InteriorHero eyebrow="Denis Tadic · Final Finish" title="A local finish, with a real name behind it." lead="Final Finish Epoxy Coatings was founded by Denis Tadic to transform concrete spaces across Edmonton through preparation, clear communication and a carefully finished result." />
+    <SectionShell>
+      <p class="section-kicker">Owner on the job</p>
+      <h2 class="section-title">Prep, punctuality, and Denis in the bay.</h2>
+      <p class="section-lead">Google reviews keep repeating the same facts: Denis works the floor himself, the crew shows up when they said they would, and the grind happens before the pretty coat. That is the company.</p>
+      <ol class="about-steps">
+        <li>Inspect the slab.</li>
+        <li>Diamond grind and repair.</li>
+        <li>Build the coating system.</li>
+        <li>Cove and topcoat.</li>
+        <li>Hand the room back on the quoted timing.</li>
+      </ol>
+      <div class="button-row">
+        <a class="button button-primary" href="/contact#quote">Tell Denis about the project</a>
+        <a class="button button-secondary" href="/process">How a floor goes</a>
+      </div>
+    </SectionShell>
+  </main>
+  <SiteFooter />
+</BaseLayout>
+<style>
+  .about-steps { display: grid; gap: 0.6rem; padding-left: 1.2rem; color: var(--muted); font-family: var(--serif); font-size: 1.6rem; }
+</style>
