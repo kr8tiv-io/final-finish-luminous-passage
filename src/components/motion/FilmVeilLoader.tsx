@@ -21,7 +21,11 @@ function detectWebGLCapabilities(): { webgl2: boolean; thresholdHdr: boolean } {
   }
 }
 
-function detectMotionCapability(webgl2: boolean, reducedMotion: boolean): boolean {
+function detectMotionCapability(
+  webgl2: boolean,
+  reducedMotion: boolean,
+  motionPreference: 'auto' | 'still',
+): boolean {
   const connection = (navigator as Navigator & { connection?: { saveData?: boolean } }).connection;
   const deviceMemory = (navigator as Navigator & { deviceMemory?: number }).deviceMemory ?? null;
   return shouldUseFilmVeil({
@@ -29,6 +33,7 @@ function detectMotionCapability(webgl2: boolean, reducedMotion: boolean): boolea
     reducedMotion,
     saveData: Boolean(connection?.saveData),
     deviceMemory,
+    motionPreference,
   });
 }
 
@@ -46,31 +51,59 @@ export default function FilmVeilLoader({ enableThresholdStudy = resolveThreshold
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
+    journeyControls.hydrate();
     const reduced = window.matchMedia('(prefers-reduced-motion: reduce)');
-    const capabilities = detectWebGLCapabilities();
+    let idleHandle: number | null = null;
+    let timeoutHandle: number | null = null;
+    const clearDeferredImport = () => {
+      if (idleHandle !== null) window.cancelIdleCallback(idleHandle);
+      if (timeoutHandle !== null) window.clearTimeout(timeoutHandle);
+      idleHandle = null;
+      timeoutHandle = null;
+    };
+    const deferImport = () => {
+      clearDeferredImport();
+      if (window.requestIdleCallback) {
+        idleHandle = window.requestIdleCallback(() => setReady(true), { timeout: 1_500 });
+      } else {
+        timeoutHandle = window.setTimeout(() => setReady(true), 180);
+      }
+    };
     const updateMotion = () => {
+      const motionPreference = journeyControls.getSnapshot().motionPreference;
+      const saveData = Boolean((navigator as Navigator & { connection?: { saveData?: boolean } }).connection?.saveData);
+      const admitted = shouldUseFilmVeil({
+        webgl2: true,
+        reducedMotion: reduced.matches,
+        saveData,
+        deviceMemory: null,
+        motionPreference,
+      });
+      if (!admitted) {
+        clearDeferredImport();
+        setReady(false);
+        setWebglCapable(false);
+        setThresholdHdrCapable(false);
+        setMotionCapable(false);
+        return;
+      }
+      const capabilities = detectWebGLCapabilities();
       setWebglCapable(capabilities.webgl2);
       setThresholdHdrCapable(capabilities.thresholdHdr);
-      setMotionCapable(detectMotionCapability(capabilities.webgl2, reduced.matches));
+      const capable = detectMotionCapability(capabilities.webgl2, reduced.matches, motionPreference);
+      setMotionCapable(capable);
+      if (capable) deferImport();
     };
     reduced.addEventListener('change', updateMotion);
     updateMotion();
-    if (window.requestIdleCallback) {
-      const handle = window.requestIdleCallback(() => setReady(true), { timeout: 1_500 });
-      return () => {
-        reduced.removeEventListener('change', updateMotion);
-        window.cancelIdleCallback(handle);
-      };
-    }
-    const handle = window.setTimeout(() => setReady(true), 180);
     return () => {
       reduced.removeEventListener('change', updateMotion);
-      window.clearTimeout(handle);
+      clearDeferredImport();
     };
-  }, []);
+  }, [controls.motionPreference]);
 
-  const renderCanvas = ready && webglCapable;
-  const enhanced = renderCanvas && motionCapable && controls.motionPreference === 'auto';
+  const renderCanvas = ready && webglCapable && motionCapable && controls.motionPreference === 'auto';
+  const enhanced = renderCanvas;
 
   return (
     <div className="film-veil" data-film-veil={enhanced ? 'on' : 'still'} aria-hidden="true">

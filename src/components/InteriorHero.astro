@@ -20,11 +20,11 @@ const { eyebrow, title, lead, chapter = 'Final Finish · Edmonton' } = Astro.pro
 </section>
 
 <style>
-  .interior-hero { position: relative; display: grid; align-items: end; min-height: 78svh; padding: 11rem var(--gutter) 5rem; overflow: hidden; background: radial-gradient(ellipse at 72% 18%, white, transparent 30%), linear-gradient(145deg, #faf8f1, #ddd7cc); }
-  .interior-frame { position: absolute; top: 9rem; right: 7vw; bottom: 0; width: min(36vw, 36rem); border: 1px solid rgba(22,79,131,.15); border-bottom: 0; border-radius: 50% 50% 0 0 / 18% 18% 0 0; box-shadow: inset 0 0 6rem rgba(22,79,131,.08); }
+  .interior-hero { position: relative; display: grid; align-items: end; min-height: 70svh; padding: 11rem var(--gutter) var(--reading-space); overflow: hidden; background: linear-gradient(180deg,transparent 50%,var(--paper)), radial-gradient(ellipse at 82% 25%,rgba(111,166,202,.13),transparent 56%), var(--paper); }
+  .interior-frame { position: absolute; top: 9rem; right: 7vw; bottom: 0; width: min(36vw, 36rem); border: 1px solid rgba(22,79,131,.09); border-bottom: 0; border-radius: 50% 50% 0 0 / 18% 18% 0 0; mask-image: linear-gradient(#000,transparent 90%); }
   .interior-copy { position: relative; z-index: 2; width: min(100%, var(--max)); margin: 0 auto; }
-  .interior-copy h1 { max-width: 12ch; margin: 0; font-family: var(--serif); font-size: clamp(4rem, 8.2vw, 9rem); font-weight: 400; letter-spacing: -.055em; line-height: .86; text-wrap: balance; }
-  .interior-copy > p:last-child { max-width: 40rem; margin: 2rem 0 0; color: var(--muted); font-size: clamp(1rem, 1.4vw, 1.22rem); }
-  .interior-chapter { position: absolute; right: var(--gutter); bottom: 2rem; color: var(--muted); font-size: .64rem; font-weight: 750; letter-spacing: .14em; text-transform: uppercase; }
+  .interior-copy h1 { max-width: 15ch; margin: 0; font: 550 var(--type-hero)/1.02 var(--sans); letter-spacing: -.035em; text-wrap: balance; overflow-wrap: break-word; }
+  .interior-copy > p:last-child { max-width: 55ch; margin: 2rem 0 0; color: #3f4e57; font-size: var(--type-lead); line-height: 1.5; }
+  .interior-chapter { position: absolute; right: var(--gutter); bottom: 2rem; color: var(--muted); font-size: .875rem; letter-spacing: .025em; }
   @media (max-width: 720px) { .interior-hero { min-height: 72svh; } .interior-frame { right: -18%; width: 70vw; opacity: .7; } }
 </style>

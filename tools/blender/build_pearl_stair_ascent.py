@@ -32,31 +32,33 @@ ROOT = Path(__file__).resolve().parents[2]
 SOURCE = "tools/blender/build_pearl_stair_ascent.py"
 STATUS = "study-unready"
 FPS = 24
-DURATION_SECONDS = 6.5
+DURATION_SECONDS = 9.0
 GOP_SIZE = 6
 STAIR_COUNT = 15
-STAIR_WIDTH = 8.4
+STAIR_WIDTH = 9.4
 RISER_HEIGHT = 0.165
 TREAD_DEPTH = 0.46
 LANDING_HEIGHT = STAIR_COUNT * RISER_HEIGHT
+CAMERA_LENS_MM = 27.0
 PALETTE = {
-    "pearl_low": "#B9C0C1",
-    "pearl_high": "#E5E8E6",
-    "limestone_low": "#ACA79E",
-    "limestone_high": "#D8D0C4",
-    "warm_reveal": "#D2B98F",
-    "sky": "#BCD7E4",
+    "pearl_low": "#AEB6B8",
+    "pearl_mid": "#D9DCDD",
+    "pearl_high": "#F2EEE7",
+    "limestone_low": "#9D9588",
+    "limestone_high": "#DED4C5",
+    "joint": "#89857F",
+    "warm_reveal": "#C8AD86",
+    "sky": "#9AC4DD",
 }
 CAMERA_KEYFRAMES = (
-    {"time": 0.0, "position": (0.00, -5.60, 1.620), "target": (0.00, 2.3, 0.82)},
-    {"time": 0.8, "position": (0.02, -4.00, 1.620), "target": (0.04, 3.0, 1.22)},
-    {"time": 1.6, "position": (-0.035, -2.10, 1.635), "target": (-0.02, 3.9, 1.76)},
-    {"time": 2.4, "position": (0.045, -0.20, 1.785), "target": (0.03, 5.1, 2.35)},
-    {"time": 3.2, "position": (-0.055, 1.70, 2.445), "target": (-0.02, 6.7, 3.05)},
-    {"time": 4.0, "position": (0.045, 3.50, 3.105), "target": (0.02, 8.5, 3.76)},
-    {"time": 4.8, "position": (-0.025, 5.40, 3.765), "target": (0.00, 10.5, 4.16)},
-    {"time": 5.6, "position": (0.015, 7.20, 4.095), "target": (0.02, 12.3, 4.22)},
-    {"time": 6.5, "position": (0.00, 8.10, 4.095), "target": (0.00, 13.8, 4.24)},
+    {"time": 0.0, "position": (0.0, -9.10, 1.48), "target": (0.0, 1.35, 0.64)},
+    {"time": 1.5, "position": (0.0, -6.85, 1.50), "target": (0.0, 2.20, 1.00)},
+    {"time": 3.0, "position": (0.0, -4.45, 1.52), "target": (0.0, 3.20, 1.52)},
+    {"time": 4.5, "position": (0.0, -1.15, 1.68), "target": (0.0, 4.70, 2.18)},
+    {"time": 6.0, "position": (0.0, 1.10, 2.30), "target": (0.0, 6.20, 2.92)},
+    {"time": 7.3, "position": (0.0, 3.15, 3.02), "target": (0.0, 8.15, 3.55)},
+    {"time": 8.2, "position": (0.0, 5.25, 3.76), "target": (0.0, 10.10, 4.02)},
+    {"time": 9.0, "position": (0.0, 7.30, 3.995), "target": (0.0, 12.40, 4.06)},
 )
 OUTPUT_TARGETS = {
     "blend": ROOT / "assets" / "3d" / "pearl-stair-ascent.blend",
@@ -76,37 +78,98 @@ def linear_hex(value: str):
     return tuple(channel(value[index:index + 2]) for index in (0, 2, 4)) + (1.0,)
 
 
-def procedural_material(name, low, high, roughness, scale, bump_strength, coat=0.0):
+def pearl_material(name):
     material = bpy.data.materials.new(name)
     material.use_nodes = True
     nodes = material.node_tree.nodes
     links = material.node_tree.links
     principled = nodes.get("Principled BSDF")
-    principled.inputs["Roughness"].default_value = roughness
-    principled.inputs["Metallic"].default_value = 0.04 if coat else 0.0
+    principled.inputs["Roughness"].default_value = 0.19
+    principled.inputs["Metallic"].default_value = 0.03
     if "Coat Weight" in principled.inputs:
-        principled.inputs["Coat Weight"].default_value = coat
-        principled.inputs["Coat Roughness"].default_value = min(0.3, roughness * 0.65)
+        principled.inputs["Coat Weight"].default_value = 0.42
+        principled.inputs["Coat Roughness"].default_value = 0.12
 
-    texture = nodes.new("ShaderNodeTexNoise")
-    texture.name = f"{name} · mineral field"
-    texture.inputs["Scale"].default_value = scale
-    texture.inputs["Detail"].default_value = 4.0
-    texture.inputs["Roughness"].default_value = 0.58
-    texture.inputs["Distortion"].default_value = 0.08
-    ramp = nodes.new("ShaderNodeValToRGB")
-    ramp.color_ramp.elements[0].position = 0.28
-    ramp.color_ramp.elements[0].color = linear_hex(low)
-    ramp.color_ramp.elements[1].position = 0.76
-    ramp.color_ramp.elements[1].color = linear_hex(high)
-    bump = nodes.new("ShaderNodeBump")
-    bump.inputs["Strength"].default_value = bump_strength
-    bump.inputs["Distance"].default_value = 0.055
     coordinates = nodes.new("ShaderNodeTexCoord")
-    links.new(coordinates.outputs["Generated"], texture.inputs["Vector"])
-    links.new(texture.outputs["Fac"], ramp.inputs["Fac"])
+    mapping = nodes.new("ShaderNodeMapping")
+    mapping.inputs["Scale"].default_value = (0.42, 0.62, 1.0)
+    broad = nodes.new("ShaderNodeTexNoise")
+    broad.name = "Large pearlescent clouds"
+    broad.noise_dimensions = "4D"
+    broad.inputs["Scale"].default_value = 3.4
+    broad.inputs["Detail"].default_value = 7.0
+    broad.inputs["Roughness"].default_value = 0.68
+    broad.inputs["Distortion"].default_value = 0.32
+    broad.inputs["W"].default_value = 1.73
+    fine = nodes.new("ShaderNodeTexNoise")
+    fine.name = "Fine hand-trowelled variation"
+    fine.inputs["Scale"].default_value = 11.0
+    fine.inputs["Detail"].default_value = 3.0
+    fine.inputs["Roughness"].default_value = 0.64
+    mix = nodes.new("ShaderNodeMixRGB")
+    mix.blend_type = "MULTIPLY"
+    mix.inputs["Fac"].default_value = 0.34
+    ramp = nodes.new("ShaderNodeValToRGB")
+    ramp.color_ramp.interpolation = "EASE"
+    ramp.color_ramp.elements[0].position = 0.24
+    ramp.color_ramp.elements[0].color = linear_hex(PALETTE["pearl_low"])
+    warm = ramp.color_ramp.elements.new(0.43)
+    warm.color = linear_hex("#EEE4D9")
+    middle = ramp.color_ramp.elements.new(0.57)
+    middle.color = linear_hex(PALETTE["pearl_mid"])
+    ramp.color_ramp.elements[1].position = 0.76
+    ramp.color_ramp.elements[1].color = linear_hex(PALETTE["pearl_high"])
+    bump = nodes.new("ShaderNodeBump")
+    bump.inputs["Strength"].default_value = 0.075
+    bump.inputs["Distance"].default_value = 0.018
+    links.new(coordinates.outputs["Generated"], mapping.inputs["Vector"])
+    links.new(mapping.outputs["Vector"], broad.inputs["Vector"])
+    links.new(mapping.outputs["Vector"], fine.inputs["Vector"])
+    links.new(broad.outputs["Fac"], mix.inputs[1])
+    links.new(fine.outputs["Fac"], mix.inputs[2])
+    links.new(mix.outputs["Color"], ramp.inputs["Fac"])
     links.new(ramp.outputs["Color"], principled.inputs["Base Color"])
-    links.new(texture.outputs["Fac"], bump.inputs["Height"])
+    links.new(fine.outputs["Fac"], bump.inputs["Height"])
+    links.new(bump.outputs["Normal"], principled.inputs["Normal"])
+    return material
+
+
+def limestone_material(name):
+    material = bpy.data.materials.new(name)
+    material.use_nodes = True
+    nodes = material.node_tree.nodes
+    links = material.node_tree.links
+    principled = nodes.get("Principled BSDF")
+    principled.inputs["Roughness"].default_value = 0.57
+    coordinates = nodes.new("ShaderNodeTexCoord")
+    mapping = nodes.new("ShaderNodeMapping")
+    mapping.inputs["Scale"].default_value = (0.62, 0.62, 1.45)
+    base = nodes.new("ShaderNodeTexNoise")
+    base.noise_dimensions = "4D"
+    base.name = "Limestone clouding"
+    base.inputs["Scale"].default_value = 3.2
+    base.inputs["Detail"].default_value = 6.0
+    base.inputs["Roughness"].default_value = 0.72
+    base.inputs["Distortion"].default_value = 0.38
+    base.inputs["W"].default_value = 4.1
+    pores = nodes.new("ShaderNodeTexNoise")
+    pores.name = "Fine limestone pores"
+    pores.inputs["Scale"].default_value = 46.0
+    pores.inputs["Detail"].default_value = 2.0
+    ramp = nodes.new("ShaderNodeValToRGB")
+    ramp.color_ramp.elements[0].position = 0.24
+    ramp.color_ramp.elements[0].color = linear_hex(PALETTE["limestone_low"])
+    ramp.color_ramp.elements[1].position = 0.82
+    ramp.color_ramp.elements[1].color = linear_hex(PALETTE["limestone_high"])
+    bump = nodes.new("ShaderNodeBump")
+    bump.inputs["Strength"].default_value = 0.20
+    bump.inputs["Distance"].default_value = 0.018
+    links.new(coordinates.outputs["Generated"], mapping.inputs["Vector"])
+    links.new(mapping.outputs["Vector"], base.inputs["Vector"])
+    links.new(mapping.outputs["Vector"], pores.inputs["Vector"])
+    links.new(base.outputs["Fac"], ramp.inputs["Fac"])
+    links.new(ramp.outputs["Color"], principled.inputs["Base Color"])
+    links.new(pores.outputs["Fac"], bump.inputs["Height"])
     links.new(bump.outputs["Normal"], principled.inputs["Normal"])
     return material
 
@@ -135,6 +198,11 @@ def add_box(name, location, dimensions, material, bevel=0.0):
         bpy.context.view_layer.objects.active = obj
         bpy.ops.object.modifier_apply(modifier=modifier.name)
     return obj
+
+
+def add_joint(name, location, dimensions, material):
+    """Inset-looking masonry joint used as a real, shadow-catching object."""
+    return add_box(name, location, dimensions, material, 0.003)
 
 
 def add_sloped_wall(name, side, y_start, y_end, top_start, top_end, material):
@@ -172,51 +240,94 @@ def add_cap_between(name, start, end, material):
     return cap
 
 
-def add_stair_set(pearl, limestone, reveal):
-    # The apron and landing share the same coating as the treads, so the first
-    # frame reads as one pearl-grey material field instead of a pasted stair shot.
-    add_box("Pearl apron", (0, -6.0, -0.10), (12.0, 12.0, 0.20), pearl, 0.035)
+def add_retaining_walls(limestone, joint):
+    """Panelled side walls ground the open stair in credible civic architecture."""
+    for side in (-1, 1):
+        x = side * 6.05
+        add_box(f"Forecourt retaining wall {side}", (x, -3.35, 1.18), (0.34, 7.3, 2.36), limestone, 0.045)
+        add_box(f"Forecourt wall cap {side}", (x - side * 0.03, -3.35, 2.41), (0.52, 7.42, 0.15), limestone, 0.035)
+        for y in (-5.65, -3.35, -1.05):
+            add_joint(f"Wall vertical joint {side} {y}", (x - side * 0.176, y, 1.25), (0.012, 0.035, 2.05), joint)
+        add_joint(f"Wall horizontal joint {side}", (x - side * 0.176, -3.35, 1.14), (0.012, 7.12, 0.025), joint)
+
+
+def add_stair_set(pearl, limestone, joint):
+    stair_end = STAIR_COUNT * TREAD_DEPTH
+    # A deep, polished forecourt is essential to the approved image: it reflects
+    # the sun and lets the viewer read the finish before reaching the first tread.
+    add_box("Pearl forecourt", (0, -4.75, -0.095), (11.6, 9.5, 0.19), pearl, 0.025)
+    add_box("Left limestone border", (-5.92, -4.75, -0.06), (0.34, 9.5, 0.13), limestone, 0.025)
+    add_box("Right limestone border", (5.92, -4.75, -0.06), (0.34, 9.5, 0.13), limestone, 0.025)
+    add_retaining_walls(limestone, joint)
+
     for index in range(STAIR_COUNT):
         top = (index + 1) * RISER_HEIGHT
         y = index * TREAD_DEPTH + TREAD_DEPTH / 2
         step = add_box(
             f"Pearl stair {index + 1:02d}",
-            (0, y, top / 2),
-            (STAIR_WIDTH, TREAD_DEPTH + 0.018, top),
+            (0, y - 0.018, top / 2),
+            (STAIR_WIDTH, TREAD_DEPTH + 0.052, top),
             pearl,
-            0.022,
+            0.028,
         )
         step["treadIndex"] = index + 1
-        # Fine warm reveals make each rise legible without introducing dark flakes.
+        # A recessed line under each bullnose produces the natural horizontal
+        # shadow visible in the reference without resorting to black flakes.
         add_box(
-            f"Warm riser reveal {index + 1:02d}",
-            (0, y - TREAD_DEPTH / 2 - 0.006, top - 0.018),
-            (STAIR_WIDTH - 0.16, 0.012, 0.025),
-            reveal,
-            0.004,
+            f"Nosing shadow {index + 1:02d}",
+            (0, y - TREAD_DEPTH / 2 - 0.046, top - 0.045),
+            (STAIR_WIDTH - 0.10, 0.014, 0.026),
+            joint,
+            0.002,
         )
-    stair_end = STAIR_COUNT * TREAD_DEPTH
+        seam_x = (-2.35, 0.0, 2.35)[index % 3]
+        add_joint(
+            f"Riser masonry seam {index + 1:02d}",
+            (seam_x, y - TREAD_DEPTH / 2 - 0.054, top - RISER_HEIGHT / 2),
+            (0.018, 0.012, RISER_HEIGHT - 0.045), joint,
+        )
+        # Sparse expansion joints break the implausibly perfect continuous run.
+        if index in (4, 9):
+            add_joint(
+                f"Tread expansion joint {index + 1:02d}",
+                (0.0, y + TREAD_DEPTH * 0.28, top + 0.003),
+                (0.018, TREAD_DEPTH * 0.45, 0.008), joint,
+            )
     add_box("Pearl upper landing", (0, stair_end + 4.0, LANDING_HEIGHT - 0.10), (STAIR_WIDTH, 8.0, 0.20), pearl, 0.035)
 
     # Open, sloped balustrades retain strong parallax without turning the ascent
     # into a corridor. Lower apron wings echo the approved daylight composition.
     for side in (-1, 1):
-        add_box(f"Apron wing {side}", (side * 5.18, -3.15, 1.05), (1.55, 6.3, 2.10), limestone, 0.06)
         add_sloped_wall(
-            f"Ascending limestone balustrade {side}", side, -0.35, 7.25,
-            1.32, LANDING_HEIGHT + 1.18, limestone,
+            f"Ascending limestone balustrade {side}", side, -0.12, stair_end + 0.38,
+            1.28, LANDING_HEIGHT + 1.18, limestone,
         )
         add_cap_between(
-            f"Champagne balustrade cap {side}",
-            (side * 4.36, -0.35, 1.39),
-            (side * 4.36, 7.25, LANDING_HEIGHT + 1.25),
-            reveal,
+            f"Limestone balustrade cap {side}",
+            (side * (STAIR_WIDTH / 2 + 0.15), -0.12, 1.36),
+            (side * (STAIR_WIDTH / 2 + 0.15), stair_end + 0.38, LANDING_HEIGHT + 1.26),
+            limestone,
         )
+        # Broad vertical joints articulate the veneer on the balustrade faces.
+        for segment in range(1, 6):
+            y = segment * stair_end / 6
+            top = 1.28 + (LANDING_HEIGHT - 0.10) * (y / stair_end)
+            add_joint(
+                f"Balustrade joint {side} {segment}",
+                (side * (STAIR_WIDTH / 2 + 0.118), y, top * 0.55),
+                (0.014, 0.026, max(0.5, top - 0.22)), joint,
+            )
+
+        # Substantial foot posts match the reference's human-scale masonry.
+        add_box(f"Balustrade foot post {side}", (side * 5.08, -0.02, 0.84), (0.86, 0.86, 1.68), limestone, 0.055)
+        add_box(f"Balustrade foot post cap {side}", (side * 5.08, -0.02, 1.73), (1.02, 1.02, 0.16), limestone, 0.035)
 
     # A low parapet gives the landing a destination while preserving open sky.
-    add_box("Upper landing parapet", (0, 10.65, LANDING_HEIGHT + 0.54), (5.0, 0.52, 1.08), limestone, 0.065)
+    add_box("Upper landing parapet", (0, 10.65, LANDING_HEIGHT + 0.54), (5.0, 0.52, 1.08), limestone, 0.055)
+    add_box("Upper parapet cap", (0, 10.65, LANDING_HEIGHT + 1.13), (5.25, 0.68, 0.14), limestone, 0.035)
     for side in (-1, 1):
         add_box(f"Parapet wing {side}", (side * 4.72, 10.65, LANDING_HEIGHT + 0.75), (3.65, 0.52, 1.50), limestone, 0.065)
+        add_box(f"Parapet wing cap {side}", (side * 4.72, 10.65, LANDING_HEIGHT + 1.55), (3.82, 0.68, 0.14), limestone, 0.035)
     add_box("Distant pearl plane", (0, 16.0, LANDING_HEIGHT - 0.12), (12.0, 12.0, 0.24), pearl, 0.04)
 
 
@@ -231,7 +342,7 @@ def add_camera(scene):
     camera.name = "Pearl_Stair_Walk_Camera"
     camera.data.name = camera.name
     camera.data.sensor_fit = "HORIZONTAL"
-    camera.data.angle = math.radians(55.0)
+    camera.data.lens = CAMERA_LENS_MM
     camera.data.clip_start = 0.08
     camera.data.clip_end = 90.0
     camera.data.dof.use_dof = False
@@ -259,39 +370,51 @@ def add_lighting(scene):
     sky = nodes.new("ShaderNodeTexSky")
     # Blender 5.2 exposes the Nishita model as its multiple-scattering mode.
     sky.sky_type = "MULTIPLE_SCATTERING"
-    sky.sun_elevation = math.radians(34)
-    sky.sun_rotation = math.radians(138)
-    sky.air_density = 1.05
-    sky.ozone_density = 0.35
-    background.inputs["Strength"].default_value = 0.28
+    sky.sun_elevation = math.radians(18)
+    sky.sun_rotation = math.radians(238)
+    sky.air_density = 0.95
+    sky.ozone_density = 0.42
+    background.inputs["Strength"].default_value = 0.20
     links.new(sky.outputs["Color"], background.inputs["Color"])
     links.new(background.outputs["Background"], output.inputs["Surface"])
 
     bpy.ops.object.light_add(type="SUN", location=(2.0, -3.0, 10.0))
     sun = bpy.context.object
-    sun.name = "Warm Alberta daylight"
-    sun.data.energy = 2.7
-    sun.data.angle = math.radians(9.0)
-    sun.data.color = (1.0, 0.90, 0.76)
-    sun.rotation_euler = (math.radians(24), math.radians(-19), math.radians(-31))
+    sun.name = "Low warm Alberta daylight"
+    sun.data.energy = 3.8
+    sun.data.angle = math.radians(3.2)
+    sun.data.color = (1.0, 0.84, 0.66)
+    sun.rotation_mode = "QUATERNION"
+    sun.rotation_quaternion = (Vector((0.0, 1.8, 0.0)) - Vector((-11.0, -15.0, 13.0))).to_track_quat("-Z", "Y")
 
     bpy.ops.object.light_add(type="AREA", location=(0, -1.5, 8.5))
     fill = bpy.context.object
     fill.name = "Broad sky fill"
-    fill.data.energy = 1050
+    fill.data.energy = 660
     fill.data.shape = "DISK"
     fill.data.size = 8.0
-    fill.data.color = (0.71, 0.84, 1.0)
+    fill.data.color = (0.82, 0.89, 1.0)
     fill.rotation_euler = (0, 0, 0)
 
     bpy.ops.object.light_add(type="AREA", location=(0, 8.0, 7.5))
     landing = bpy.context.object
     landing.name = "Landing daylight"
-    landing.data.energy = 820
+    landing.data.energy = 440
     landing.data.shape = "RECTANGLE"
     landing.data.size = 7.0
     landing.data.size_y = 5.0
     landing.data.color = (1.0, 0.92, 0.80)
+
+    bpy.ops.object.light_add(type="AREA", location=(-5.8, -5.0, 5.5))
+    warmth = bpy.context.object
+    warmth.name = "Warm forecourt reflection"
+    warmth.data.energy = 780
+    warmth.data.shape = "RECTANGLE"
+    warmth.data.size = 5.0
+    warmth.data.size_y = 3.0
+    warmth.data.color = (1.0, 0.72, 0.49)
+    warmth.rotation_mode = "QUATERNION"
+    warmth.rotation_quaternion = (Vector((0.0, -3.4, 0.0)) - warmth.location).to_track_quat("-Z", "Y")
 
 
 def configure_scene(width=1920, height=1080):
@@ -321,20 +444,14 @@ def configure_scene(width=1920, height=1080):
     scene.render.use_motion_blur = False
     scene.render.image_settings.color_management = "FOLLOW_SCENE"
     scene.view_settings.look = "AgX - Medium High Contrast"
-    scene.view_settings.exposure = -0.05
+    scene.view_settings.exposure = -0.55
     scene.frame_start = 0
     scene.frame_end = round(DURATION_SECONDS * FPS)
 
-    pearl = procedural_material(
-        "Pearl grey coating", PALETTE["pearl_low"], PALETTE["pearl_high"],
-        roughness=0.24, scale=1.7, bump_strength=0.10, coat=0.52,
-    )
-    limestone = procedural_material(
-        "Pale architectural limestone", PALETTE["limestone_low"], PALETTE["limestone_high"],
-        roughness=0.58, scale=1.15, bump_strength=0.18,
-    )
-    reveal = flat_material("Warm champagne reveal", PALETTE["warm_reveal"], 0.34, 0.16)
-    add_stair_set(pearl, limestone, reveal)
+    pearl = pearl_material("Pearl grey hand-trowelled coating")
+    limestone = limestone_material("Veined pale architectural limestone")
+    joint = flat_material("Recessed warm-grey masonry joints", PALETTE["joint"], 0.82)
+    add_stair_set(pearl, limestone, joint)
     camera = add_camera(scene)
     add_lighting(scene)
     scene.frame_set(0)
@@ -485,7 +602,12 @@ def render_full():
             "fps": FPS,
             "gopSize": GOP_SIZE,
             "geometry": {"stairCount": STAIR_COUNT, "stairWidthM": STAIR_WIDTH, "riserHeightM": RISER_HEIGHT, "treadDepthM": TREAD_DEPTH},
-            "camera": {"node": "Pearl_Stair_Walk_Camera", "keyframes": list(CAMERA_KEYFRAMES)},
+            "camera": {
+                "node": "Pearl_Stair_Walk_Camera",
+                "lensMm": CAMERA_LENS_MM,
+                "stabilization": "centred monotonic ascent; no sway, bob, or zoom",
+                "keyframes": list(CAMERA_KEYFRAMES),
+            },
             "palette": PALETTE,
             "assets": assets,
             "provenance": {"source": SOURCE, "blenderBuiltWith": bpy.app.version_string, "externalAssets": []},

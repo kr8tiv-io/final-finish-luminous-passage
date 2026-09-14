@@ -1,3 +1,5 @@
+import type { JourneyChapterId, JourneySnapshot } from './journey-director';
+
 export interface UvTransform {
   readonly scale: readonly [number, number];
   readonly offset: readonly [number, number];
@@ -83,8 +85,10 @@ export function shouldUseFilmVeil(capabilities: {
   readonly reducedMotion: boolean;
   readonly saveData: boolean;
   readonly deviceMemory: number | null;
+  readonly motionPreference: 'auto' | 'still';
 }): boolean {
-  return capabilities.webgl2 && !capabilities.reducedMotion && !capabilities.saveData;
+  return capabilities.webgl2 && !capabilities.reducedMotion && !capabilities.saveData
+    && capabilities.motionPreference === 'auto';
 }
 
 export function thresholdHdrSupported(capabilities: {
@@ -94,8 +98,23 @@ export function thresholdHdrSupported(capabilities: {
   return capabilities.webgl2 && capabilities.colorBufferFloat;
 }
 
-export function shouldRequestVideo(previouslyRequested: boolean): boolean {
-  return !previouslyRequested;
+export function shouldRequestVideo(
+  previouslyRequested: boolean,
+  chapter: string,
+  residentChapters: readonly string[],
+  documentActive: boolean,
+): boolean {
+  return documentActive && residentChapters.includes(chapter) && !previouslyRequested;
+}
+
+export function journeyMediaResidents(snapshot: Pick<
+  JourneySnapshot,
+  'activeChapter' | 'fromChapter' | 'toChapter' | 'transitionProgress'
+>): readonly JourneyChapterId[] {
+  const interior = snapshot.transitionProgress > 0 && snapshot.transitionProgress < 1;
+  return [...new Set<JourneyChapterId>(interior
+    ? [snapshot.fromChapter, snapshot.toChapter]
+    : [snapshot.activeChapter, snapshot.toChapter])];
 }
 
 export function shouldInvalidateForMediaReadiness(previous: boolean, next: boolean): boolean {

@@ -18,6 +18,7 @@ export function removeJourneyEnhancement(source: {
 }
 
 export type JourneyChapterId = (typeof JOURNEY_CHAPTER_IDS)[number];
+export type JourneyWhiteTargetId = 'customer-reviews';
 
 export interface JourneyChapterMetric {
   readonly id: JourneyChapterId;
@@ -38,12 +39,33 @@ export interface JourneyWhiteStageMetric {
   readonly end: number;
 }
 
+export interface JourneyReadingMetric {
+  readonly id: JourneyChapterId;
+  readonly start: number;
+  readonly end: number;
+}
+
+export interface JourneyWhiteTargetMetric {
+  readonly id: JourneyWhiteTargetId;
+  readonly from: JourneyChapterId;
+  readonly start: number;
+  readonly end: number;
+}
+
+export interface JourneyWhiteTargetSnapshot {
+  readonly id: JourneyWhiteTargetId;
+  readonly from: JourneyChapterId;
+  readonly progress: number;
+}
+
 export interface JourneyMetrics {
   readonly top: number;
   readonly bottom: number;
   readonly chapters: readonly JourneyChapterMetric[];
   readonly transitions: readonly JourneyTransitionMetric[];
   readonly whiteStages?: readonly JourneyWhiteStageMetric[];
+  readonly readings?: readonly JourneyReadingMetric[];
+  readonly whiteTargets?: readonly JourneyWhiteTargetMetric[];
 }
 
 export interface JourneySnapshot {
@@ -65,6 +87,8 @@ export interface JourneySnapshot {
   readonly whiteStageActive: boolean;
   readonly scrollDirection: -1 | 0 | 1;
   readonly transitionFromWhite: boolean;
+  readonly readingChapter: JourneyChapterId | null;
+  readonly whiteTarget: JourneyWhiteTargetSnapshot | null;
 }
 
 export interface JourneyDirector {
@@ -104,6 +128,8 @@ const EMPTY_SNAPSHOT: JourneySnapshot = Object.freeze({
   whiteStageActive: false,
   scrollDirection: 0,
   transitionFromWhite: false,
+  readingChapter: null,
+  whiteTarget: null,
 });
 
 function chapterIndex(id: JourneyChapterId, metrics: JourneyMetrics): number {
@@ -149,6 +175,14 @@ export function sampleJourneySnapshot(
   const journeyRange = Math.max(1, metrics.bottom - metrics.top - viewportHeight);
   const journeyProgress = clamp01((scrollY - metrics.top) / journeyRange);
   const transition = metrics.transitions.find(({ start, end }) => viewportCenter >= start && viewportCenter <= end);
+  const whiteTargetMetric = metrics.whiteTargets?.find(({ start, end }) => viewportCenter >= start && viewportCenter <= end);
+  const whiteTarget = whiteTargetMetric
+    ? Object.freeze({
+        id: whiteTargetMetric.id,
+        from: whiteTargetMetric.from,
+        progress: clamp01((viewportCenter - whiteTargetMetric.start) / Math.max(1, whiteTargetMetric.end - whiteTargetMetric.start)),
+      })
+    : null;
 
   let active = chapters.find(({ start, end }) => viewportCenter >= start && viewportCenter < end)
     ?? closestChapter({ ...metrics, chapters }, viewportCenter);
@@ -170,6 +204,11 @@ export function sampleJourneySnapshot(
   }
 
   const activeIndex = chapterIndex(active.id, metrics);
+  const readingLine = scrollY + viewportHeight * 0.66;
+  const readingTopGuard = scrollY + viewportHeight * 0.12;
+  const readingChapter = metrics.readings
+    ? metrics.readings.find(({ start, end }) => start <= readingLine && end >= readingTopGuard)?.id ?? null
+    : active.id;
   const progressStart = Math.max(metrics.top, active.start - viewportHeight / 2);
   const progressEnd = active.end - viewportHeight / 2;
   return Object.freeze({
@@ -191,6 +230,8 @@ export function sampleJourneySnapshot(
     whiteStageActive,
     scrollDirection,
     transitionFromWhite,
+    readingChapter,
+    whiteTarget,
   });
 }
 
@@ -208,7 +249,11 @@ function snapshotChanged(previous: JourneySnapshot, next: JourneySnapshot): bool
     || previous.documentVisible !== next.documentVisible
     || previous.whiteStageActive !== next.whiteStageActive
     || previous.scrollDirection !== next.scrollDirection
-    || previous.transitionFromWhite !== next.transitionFromWhite;
+    || previous.transitionFromWhite !== next.transitionFromWhite
+    || previous.readingChapter !== next.readingChapter
+    || previous.whiteTarget?.id !== next.whiteTarget?.id
+    || previous.whiteTarget?.from !== next.whiteTarget?.from
+    || previous.whiteTarget?.progress !== next.whiteTarget?.progress;
 }
 
 export function createJourneyDirector(options: JourneyDirectorOptions = {}): JourneyDirector {
@@ -262,6 +307,15 @@ export function createJourneyDirector(options: JourneyDirectorOptions = {}): Jou
       const rect = node.getBoundingClientRect();
       return [{ id, start: rect.top + scrollY, end: rect.bottom + scrollY }];
     });
+    const readings = JOURNEY_CHAPTER_IDS.flatMap((id) => {
+      const node = chapterById.get(id);
+      const title = node?.querySelector<HTMLElement>(
+        ':scope > .chapter-content > .display-title, :scope > .chapter-content > .chapter-copy-surface > .chapter-title',
+      );
+      if (!title) return [];
+      const rect = title.getBoundingClientRect();
+      return [{ id, start: rect.top + scrollY, end: rect.bottom + scrollY }];
+    });
     const transitions = [...journey.querySelectorAll<HTMLElement>('.journey-breath[data-hall-from][data-hall-to]')]
       .flatMap((node) => {
         const from = node.dataset.hallFrom;
@@ -276,12 +330,20 @@ export function createJourneyDirector(options: JourneyDirectorOptions = {}): Jou
       const rect = node.getBoundingClientRect();
       return { start: rect.top + scrollY, end: rect.bottom + scrollY };
     });
+    const whiteTargets = [...journey.querySelectorAll<HTMLElement>('#customer-reviews[data-journey-white-stage]')].map((node) => {
+      const rect = node.getBoundingClientRect();
+      const end = rect.top + scrollY;
+      const distance = Math.min(420, Math.max(180, window.innerHeight * 0.34));
+      return { id: 'customer-reviews' as const, from: 'portico' as const, start: end - distance, end };
+    });
     metrics = Object.freeze({
       top: journeyRect.top + scrollY,
       bottom: journeyRect.bottom + scrollY,
       chapters: Object.freeze(chapters),
       transitions: Object.freeze(transitions),
       whiteStages: Object.freeze(whiteStages),
+      readings: Object.freeze(readings),
+      whiteTargets: Object.freeze(whiteTargets),
     });
     publish();
   };

@@ -65,31 +65,31 @@ const breadcrumb = {
 </BaseLayout>
 
 <style>
-  .article-hero { padding: clamp(9rem, 16vh, 13rem) var(--gutter) clamp(4rem, 8vw, 8rem); background: radial-gradient(circle at 78% 16%, rgba(126,178,204,.22), transparent 28%), #f7f4ec; }
+  .article-hero { padding: clamp(9rem, 16vh, 13rem) var(--gutter) var(--reading-space); background: linear-gradient(180deg,transparent 40%,var(--paper)), radial-gradient(ellipse at 88% 16%, rgba(111,166,202,.15), transparent 55%),var(--paper); }
   .article-hero > * { width: min(100%, 68rem); margin-inline: auto; }
-  nav { display: flex; flex-wrap: wrap; gap: .55rem; margin-bottom: 5rem !important; color: var(--muted); font-size: .68rem; letter-spacing: .08em; text-transform: uppercase; }
+  nav { display: flex; flex-wrap: wrap; align-items: center; gap: .55rem; margin-bottom: 3rem !important; color: var(--muted); font-size: .875rem; }
   nav a { color: inherit; }
-  .article-hero h1 { margin: .8rem 0 1.6rem; font-family: var(--serif); font-size: clamp(3.8rem, 8vw, 8.5rem); font-weight: 400; letter-spacing: -.05em; line-height: .88; }
-  .deck { max-width: 48rem; margin-left: 0; color: var(--muted); font-size: clamp(1.05rem, 2vw, 1.35rem); }
+  .article-hero h1 { margin: .8rem 0 1.6rem; font: 550 var(--type-hero)/1.08 var(--sans); letter-spacing: -.035em; text-wrap: balance; overflow-wrap: break-word; }
+  .deck { max-width: 58ch; margin-left: 0; color: #3f4e57; font-size: var(--type-lead); line-height: 1.5; }
   .article-grid { display: grid; grid-template-columns: minmax(12rem, .42fr) minmax(0, 1fr); gap: 3rem 6vw; width: min(calc(100% - 2 * var(--gutter)), var(--max)); margin: 0 auto; padding: clamp(4rem, 9vw, 9rem) 0; }
   .article-rail { position: sticky; top: 7rem; align-self: start; }
   .review-note { display: grid; gap: .55rem; padding: 1.15rem; border: 1px solid #e3d5aa; background: #fff8e3; color: #645a3d; font-size: .72rem; }
-  .article-rail > p { margin: 2rem 0; color: var(--muted); font-size: .7rem; line-height: 1.7; text-transform: uppercase; }
-  .article-rail > a { color: var(--cobalt); font-size: .68rem; font-weight: 780; letter-spacing: .08em; text-underline-offset: .35rem; text-transform: uppercase; }
-  .article-body { max-width: 48rem; font-size: 1.05rem; line-height: 1.78; }
-  .article-body :global(h2) { margin: 4rem 0 1rem; font-family: var(--serif); font-size: clamp(2.4rem, 4vw, 4.2rem); font-weight: 400; letter-spacing: -.035em; line-height: .98; }
+  .article-rail > p { margin: 2rem 0; color: var(--muted); font-size: .875rem; line-height: 1.65; }
+  .article-rail > a { display: inline-flex; align-items: center; min-height: 44px; color: var(--cobalt); font-size: .875rem; font-weight: 650; text-underline-offset: .35rem; }
+  .article-body { max-width: 65ch; font-size: var(--type-body); line-height: 1.65; overflow-wrap: break-word; }
+  .article-body :global(h2) { margin: 4rem 0 1rem; font: 550 clamp(1.75rem,3vw,3rem)/1.15 var(--sans); letter-spacing: -.025em; text-wrap: balance; }
   .article-body :global(h3) { margin: 2.8rem 0 .8rem; font-size: 1.2rem; }
   .article-body :global(p), .article-body :global(li) { color: #3f4a50; }
   .article-body :global(a) { color: var(--cobalt-dark); text-underline-offset: .22rem; }
   .article-body :global(blockquote) { margin: 2rem 0; padding: 1rem 1.5rem; border-left: 3px solid var(--cobalt); background: #eef3f5; }
   .service-turn { margin-top: 3rem; }
-  .service-turn a { color: var(--cobalt-dark); font-size: .78rem; font-weight: 760; letter-spacing: .09em; text-transform: uppercase; }
-  .source-panel { grid-column: 2; margin-top: 3rem; padding: clamp(1.5rem, 4vw, 3.5rem); border: 1px solid var(--line); background: #f2efe7; }
-  .source-panel h2, .related h2 { margin: .6rem 0 2rem; font-family: var(--serif); font-size: clamp(2.4rem, 4vw, 4.4rem); font-weight: 400; line-height: .95; }
+  .service-turn a { color: var(--cobalt-dark); font-size: .875rem; font-weight: 650; }
+  .source-panel { grid-column: 2; margin-top: 3rem; padding-top: 2rem; border-top: 1px solid var(--line); }
+  .source-panel h2, .related h2 { margin: .6rem 0 2rem; font: 550 clamp(1.75rem,3vw,3rem)/1.15 var(--sans); letter-spacing: -.025em; }
   .source-panel ul { display: grid; gap: 1rem; padding: 0; list-style: none; }
   .source-panel li { display: grid; gap: .2rem; }
   .source-panel li a { color: var(--cobalt-dark); font-weight: 700; }
-  .source-panel li span { color: var(--muted); font-size: .72rem; }
+  .source-panel li span { color: var(--muted); font-size: .875rem; }
   .related { padding: clamp(4rem, 8vw, 8rem) var(--gutter); background: #173d59; color: white; }
   .related > * { width: min(100%, var(--max)); margin-inline: auto; }
   .related .eyebrow { color: #a7d2e8; }

@@ -11,22 +11,25 @@ truthfully provide a walk up the pearl-grey stairs:
   camera never ascends it.
 - The remaining garage, finish, and mancave films contain no stair ascent.
 
-The procedural Blender study therefore uses fifteen real treads, an 8.4 m stair
-width, and a camera route that advances 13.7 m while rising 2.475 m at human eye
-height. It is a genuine 3D camera ascent—not a crop or image zoom—and uses only
-local Blender 5.2 and ffmpeg.
+The procedural Blender study therefore uses fifteen real treads, a 9.4 m stair
+width, and a nine-second camera route that advances 16.4 m while rising 2.475 m
+at human eye height. The camera stays on the architectural centreline with a
+fixed 27 mm lens: it is a genuine smooth 3D ascent, not a crop, image zoom, or
+simulated head-bob. It uses only local Blender 5.2 and ffmpeg.
 
 ## Quality decision
 
-The corrected 1280×720 frame is generated at:
+The revised 1280×720 quality-gate frame is generated at:
 
 `output/blender/pearl-stair-ascent-preview.jpg`
 
-The root quality review rejected it before animation rendering. Although the
-geometry and movement contract are sound, the procedural set still reads too
-clean and synthetic beside `assets/brand/source/pearl-stair-v2.png`. No master,
-delivery video, poster, or Blend output was produced, and `index.astro` remains
-on the approved pearl still.
+The 2026-09-08 version was rejected before animation rendering because it read
+too clean and synthetic beside `assets/brand/source/pearl-stair-v2.png`. The
+current quality pass adds a deep pearl forecourt, layered hand-trowelled
+variation, rounded nosings, recessed tread shadows, panelled retaining walls,
+veneered sloped balustrades, foot posts, caps, and warmer low daylight. It is
+still a review study: no master, delivery video, poster, or Blend output is
+produced by `--preview`, and `index.astro` remains on the approved pearl still.
 
 Do not publish a full render without a new visual-quality approval. The builder
 retains `status: study-unready` in both the Blender scene and any study manifest.
@@ -40,7 +43,7 @@ blender --background --factory-startup --python tools/blender/tests/test_pearl_s
 blender --background --factory-startup --python tools/blender/build_pearl_stair_ascent.py -- --preview
 ```
 
-The dormant full-study path is six and a half seconds at 24 fps with a six-frame
+The dormant full-study path is nine seconds at 24 fps with a six-frame
 GOP and 480p/720p H.264 outputs. Those dimensions match the existing journey
 film delivery convention but are not evidence of creative approval.
 

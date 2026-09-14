@@ -19,6 +19,11 @@ const metrics: JourneyMetrics = {
     { from: 'portico', to: 'foundation', start: 1_000, end: 1_500 },
     { from: 'foundation', to: 'garage', start: 2_500, end: 3_000 },
   ],
+  readings: [
+    { id: 'portico', start: 120, end: 620 },
+    { id: 'foundation', start: 1_820, end: 2_180 },
+    { id: 'garage', start: 3_320, end: 3_680 },
+  ],
 };
 
 describe('native journey snapshots', () => {
@@ -56,6 +61,21 @@ describe('native journey snapshots', () => {
     expect(atEnd.transitionProgress).toBe(1);
   });
 
+  it('does not complete the incoming heading before its copy surface actually arrives', () => {
+    const duringBreath = sampleJourneySnapshot(metrics, 1_120, 1_000, true, 1);
+    const atCopyArrival = sampleJourneySnapshot(metrics, 1_160, 1_000, true, 2);
+
+    expect(duringBreath.activeChapter).toBe('foundation');
+    expect(duringBreath.readingChapter).toBeNull();
+    expect(atCopyArrival.readingChapter).toBe('foundation');
+  });
+
+  it('reports the actually visible heading after an immediate deep-link jump', () => {
+    const deepLinked = sampleJourneySnapshot(metrics, 2_700, 1_000, true, 1);
+
+    expect(deepLinked.readingChapter).toBe('garage');
+  });
+
   it('turns the fixed media stage off while the viewport centre is inside a white interlude', () => {
     const staged: JourneyMetrics = {
       ...metrics,
@@ -66,6 +86,27 @@ describe('native journey snapshots', () => {
     expect(sampleJourneySnapshot(staged, 500, 1_000, true, 2).whiteStageActive).toBe(true);
     expect(sampleJourneySnapshot(staged, 999, 1_000, true, 3).whiteStageActive).toBe(true);
     expect(sampleJourneySnapshot(staged, 1_000, 1_000, true, 4).whiteStageActive).toBe(false);
+  });
+
+  it('publishes a dedicated opening-to-review boundary without borrowing the later room transition', () => {
+    const staged: JourneyMetrics = {
+      ...metrics,
+      whiteStages: [{ start: 1_000, end: 1_500 }],
+      whiteTargets: [{ id: 'customer-reviews', from: 'portico', start: 700, end: 1_000 }],
+    };
+
+    const start = sampleJourneySnapshot(staged, 200, 1_000, true, 1, 1_440, 199);
+    const middle = sampleJourneySnapshot(staged, 350, 1_000, true, 2, 1_440, 200);
+    const reversed = sampleJourneySnapshot(staged, 350, 1_000, true, 3, 1_440, 351);
+    const review = sampleJourneySnapshot(staged, 500, 1_000, true, 4, 1_440, 350);
+
+    expect(start.whiteTarget).toEqual({ id: 'customer-reviews', from: 'portico', progress: 0 });
+    expect(middle.whiteTarget).toEqual({ id: 'customer-reviews', from: 'portico', progress: 0.5 });
+    expect(reversed.whiteTarget).toEqual(middle.whiteTarget);
+    expect(reversed.scrollDirection).toBe(-1);
+    expect(review.whiteTarget).toEqual({ id: 'customer-reviews', from: 'portico', progress: 1 });
+    expect(review.whiteStageActive).toBe(true);
+    expect(review.transitionProgress).toBe(0);
   });
 
   it('reports scroll direction without changing a sampled boundary when the visitor reverses', () => {
@@ -87,6 +128,8 @@ describe('native journey snapshots', () => {
     expect(end.transitionProgress).toBe(1);
     expect(end.transitionFromWhite).toBe(true);
     expect(end.scrollDirection).toBe(-1);
+    expect(start.whiteTarget).toBeNull();
+    expect(end.whiteTarget).toBeNull();
   });
 
   it('starts hero travel at zero before the visitor performs native scroll', () => {
@@ -183,6 +226,7 @@ describe('native journey snapshots', () => {
     const chapter = {
       dataset: { journeyChapter: 'portico' },
       getBoundingClientRect: () => { layoutReads += 1; return rect(0, 1_000); },
+      querySelector: () => null,
     };
     const journey = {
       getBoundingClientRect: () => { layoutReads += 1; return rect(0, 6_000); },

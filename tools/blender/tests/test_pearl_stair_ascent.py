@@ -40,21 +40,24 @@ class PearlStairAscentContract(unittest.TestCase):
     def test_delivery_clock_is_bounded_and_seek_friendly(self):
         self.assertEqual(self.builder.STATUS, "study-unready")
         self.assertEqual(self.builder.FPS, 24)
-        self.assertGreaterEqual(self.builder.DURATION_SECONDS, 6.0)
-        self.assertLessEqual(self.builder.DURATION_SECONDS, 7.0)
+        self.assertGreaterEqual(self.builder.DURATION_SECONDS, 8.0)
+        self.assertLessEqual(self.builder.DURATION_SECONDS, 10.0)
         self.assertEqual(self.builder.GOP_SIZE, 6)
 
     def test_camera_performs_a_real_human_scale_ascent(self):
         route = self.builder.CAMERA_KEYFRAMES
         self.assertEqual(route[0]["time"], 0.0)
         self.assertEqual(route[-1]["time"], self.builder.DURATION_SECONDS)
-        self.assertGreater(route[-1]["position"][1] - route[0]["position"][1], 10.0)
+        self.assertGreater(route[-1]["position"][1] - route[0]["position"][1], 15.0)
         self.assertGreater(route[-1]["position"][2] - route[0]["position"][2], 2.0)
         self.assertAlmostEqual(
             self.builder.STAIR_COUNT * self.builder.RISER_HEIGHT,
             route[-1]["position"][2] - route[0]["position"][2],
             delta=0.12,
         )
+        self.assertTrue(all(frame["position"][0] == 0.0 for frame in route))
+        self.assertTrue(all(route[index + 1]["position"][2] >= route[index]["position"][2] for index in range(len(route) - 1)))
+        self.assertEqual(self.builder.CAMERA_LENS_MM, 27.0)
 
     def test_scene_palette_stays_bright_and_pearl_grey(self):
         self.assertGreaterEqual(self.builder.STAIR_COUNT, 14)

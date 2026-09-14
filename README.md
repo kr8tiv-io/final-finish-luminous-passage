@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="public/images/brand/epoxy-pour-poster.jpg" alt="Concept film: pearlescent epoxy pouring across a surface" width="100%" />
+  <img src="public/images/brand/follow-floor/720/epoxy-pour-pearl-poster.jpg" alt="Concept film: the original epoxy pour, locally graded toward pearl and cool blue" width="100%" />
 </p>
 
 <h1 align="center">Final Finish Epoxy · Follow the Floor</h1>
@@ -25,7 +25,9 @@ Manrope provides one precise typographic voice. Warm white gives the work space;
 
 ## In the browser
 
-![Implemented desktop opening](docs/follow-the-floor/images/opening-desktop.png)
+The current readability pass follows one rule: **the scene moves; the message lands**. Short architectural statements lead into warm-white editorial passages, while Manrope's spacing, body text and controls share a single scale. The original pour now has a locally produced pearl-blue grade with identical timing. [Implementation notes and release boundaries](docs/cinematic-readability-implementation.md) distinguish working changes from approval gates.
+
+![The pearl-blue opening, captured from the built application](docs/readability/images/opening-desktop.png)
 
 *Actual local browser capture. The pouring imagery is concept footage, not a photographed Final Finish installation.*
 
@@ -33,13 +35,31 @@ Manrope provides one precise typographic voice. Warm white gives the work space;
 
 The pouring film now gives way to a generous white customer stage: **17 genuine, individually attributed Google excerpts**, equal-size cards, native horizontal exploration, and controls that stop for reading. The rating is dated evidence, not an invented live feed: Google showed **5.0 from 30 reviews** when checked on September 8, 2026 in Edmonton.
 
-Three selected before/after pairs now form a horizontal project gallery. GSAP carries the gallery between projects; each photograph has its own independent, keyboard-accessible comparison divider. Original proportions and complete portrait frames are retained, with wide asymmetric edges dissolving into the paper background. Pairing selections are based on visible geometry and remain subject to Denis's confirmation. A separate preparation story keeps differently angled photographs side by side.
+Three same-view before/after candidates form the staging comparison collection. The journey director coordinates the featured passage, and the exploration ribbon has its own native horizontal movement. Divider positions belong to the visitor. These are **pending pairings**, not fifteen approved transformations; production withholds them until approval is recorded. A separate preparation story keeps differently angled photographs distinct.
 
-The shared navigation has a moving material inset, a fine reading-progress line and direct chapter links beneath the opening. Following the latest client direction, titles and subtitles sit directly on the imagery **without white shadows or backdrop panels**. Seventeen review cards now include editorial topic labels and discreet initials; a new HTML planning section answers useful questions about concrete condition, room use and quoting.
+The shared navigation has a moving material inset, a fine reading-progress line and direct chapter links beneath the opening. Short statements settle over deliberately quiet compositions; longer explanations occupy connected white reading surfaces. There are no letter-sized white halos. Seventeen review cards include editorial topic labels and discreet initials; HTML planning content answers useful questions about concrete condition, room use and quoting.
 
-![Implemented Google customer-proof stage](docs/follow-the-floor/images/customer-proof-desktop.png)
+![The white customer-proof stage, captured from the built application](docs/readability/images/customer-proof-desktop.png)
 
 *Actual desktop browser capture; the phone layout and touch targets are also covered by browser emulation, not yet physical-device certification.*
+
+### A comparison, not a magic trick
+
+Three real transformations travel through a shallow ribbon. The active photograph faces the visitor squarely; its divider reveals the original and finished room without bending either image. Direct navigation lands immediately so controls cannot slip away mid-click. On phones, the same collection uses native horizontal browsing. The expanded collection has its own track and remembers the visitor's comparison positions.
+
+![Featured before-and-after comparison in the current browser implementation](docs/readability/images/transformations-desktop.png)
+
+<p align="center">
+  <img src="docs/readability/images/opening-phone.png" alt="Phone opening: visible pour above a readable heading and direct actions" width="30%" />
+  &nbsp;
+  <img src="docs/readability/images/customer-proof-phone.png" alt="Phone review stage: readable cards with deliberate navigation" width="30%" />
+  &nbsp;
+  <img src="docs/readability/images/transformations-phone.png" alt="Phone comparison: a genuine original and finished floor with an accessible divider" width="30%" />
+</p>
+
+*Actual browser screenshots: built opening/proof and independently reviewed local gallery. Project pairings remain staging candidates awaiting client approval.*
+
+Watch the actual [desktop transition recording](docs/readability/motion/desktop-motion.webm) or [emulated-phone transition recording](docs/readability/motion/phone-motion.webm). These are browser captures, not aspirational Blender renders.
 
 ![Pearl-grey stair concept used in the implemented surface study](public/images/brand/pearl-stair-v2.jpg)
 
@@ -68,15 +88,9 @@ Local interaction → React state → stable studio / quote controls
 
 Three.js renders the imagery and spatial study; GSAP handles editorial choreography; Framer Motion is confined to local interface transitions. Reading and editing surfaces stay steady. The homepage has one demand-rendered WebGL canvas, with useful HTML and posters when enhancement is unavailable.
 
-Current and adjacent media are staged rather than loading the whole film library on arrival. Local H.264 encodes use 24 fps, six-frame keyframe intervals, fast-start and no audio:
+Current and adjacent media are staged rather than loading the whole film library on arrival. Local H.264 encodes use 24 fps, six-frame keyframe intervals, fast-start and no audio. The new pour derivatives preserve all 241 original frames. [The grade manifest](docs/pearl-pour-asset-manifest.md) records source hashes and exact encoded sizes.
 
-| Complete six-film variant set | Encoded media only |
-| --- | --- |
-| 480p | 5.28 MiB |
-| 720p | 10.96 MiB |
-| 1080p | 19.02 MiB; not the default |
-
-These are file sizes, not measured route transfer or Core Web Vitals results. Device testing and field performance gates are still open.
+This pass also removed invisible first-load work: full-resolution comparison pairs no longer load before hydration, inactive cinematic layers remain genuinely offscreen, and native video poster attributes no longer duplicate the responsive image layer. The built phone capture's arrival transfer fell from about **3.35 MB to 0.72 MB** in the recorded local checks. Desktop loads a deferred film and WebGL renderer in addition to essentials. These are sampled local transfers, not field Core Web Vitals or complete-route certification; see [the verification ledger](docs/readability/VERIFICATION.md).
 
 ## Status: first visual gate, not launch-ready
 
@@ -107,7 +121,10 @@ Use `npm run dev -- logs` and `npm run dev -- stop` from this worktree only.
 | --- | --- |
 | Unit regressions | `npm test` |
 | Astro / TypeScript | `npm run check` |
-| Current first-gate browser suite | `npx playwright test --config=playwright.gate.config.ts` |
+| Current homepage, routes, studio and accessibility | `npx playwright test` (one worker; reuse port 4333) |
+| Transformation ownership and endpoints | `npx playwright test tests/e2e/transformation-ribbon.spec.ts` |
+| Readability and no-JavaScript checks | `npx playwright test --config=playwright.readability.config.ts` |
+| Built-page captures and transfer evidence | `npx playwright test --config=playwright.delivery.config.ts` (built server on 4334) |
 | Existing content checks | `npm run test:content` |
 | Project asset checks | `npm run test:project-assets` |
 | Legacy asset contract | `npm run validate:3d` |
@@ -115,7 +132,7 @@ Use `npm run dev -- logs` and `npm run dev -- stop` from this worktree only.
 | Staging build | `npm run build:staging` |
 | Recoverable working-tree copy | `node scripts/checkpoint-follow-floor.mjs` |
 
-The first-gate browser suite uses the already-running local server and does not send real email or call an image provider. Its Chromium/WebKit phone profiles are emulations. The older full-site browser suite still needs reconciliation with the redesigned journey.
+The updated behavioural tests use the already-running local server and do not send real email or call an image provider. Chromium/WebKit phone profiles are emulations. Keep the configured single worker: concurrent cold Vite route compilation stalled this Windows development server during verification. The [verification ledger](docs/readability/VERIFICATION.md) records passing checks, retries and open gates rather than implying every environment is certified.
 
 ## Privacy and reliability
 

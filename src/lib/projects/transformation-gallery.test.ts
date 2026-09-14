@@ -1,12 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import {
   clampReveal,
-  getGalleryProgressForIndex,
-  getGalleryProgressForTarget,
+  getFeaturedPassageState,
+  getFeaturedScrollTarget,
   getGalleryScrollTarget,
-  getNearestGalleryIndex,
-  getVerticalScrollPosition,
-  isScrollDrivenGalleryAdmissible,
+  isFeaturedPassageAdmissible,
+  isRibbonEnhancementAdmissible,
+  normalizeImageTransform,
   resolveDragOwner,
 } from './transformation-gallery';
 
@@ -14,60 +14,65 @@ describe('transformation gallery helpers', () => {
   it('preserves the full native range endpoints for an honest before/after view', () => {
     expect(clampReveal(0)).toBe(0);
     expect(clampReveal(100)).toBe(100);
-  });
-
-  it('bounds out-of-range reveal values without inventing an in-between state', () => {
     expect(clampReveal(-24)).toBe(0);
     expect(clampReveal(124)).toBe(100);
   });
 
-  it('gives horizontal comparison drags ownership to the divider', () => {
-    expect(resolveDragOwner({ startsInComparison: true, deltaX: 36, deltaY: 8 })).toBe('comparison');
-  });
-
-  it('waits for clear intent, then leaves vertical gestures for page scrolling and outside gestures for the gallery', () => {
+  it('gives only a clear horizontal comparison drag ownership of the divider', () => {
     expect(resolveDragOwner({ startsInComparison: true, deltaX: 4, deltaY: 3 })).toBe('undecided');
+    expect(resolveDragOwner({ startsInComparison: true, deltaX: 36, deltaY: 8 })).toBe('comparison');
     expect(resolveDragOwner({ startsInComparison: true, deltaX: 8, deltaY: 36 })).toBe('page');
     expect(resolveDragOwner({ startsInComparison: false, deltaX: 36, deltaY: 8 })).toBe('gallery');
   });
 
-  it('aligns a card with the viewport scroll padding using rect differences and clamps the destination', () => {
-    expect(getGalleryScrollTarget({
-      cardLeft: 980,
-      viewportLeft: 100,
-      scrollLeft: 720,
-      scrollPaddingStart: 48,
-      maximumScrollLeft: 1700,
-    })).toBe(1552);
-
-    expect(getGalleryScrollTarget({
-      cardLeft: 80,
-      viewportLeft: 100,
-      scrollLeft: 10,
-      scrollPaddingStart: 48,
-      maximumScrollLeft: 1700,
-    })).toBe(0);
+  it('aligns a selected card using native scroll padding and clamps the target', () => {
+    expect(getGalleryScrollTarget({ cardLeft: 980, viewportLeft: 100, scrollLeft: 720, scrollPaddingStart: 48, maximumScrollLeft: 1700 })).toBe(1552);
+    expect(getGalleryScrollTarget({ cardLeft: 80, viewportLeft: 100, scrollLeft: 10, scrollPaddingStart: 48, maximumScrollLeft: 1700 })).toBe(0);
   });
 
-  it('only admits scroll-driven pinning when there is room, travel, and motion is allowed', () => {
-    expect(isScrollDrivenGalleryAdmissible({ viewportWidth: 1280, viewportHeight: 760, horizontalTravel: 940, shellHeight: 660, still: false, reducedMotion: false })).toBe(true);
-    expect(isScrollDrivenGalleryAdmissible({ viewportWidth: 1280, viewportHeight: 540, horizontalTravel: 940, still: false, reducedMotion: false })).toBe(false);
-    expect(isScrollDrivenGalleryAdmissible({ viewportWidth: 1280, viewportHeight: 760, horizontalTravel: 940, shellHeight: 730, still: false, reducedMotion: false })).toBe(false);
-    expect(isScrollDrivenGalleryAdmissible({ viewportWidth: 1280, viewportHeight: 760, horizontalTravel: 940, still: true, reducedMotion: false })).toBe(false);
-    expect(isScrollDrivenGalleryAdmissible({ viewportWidth: 1280, viewportHeight: 760, horizontalTravel: 0, still: false, reducedMotion: false })).toBe(false);
+  it('admits enhancement from one width, height, and measured-fit check', () => {
+    expect(isRibbonEnhancementAdmissible({ viewportWidth: 1280, viewportHeight: 760, cardWidth: 840, cardHeight: 560, still: false, reducedMotion: false })).toBe(true);
+    expect(isRibbonEnhancementAdmissible({ viewportWidth: 700, viewportHeight: 760, cardWidth: 640, cardHeight: 420, still: false, reducedMotion: false })).toBe(false);
+    expect(isRibbonEnhancementAdmissible({ viewportWidth: 1280, viewportHeight: 540, cardWidth: 840, cardHeight: 560, still: false, reducedMotion: false })).toBe(false);
+    expect(isRibbonEnhancementAdmissible({ viewportWidth: 1280, viewportHeight: 760, cardWidth: 1240, cardHeight: 560, still: false, reducedMotion: false })).toBe(false);
+    expect(isRibbonEnhancementAdmissible({ viewportWidth: 1280, viewportHeight: 760, cardWidth: 840, cardHeight: 560, still: true, reducedMotion: false })).toBe(false);
   });
 
-  it('maps direct gallery navigation to a linear point in the pinned vertical range', () => {
-    expect(getGalleryProgressForIndex(0, 3)).toBe(0);
-    expect(getGalleryProgressForIndex(1, 3)).toBe(.5);
-    expect(getGalleryProgressForIndex(2, 3)).toBe(1);
-    expect(getVerticalScrollPosition({ start: 1200, end: 3000, progress: .5 })).toBe(2100);
+  it('holds each featured comparison before moving across the shallow arc', () => {
+    expect(getFeaturedPassageState(0, 3)).toEqual({ activeIndex: 0, position: 0 });
+    expect(getFeaturedPassageState(.1, 3)).toEqual({ activeIndex: 0, position: 0 });
+    expect(getFeaturedPassageState(.5, 3)).toEqual({ activeIndex: 1, position: 1 });
+    expect(getFeaturedPassageState(.9, 3)).toEqual({ activeIndex: 2, position: 2 });
+    expect(getFeaturedPassageState(1, 3)).toEqual({ activeIndex: 2, position: 2 });
   });
 
-  it('uses measured card targets rather than evenly spaced indexes for pinned navigation', () => {
-    const targets = [0, .39, .84];
-    expect(getGalleryProgressForTarget(840, 1000)).toBe(.84);
-    expect(getNearestGalleryIndex(.48, targets)).toBe(1);
-    expect(getNearestGalleryIndex(.74, targets)).toBe(2);
+  it('maps direct featured navigation onto the native vertical passage', () => {
+    expect(getFeaturedScrollTarget({ passageTop: 1400, passageTravel: 1200, index: 0, count: 3 })).toBe(1400);
+    expect(getFeaturedScrollTarget({ passageTop: 1400, passageTravel: 1200, index: 1, count: 3 })).toBe(2000);
+    expect(getFeaturedScrollTarget({ passageTop: 1400, passageTravel: 1200, index: 2, count: 3 })).toBe(2600);
+  });
+
+  it('only admits a sticky passage when the actual comparison content fits', () => {
+    expect(isFeaturedPassageAdmissible({ viewportWidth: 1280, viewportHeight: 900, contentHeight: 760, still: false, reducedMotion: false })).toBe(true);
+    expect(isFeaturedPassageAdmissible({ viewportWidth: 1280, viewportHeight: 700, contentHeight: 760, still: false, reducedMotion: false })).toBe(false);
+    expect(isFeaturedPassageAdmissible({ viewportWidth: 820, viewportHeight: 900, contentHeight: 700, still: false, reducedMotion: false })).toBe(false);
+    expect(isFeaturedPassageAdmissible({ viewportWidth: 1280, viewportHeight: 900, contentHeight: 760, still: true, reducedMotion: false })).toBe(false);
+    expect(isFeaturedPassageAdmissible({ viewportWidth: 1280, viewportHeight: 900, contentHeight: 760, still: false, reducedMotion: true })).toBe(false);
+  });
+
+  it('bounds crop correction to a conservative uniform transform without exposing image edges', () => {
+    expect(normalizeImageTransform()).toEqual({ scale: 1, translateX: 0, translateY: 0, rotate: 0 });
+    expect(normalizeImageTransform({ scale: 2, translateX: 40, translateY: -40, rotate: 8 })).toEqual({
+      scale: 1.12,
+      translateX: 3.68,
+      translateY: -3.68,
+      rotate: 1.5,
+    });
+    expect(normalizeImageTransform({ scale: 1, translateX: 4, translateY: 4, rotate: 1 })).toEqual({
+      scale: 1.025,
+      translateX: 0,
+      translateY: 0,
+      rotate: 1,
+    });
   });
 });

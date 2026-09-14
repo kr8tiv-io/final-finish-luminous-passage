@@ -9,18 +9,18 @@ export default defineConfig({
   retries: process.env.CI ? 2 : 0,
   reporter: 'list',
   use: {
-    baseURL: 'http://127.0.0.1:4322',
+    baseURL: 'http://127.0.0.1:4333',
     trace: 'retain-on-failure',
   },
   webServer: {
-    command: 'npm run dev -- --host 127.0.0.1 --port 4322 --force',
-    url: 'http://127.0.0.1:4322',
-    reuseExistingServer: false,
+    command: 'npm run dev -- --host 127.0.0.1 --port 4333',
+    url: 'http://127.0.0.1:4333',
+    reuseExistingServer: true,
     timeout: 120_000,
     env: {
       ASTRO_DEV_BACKGROUND: '0',
       SITE_ENV: 'staging',
-      PUBLIC_SITE_URL: 'https://staging.example.com',
+      PUBLIC_SITE_URL: 'http://127.0.0.1:4333',
     },
   },
   projects: [

@@ -4,6 +4,7 @@ import {
   dissolveWeight,
   endpointBlend,
   journeyEnhancementReady,
+  journeyMediaResidents,
   openingPourOpacity,
   plateMediaChoice,
   shouldInvalidateForMediaReadiness,
@@ -57,6 +58,10 @@ describe('cinematic plate sampling', () => {
     expect(FILM_VEIL_FRAGMENT_SHADER).toContain('vec4(toColor.rgb, 0.0)');
     expect(FILM_VEIL_FRAGMENT_SHADER).toContain('mix(-0.25, 1.05, eased)');
     expect(FILM_VEIL_FRAGMENT_SHADER).toContain('mix(-0.24, 1.24, eased)');
+    expect(FILM_VEIL_FRAGMENT_SHADER).toContain('float resinFront');
+    expect(FILM_VEIL_FRAGMENT_SHADER).toContain('float curlEdge');
+    expect(FILM_VEIL_FRAGMENT_SHADER).toContain('texture2D(tFrom, vUv * uFromScale + uFromOffset)');
+    expect(FILM_VEIL_FRAGMENT_SHADER).toContain('texture2D(tTo, vUv * uToScale + uToOffset)');
   });
 
   it('keeps the poster selected until a video has decoded dimensions and current frame data', () => {
@@ -81,9 +86,29 @@ describe('cinematic plate sampling', () => {
   });
 
   it('allows native-phone motion when coarse pointer is the only constraint', () => {
-    expect(shouldUseFilmVeil({ webgl2: true, reducedMotion: false, saveData: false, deviceMemory: 8 })).toBe(true);
-    expect(shouldUseFilmVeil({ webgl2: true, reducedMotion: true, saveData: false, deviceMemory: 8 })).toBe(false);
-    expect(shouldUseFilmVeil({ webgl2: true, reducedMotion: false, saveData: true, deviceMemory: 8 })).toBe(false);
+    expect(shouldUseFilmVeil({ webgl2: true, reducedMotion: false, saveData: false, deviceMemory: 8, motionPreference: 'auto' })).toBe(true);
+    expect(shouldUseFilmVeil({ webgl2: true, reducedMotion: true, saveData: false, deviceMemory: 8, motionPreference: 'auto' })).toBe(false);
+    expect(shouldUseFilmVeil({ webgl2: true, reducedMotion: false, saveData: true, deviceMemory: 8, motionPreference: 'auto' })).toBe(false);
+    expect(shouldUseFilmVeil({ webgl2: true, reducedMotion: false, saveData: false, deviceMemory: 8, motionPreference: 'still' })).toBe(false);
+  });
+
+  it('admits video requests only for the current and next plates while the document is active', () => {
+    expect(shouldRequestVideo(false, 'garage', ['garage', 'vault'], true)).toBe(true);
+    expect(shouldRequestVideo(false, 'foundation', ['garage', 'vault'], true)).toBe(false);
+    expect(shouldRequestVideo(false, 'garage', ['garage', 'vault'], false)).toBe(false);
+    expect(shouldRequestVideo(true, 'garage', ['garage', 'vault'], true)).toBe(false);
+  });
+
+  it('keeps only the active/next pair resident and locks the exact transition pair mid-boundary', () => {
+    expect(journeyMediaResidents({
+      activeChapter: 'garage', fromChapter: 'garage', toChapter: 'vault', transitionProgress: 0,
+    })).toEqual(['garage', 'vault']);
+    expect(journeyMediaResidents({
+      activeChapter: 'vault', fromChapter: 'garage', toChapter: 'vault', transitionProgress: 0.7,
+    })).toEqual(['garage', 'vault']);
+    expect(journeyMediaResidents({
+      activeChapter: 'consultation', fromChapter: 'consultation', toChapter: 'consultation', transitionProgress: 0,
+    })).toEqual(['consultation']);
   });
 
   it('requires float color-buffer renderability only for the HDR threshold layer', () => {
@@ -93,8 +118,8 @@ describe('cinematic plate sampling', () => {
   });
 
   it('requests each video once and invalidates geometry only on its first ready transition', () => {
-    expect(shouldRequestVideo(false)).toBe(true);
-    expect(shouldRequestVideo(true)).toBe(false);
+    expect(shouldRequestVideo(false, 'garage', ['garage', 'vault'], true)).toBe(true);
+    expect(shouldRequestVideo(true, 'garage', ['garage', 'vault'], true)).toBe(false);
     expect(shouldInvalidateForMediaReadiness(false, false)).toBe(false);
     expect(shouldInvalidateForMediaReadiness(false, true)).toBe(true);
     expect(shouldInvalidateForMediaReadiness(true, true)).toBe(false);

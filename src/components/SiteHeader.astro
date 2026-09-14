@@ -41,6 +41,20 @@ const currentHref = links.filter(link => currentPath === link.href || currentPat
   <div class="header-progress" aria-hidden="true"><span data-header-progress></span></div>
 </header>
 
+<noscript>
+  <style is:inline>
+    .journey-motion-control { display: none; }
+    @media (max-width: 1100px) {
+      body .site-header { position: relative; grid-template-columns: 1fr auto; }
+      body .site-header .menu-toggle { display: none; }
+      body .site-header .header-cta { grid-column: 2; grid-row: 1; }
+      body .site-header [data-primary-navigation] { display: block; position: static; grid-column: 1 / -1; padding: .5rem 0; border: 0; }
+      body .site-header [data-primary-navigation] ul { display: grid; grid-template-columns: 1fr 1fr; }
+      body .site-header [data-primary-navigation] a { min-height: 44px; }
+    }
+  </style>
+</noscript>
+
 <script>
   import { initializeHeaderRibbon } from '../scripts/header-ribbon';
   import { initializeIntentMotion } from '../scripts/intent-motion';

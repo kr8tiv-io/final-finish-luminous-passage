@@ -14,11 +14,13 @@ import {
   headlineMotionSpec,
   headlineStagger,
   headlineStyleForChapter,
+  isJourneyMotionOwnedNode,
   type HeadlinePhase,
   type HeadlineStyle,
 } from '../../lib/motion/headline-motion';
 import {
   openingPourOpacity,
+  journeyMediaResidents,
   shouldInvalidateForMediaReadiness,
   shouldRequestVideo,
   videoSeekTarget,
@@ -35,7 +37,6 @@ interface HeadlineRecord {
   animation?: gsap.core.Animation;
   phase: HeadlinePhase;
   split?: SplitText;
-  splitConfig?: SplitText.Vars;
   style: HeadlineStyle;
   title: HTMLElement;
 }
@@ -86,61 +87,62 @@ export default function JourneyMotion() {
     };
 
     chapters.forEach((chapter, id) => {
-      const records = [...chapter.querySelectorAll<HTMLElement>('.display-title, .chapter-title')].map((title) => {
-        const record: HeadlineRecord = {
+      const records = [...chapter.querySelectorAll<HTMLElement>('.display-title, .chapter-title')]
+        .filter((title) => isJourneyMotionOwnedNode(title, chapter))
+        .map((title): HeadlineRecord => ({
           phase: 'ready',
           style: headlineStyleForChapter(id),
           title,
-        };
-        title.dataset.headlineStyle = record.style;
-        title.dataset.headlineState = 'ready';
-        const splitConfig: SplitText.Vars = {
-          type: 'lines',
-          mask: 'lines',
-          linesClass: 'headline-line',
-          aria: 'auto',
-          autoSplit: true,
-          onSplit: (split) => {
-            const mode = headlineMotionMode({ presentationEnabled, phase: record.phase });
-            if (mode === 'static' || mode === 'settled') {
-              title.dataset.headlineState = mode;
-              const reset = gsap.set(split.lines, { clearProps: 'all' });
-              record.animation = reset;
-              return reset;
-            }
-
-            const spec = headlineMotionSpec(record.style, compactQuery.matches);
-            const timeline = gsap.timeline({ paused: mode === 'prepare' });
-            record.animation = timeline;
-            title.dataset.headlineState = mode === 'prepare' ? 'ready' : 'entering';
-            timeline.fromTo(split.lines, {
-              ...spec.from,
-              transformOrigin: '50% 80%',
-              willChange: 'transform, opacity',
-            }, {
-              x: 0,
-              xPercent: 0,
-              y: 0,
-              yPercent: 0,
-              z: 0,
-              rotationX: 0,
-              opacity: 1,
-              duration: spec.duration,
-              ease: spec.ease,
-              stagger: headlineStagger(spec, split.lines.length),
-              clearProps: 'transform,opacity,willChange',
-              overwrite: 'auto',
-            });
-            timeline.eventCallback('onComplete', () => settleHeadline(record));
-            return timeline;
-          },
-        };
-        record.splitConfig = splitConfig;
-        record.split = SplitText.create(title, splitConfig);
-        return record;
-      });
+        }));
       headlines.set(id, records);
     });
+
+    const createHeadlineSplit = (record: HeadlineRecord) => {
+      record.title.dataset.headlineStyle = record.style;
+      record.title.dataset.headlineState = 'entering';
+      record.split = SplitText.create(record.title, {
+        type: 'lines',
+        mask: 'lines',
+        linesClass: 'headline-line',
+        aria: 'auto',
+        autoSplit: true,
+        onSplit: (split) => {
+          const mode = headlineMotionMode({ presentationEnabled, phase: record.phase });
+          if (mode === 'static' || mode === 'settled') {
+            record.title.dataset.headlineState = mode;
+            const reset = gsap.set(split.lines, { clearProps: 'all' });
+            record.animation = reset;
+            return reset;
+          }
+
+          const spec = headlineMotionSpec(record.style, compactQuery.matches);
+          const timeline = gsap.timeline();
+          record.animation = timeline;
+          const epoxyMask = record.style === 'epoxy-mask';
+          timeline.fromTo(split.lines, {
+            ...spec.from,
+            transformOrigin: epoxyMask ? undefined : '50% 80%',
+            willChange: epoxyMask ? 'clip-path' : 'transform, opacity',
+          }, {
+            x: 0,
+            xPercent: 0,
+            y: 0,
+            yPercent: 0,
+            z: 0,
+            rotationX: 0,
+            opacity: 1,
+            ...spec.to,
+            duration: spec.duration,
+            ease: spec.ease,
+            stagger: headlineStagger(spec, split.lines.length),
+            clearProps: 'transform,opacity,clipPath,willChange',
+            overwrite: 'auto',
+          });
+          timeline.eventCallback('onComplete', () => settleHeadline(record));
+          return timeline;
+        },
+      });
+    };
 
     const revealChapter = (id: JourneyChapterId) => {
       if (!presentationEnabled || revealed.has(id)) return;
@@ -148,18 +150,23 @@ export default function JourneyMotion() {
       headlines.get(id)?.forEach((record) => {
         if (record.phase === 'settled') return;
         record.phase = 'entering';
-        record.title.dataset.headlineState = 'entering';
-        if (record.animation) record.animation.play(0);
-        else settleHeadline(record);
+        if (!record.split) createHeadlineSplit(record);
+        else record.animation?.play(0);
       });
-      const supporting = chapters.get(id)?.querySelectorAll<HTMLElement>('.eyebrow, .lead, .chapter-link, .button-row');
+      const chapter = chapters.get(id);
+      const supporting = chapter
+        ? [...chapter.querySelectorAll<HTMLElement>('.eyebrow, .lead, .chapter-link')]
+          .filter((element) => isJourneyMotionOwnedNode(element, chapter))
+        : [];
       if (supporting?.length) {
-        trackTween(gsap.fromTo(supporting, { y: 12, opacity: 0 }, {
-          y: 0,
+        const spec = headlineMotionSpec('lateral-curtain', compactQuery.matches, 'label');
+        trackTween(gsap.fromTo(supporting, spec.from, {
+          xPercent: 0,
           opacity: 1,
-          duration: 0.58,
-          ease: 'power2.out',
-          stagger: 0.05,
+          duration: spec.duration,
+          ease: spec.ease,
+          stagger: spec.stagger,
+          clearProps: 'transform,opacity',
           overwrite: 'auto',
         }));
       }
@@ -204,11 +211,15 @@ export default function JourneyMotion() {
       };
     });
 
-    const promoteVideo = (id: JourneyChapterId) => {
+    const promoteVideo = (
+      id: JourneyChapterId,
+      residentChapters: readonly JourneyChapterId[],
+      documentActive: boolean,
+    ) => {
       if (!presentationEnabled || saveDataEnabled()) return;
       const video = videos.get(id);
       if (!video) return;
-      if (shouldRequestVideo(requestedVideos.has(video))) {
+      if (shouldRequestVideo(requestedVideos.has(video), id, residentChapters, documentActive)) {
         requestedVideos.add(video);
         video.preload = 'auto';
         if (video.readyState < 2) video.load();
@@ -228,6 +239,8 @@ export default function JourneyMotion() {
 
     const renderSnapshot = () => {
       const snapshot: JourneySnapshot = journeyDirector.getSnapshot();
+      const residentChapters = journeyMediaResidents(snapshot);
+      const documentActive = snapshot.visible && snapshot.documentVisible;
       const compositorReady = journey.hasAttribute('data-journey-enhanced');
       const transitionInterior = snapshot.transitionProgress > 0 && snapshot.transitionProgress < 1;
       const hideForWhiteExit = snapshot.transitionFromWhite && snapshot.transitionProgress < 1;
@@ -249,14 +262,18 @@ export default function JourneyMotion() {
       railItems.forEach((item) => {
         item.setAttribute('aria-current', item.dataset.journeyTarget === snapshot.activeChapter ? 'true' : 'false');
       });
-      revealChapter(snapshot.activeChapter);
-      promoteVideo(snapshot.activeChapter);
-      promoteVideo(snapshot.toChapter);
+      if (snapshot.readingChapter) revealChapter(snapshot.readingChapter);
+      residentChapters.forEach((id) => promoteVideo(id, residentChapters, documentActive));
+      videos.forEach((video, id) => {
+        if (documentActive && residentChapters.includes(id)) return;
+        video.pause();
+        video.preload = 'none';
+      });
 
       const hero = chapters.get('portico');
       hero?.style.setProperty('--pour-opacity', String(openingPourOpacity()));
 
-      if (presentationEnabled && !saveDataEnabled() && !transitionInterior) {
+      if (presentationEnabled && !saveDataEnabled() && documentActive && !transitionInterior) {
         const film = videos.get(snapshot.activeChapter);
         if (film && film.readyState >= 2 && Number.isFinite(film.duration) && film.duration > 0) {
           const time = journeyFilmTime(snapshot.activeChapter, snapshot.chapterProgress, film.duration);
@@ -265,7 +282,7 @@ export default function JourneyMotion() {
       }
       videos.forEach((video, id) => updateVideoReadiness(
         video,
-        id === snapshot.activeChapter && !transitionInterior && !snapshot.whiteStageActive,
+        documentActive && id === snapshot.activeChapter && !transitionInterior && !snapshot.whiteStageActive,
       ));
     };
 
@@ -277,18 +294,22 @@ export default function JourneyMotion() {
         activeTweens.forEach((tween) => tween.kill());
         activeTweens.clear();
         headlines.forEach((records) => records.forEach((record) => {
-          record.animation?.pause();
+          record.animation?.kill();
           if (record.phase === 'entering') settleHeadline(record);
-          gsap.set(record.split?.lines ?? [record.title], { clearProps: 'all' });
+          record.split?.revert();
+          record.animation = undefined;
+          record.split = undefined;
           record.title.dataset.headlineState = 'static';
         }));
         chapters.forEach((chapter) => {
-          gsap.set(chapter.querySelectorAll('.eyebrow, .lead, .chapter-link, .button-row'), { clearProps: 'all' });
+          const supporting = [...chapter.querySelectorAll<HTMLElement>('.eyebrow, .lead, .chapter-link')]
+            .filter((element) => isJourneyMotionOwnedNode(element, chapter));
+          gsap.set(supporting, { clearProps: 'all' });
         });
+        videos.forEach((video) => video.pause());
       } else if (!wasEnabled) {
         headlines.forEach((records) => records.forEach((record) => {
-          if (record.phase === 'ready' && record.splitConfig) record.split?.split(record.splitConfig);
-          else record.title.dataset.headlineState = 'settled';
+          record.title.dataset.headlineState = record.phase === 'settled' ? 'settled' : 'ready';
         }));
       }
       videos.forEach((video) => updateVideoReadiness(video, false));
@@ -314,7 +335,6 @@ export default function JourneyMotion() {
       });
       headlines.forEach((records) => records.forEach((record) => {
         record.animation?.kill();
-        record.split?.kill();
         record.split?.revert();
         delete record.title.dataset.headlineStyle;
         delete record.title.dataset.headlineState;

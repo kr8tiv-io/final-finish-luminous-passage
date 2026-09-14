@@ -13,6 +13,7 @@ import EditorialMotion from '../components/motion/EditorialMotion';
 import MotionPreferenceControl from '../components/motion/MotionPreferenceControl';
 import FloorPlanning from '../components/home/FloorPlanning.astro';
 import TransformationGallery from '../components/projects/TransformationGallery';
+import ChapterReading from '../components/home/ChapterReading.astro';
 import '../styles/journey.css';
 
 const title = 'Final Finish Epoxy | Edmonton Epoxy Floor Coatings';
@@ -48,7 +49,9 @@ const chapterLinks = [
           class="pour-poster"
           loading="eager"
           fetchpriority="high"
-          src="/images/brand/epoxy-pour-poster.jpg"
+          src="/images/brand/follow-floor/720/epoxy-pour-pearl-poster.jpg"
+          srcset="/images/brand/follow-floor/480/epoxy-pour-pearl-poster.jpg 854w, /images/brand/follow-floor/720/epoxy-pour-pearl-poster.jpg 1280w, /images/brand/follow-floor/1080/epoxy-pour-pearl-poster.jpg 1920w"
+          sizes="100vw"
           alt=""
           width="1280"
           height="720"
@@ -60,17 +63,16 @@ const chapterLinks = [
           playsinline
           disablepictureinpicture
           preload="none"
-          poster="/images/brand/epoxy-pour-poster.jpg"
         >
-          <source media="(max-width: 680px)" src="/videos/follow-floor/480/epoxy-pour.mp4" type="video/mp4" />
-          <source src="/videos/follow-floor/720/epoxy-pour.mp4" type="video/mp4" />
+          <source media="(max-width: 680px)" src="/videos/follow-floor/480/epoxy-pour-pearl.mp4" type="video/mp4" />
+          <source src="/videos/follow-floor/720/epoxy-pour-pearl.mp4" type="video/mp4" />
         </video>
       </div>
       <div class="hero-light" aria-hidden="true"></div>
       <div class="chapter-content hero-content">
         <p class="eyebrow">Edmonton garage & commercial floor coatings</p>
-        <h1 id="hero-title" class="display-title">A better floor.<br />A different feeling.</h1>
-        <p class="lead">Epoxy flooring for Edmonton garages, basements, workshops, and commercial spaces. Careful preparation. A finish chosen around the way you use the room.</p>
+        <h1 id="hero-title" class="display-title">A better floor changes the whole space.</h1>
+        <p class="lead">Epoxy floor coatings for Edmonton garages, workshops, and commercial spaces. Thoughtful preparation. A finish chosen around you.</p>
         <div class="button-row">
           <a class="button button-primary" href="/contact#quote"><span>Request a quote</span><span aria-hidden="true">↗</span></a>
           <a class="button button-secondary" href="/floor-visualizer"><span>Try your floor</span></a>
@@ -98,8 +100,6 @@ const chapterLinks = [
         <div class="chapter-copy-surface">
         <p class="eyebrow">Preparation, repair, precision</p>
         <h2 id="foundation-title" class="chapter-title">The finish begins below the surface.</h2>
-        <p class="lead">A beautiful finish starts with the concrete underneath. Denis assesses existing coatings, cracks, contamination, and moisture concerns before recommending preparation and a coating system.</p>
-        <a class="chapter-link" href="/services/concrete-solutions">Explore concrete preparation <span aria-hidden="true">↗</span></a>
         </div>
       </div>
       <figure class="material-lens" data-material-lens aria-label="Pearl-grey epoxy material concept, detail view">
@@ -109,12 +109,17 @@ const chapterLinks = [
       <p class="chapter-index" aria-hidden="true">02 / Beneath the finish <span>Architectural concept</span></p>
     </section>
 
+    <ChapterReading id="foundation" number="01" label="What happens beneath the finish" href="/services/concrete-solutions" link="Explore concrete preparation">
+      <p>A beautiful finish starts with the concrete underneath. Discuss existing coatings, cracks, contamination, and moisture concerns with Denis before choosing a coating system.</p>
+      <p>The assessment guides the preparation. It is the part you may not see in the finished photograph, but it deserves just as much attention.</p>
+    </ChapterReading>
+
     <div class="journey-breath" data-hall-from="foundation" data-hall-to="garage" aria-hidden="true"></div>
 
     <section class="journey-chapter garage-chapter" id="garage" tabindex="-1" data-journey-chapter="garage" aria-labelledby="garage-title">
       <div class="floor-film" aria-hidden="true">
         <img class="floor-film-poster" loading="lazy" src="/images/brand/epoxy-garage-poster.jpg" alt="" width="1280" height="720" decoding="async" />
-        <video class="floor-film-video" muted playsinline disablepictureinpicture preload="none" poster="/images/brand/epoxy-garage-poster.jpg">
+        <video class="floor-film-video" muted playsinline disablepictureinpicture preload="none">
           <source media="(max-width: 680px)" src="/videos/follow-floor/480/epoxy-garage.mp4" type="video/mp4" />
           <source src="/videos/follow-floor/720/epoxy-garage.mp4" type="video/mp4" />
         </video>
@@ -123,20 +128,22 @@ const chapterLinks = [
         <div class="chapter-copy-surface">
         <p class="eyebrow">More room for your life</p>
         <h2 id="garage-title" class="chapter-title">Reclaim your garage or basement.</h2>
-        <p class="lead">Make room for what you love. A workshop for the weekend. A place to train. Space for a hobby that has outgrown the kitchen table. Start with a floor that feels like part of your home.</p>
-        <a class="chapter-link" href="/services/residential-epoxy-flooring">Residential epoxy flooring <span aria-hidden="true">↗</span></a>
         </div>
       </div>
       <p class="chapter-index" aria-hidden="true">03 / Your space</p>
     </section>
 
+    <ChapterReading id="garage" number="02" label="Make room for what you love" href="/services/residential-epoxy-flooring" link="Explore residential floors">
+      <p>A workshop for the weekend. A place to train. Space for a hobby that has outgrown the kitchen table. The floor can be the starting point for making an underused room feel considered.</p>
+      <p>Tell us what the space needs to accommodate: vehicles, storage, equipment, or everyday use. That conversation helps narrow the finish choices before you settle on a colour.</p>
+    </ChapterReading>
 
     <div class="journey-breath" data-hall-from="garage" data-hall-to="vault" aria-hidden="true"></div>
 
     <section class="journey-chapter vault-chapter" id="vault" tabindex="-1" data-journey-chapter="vault" aria-labelledby="vault-title">
       <div class="floor-film" aria-hidden="true">
         <img class="floor-film-poster" loading="lazy" src="/images/brand/epoxy-basement-poster.jpg" alt="" width="1280" height="720" decoding="async" />
-        <video class="floor-film-video" muted playsinline disablepictureinpicture preload="none" poster="/images/brand/epoxy-basement-poster.jpg">
+        <video class="floor-film-video" muted playsinline disablepictureinpicture preload="none">
           <source media="(max-width: 680px)" src="/videos/follow-floor/480/epoxy-basement.mp4" type="video/mp4" />
           <source src="/videos/follow-floor/720/epoxy-basement.mp4" type="video/mp4" />
         </video>
@@ -145,11 +152,15 @@ const chapterLinks = [
         <div class="chapter-copy-surface">
         <p class="eyebrow">Below ground. Beyond storage.</p>
         <h2 id="vault-title" class="chapter-title">The space was always there.</h2>
-        <p class="lead">A calmer hobby room, a home fitness area, or simply a more useful basement. Explore the finish first, then discuss the condition of your slab. A coating does not replace moisture remediation, ventilation, heating, or a complete renovation.</p>
         </div>
       </div>
       <p class="chapter-index" aria-hidden="true">03 / Another possibility</p>
     </section>
+
+    <ChapterReading id="vault" number="03" label="A more useful basement" href="/contact#quote" link="Discuss your space with Denis">
+      <p>A calmer hobby room, a home fitness area, or simply a more useful basement. Start by discussing the condition of the slab and how the room will be used.</p>
+      <p>A coating is one part of a room transformation. It does not replace moisture remediation, ventilation, heating, or a complete renovation.</p>
+    </ChapterReading>
 
     <div class="journey-breath" data-hall-from="vault" data-hall-to="finish-hall" aria-hidden="true"></div>
 
@@ -161,7 +172,7 @@ const chapterLinks = [
       </picture>
       <div class="floor-film" aria-hidden="true">
         <img class="floor-film-poster" loading="lazy" src="/images/brand/epoxy-finish-poster.jpg" alt="" width="1280" height="720" decoding="async" />
-        <video class="floor-film-video" muted playsinline disablepictureinpicture preload="none" poster="/images/brand/epoxy-finish-poster.jpg">
+        <video class="floor-film-video" muted playsinline disablepictureinpicture preload="none">
           <source media="(max-width: 680px)" src="/videos/follow-floor/480/epoxy-finish.mp4" type="video/mp4" />
           <source src="/videos/follow-floor/720/epoxy-finish.mp4" type="video/mp4" />
         </video>
@@ -170,7 +181,6 @@ const chapterLinks = [
         <div class="chapter-copy-surface">
         <p class="eyebrow">Flake · Solid · Metallic</p>
         <h2 id="finish-title" class="chapter-title">Find your finish.</h2>
-        <p class="lead">Quiet stone tones. A more expressive flake blend. A subtle metallic surface. Explore 30 inspiration finishes, compare favourites, and preview them in your own room before discussing available samples with Denis.</p>
         <div class="button-row">
           <a class="button button-secondary" href="/finishes"><span>Explore finishes</span></a>
           <a class="button button-primary" href="/floor-visualizer"><span>Make it yours</span></a>
@@ -179,6 +189,11 @@ const chapterLinks = [
       </div>
       <p class="chapter-index" aria-hidden="true">04 / The material studio</p>
     </section>
+
+    <ChapterReading id="finish-hall" number="04" label="A finish, not just a colour" href="/floor-visualizer" link="Preview your own floor">
+      <p>Quiet stone tones. An expressive flake blend. A softer metallic surface. Explore 30 inspiration finishes and compare favourites in the floor studio.</p>
+      <p>Your screen is a starting point, not a physical sample. Confirm available materials, texture, and the right coating system with Denis before choosing.</p>
+    </ChapterReading>
 
     <div class="journey-breath" data-hall-from="finish-hall" data-hall-to="commercial" aria-hidden="true"></div>
 
@@ -190,17 +205,20 @@ const chapterLinks = [
         <div class="chapter-copy-surface">
         <p class="eyebrow">Commercial epoxy flooring</p>
         <h2 id="commercial-title" class="chapter-title">Built around your working day.</h2>
-        <p class="lead">A shop floor, a showroom, a shared corridor. The right recommendation starts with how the space operates: traffic, cleaning, access, preparation, and the time you can set aside for installation.</p>
-        <a class="chapter-link" href="/services/commercial-epoxy-flooring">Commercial epoxy flooring <span aria-hidden="true">↗</span></a>
         </div>
       </div>
       <p class="chapter-index" aria-hidden="true">A route for business</p>
     </section>
 
+    <ChapterReading id="commercial" number="05" label="Plan around the working day" href="/services/commercial-epoxy-flooring" link="Explore commercial floors">
+      <p>A shop floor, a showroom, a shared corridor. The right recommendation starts with how the space operates: traffic, cleaning, access, and the time you can set aside for installation.</p>
+      <p>Discuss equipment, operating conditions, and areas that must remain accessible. Preparation and return-to-use requirements belong in the project conversation, not a blanket promise.</p>
+    </ChapterReading>
+
     <div class="journey-breath" data-hall-from="commercial" data-hall-to="proof" aria-hidden="true"></div>
 
     <section class="journey-chapter proof-chapter white-stage" id="proof" tabindex="-1" data-journey-chapter="proof" data-journey-white-stage aria-label="Real Final Finish transformations">
-      <TransformationGallery client:visible />
+      <TransformationGallery client:visible={{ rootMargin: '800px' }} allowPending={import.meta.env.DEV || import.meta.env.SITE_ENV === 'staging'} />
       <div class="gallery-project-link editorial-width"><a class="chapter-link" href="/projects">Explore the project archive <span aria-hidden="true">↗</span></a></div>
     </section>
 
@@ -213,16 +231,11 @@ const chapterLinks = [
     <section class="journey-chapter consultation-chapter" id="consultation" tabindex="-1" data-journey-chapter="consultation" aria-labelledby="consultation-title">
       <div class="floor-film" aria-hidden="true">
         <img class="floor-film-poster" loading="lazy" src="/images/brand/epoxy-consultation-poster.jpg" alt="" width="1280" height="720" decoding="async" />
-        <video class="floor-film-video" muted playsinline disablepictureinpicture preload="none" poster="/images/brand/epoxy-consultation-poster.jpg">
-          <source media="(max-width: 680px)" src="/videos/follow-floor/480/epoxy-consultation.mp4" type="video/mp4" />
-          <source src="/videos/follow-floor/720/epoxy-consultation.mp4" type="video/mp4" />
-        </video>
       </div>
       <div class="chapter-content consultation-content">
         <div class="chapter-copy-surface">
         <p class="eyebrow">Your next step</p>
         <h2 id="consultation-title" class="chapter-title">Let’s talk about your space.</h2>
-        <p class="lead">Tell Denis where the space is, how you use it, and what you would like to change. An approximate size and any concerns about the concrete help start a useful conversation. Preparation, repairs, finish choice, and access all shape the quote.</p>
         <div class="button-row">
           <a class="button button-primary" href="/floor-visualizer"><span>Preview a finish</span></a>
           <a class="button button-secondary" href="/contact#quote"><span>Request a quote</span></a>
@@ -234,6 +247,11 @@ const chapterLinks = [
       </div>
       <p class="chapter-index" aria-hidden="true">06 / Talk to Denis</p>
     </section>
+
+    <ChapterReading id="consultation" number="06" label="A useful first conversation" href="/contact#quote" link="Tell us about your project">
+      <p>Tell Denis where the space is, how you use it, and what you would like to change. An approximate size and any concerns about the concrete help start a useful conversation.</p>
+      <p>Preparation, repairs, finish choice, and access all shape the quote. Bring your questions and any shortlisted finishes; there is no need to have every detail worked out.</p>
+    </ChapterReading>
 
     <div class="journey-breath journey-breath--end" aria-hidden="true"></div>
   </main>
