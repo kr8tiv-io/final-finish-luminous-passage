@@ -1,7 +1,6 @@
 ---
 import '../styles/global.css';
 import { deploymentSettings } from '../lib/deployment.js';
-import SiteChrome from '../components/motion/SiteChrome';
 
 interface Props {
   title: string;
@@ -20,11 +19,11 @@ const {
 } = Astro.props;
 
 const deployment = deploymentSettings(import.meta.env.SITE_ENV, Astro.site);
-const shouldNoindex = noindex ?? deployment.noindex;
+const shouldNoindex = deployment.noindex || noindex === true;
 const siteUrl = deployment.site;
 const canonical = new URL(canonicalPath, deployment.canonicalOrigin);
 const socialImage = new URL(imagePath, siteUrl);
-const businessId = new URL('/#business', siteUrl).toString();
+const businessId = new URL('/#business', deployment.canonicalOrigin).toString();
 const siteSchema = {
   '@context': 'https://schema.org',
   '@graph': [
@@ -68,7 +67,7 @@ const siteSchema = {
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-    <meta name="theme-color" content="#f4f1e9" />
+    <meta name="theme-color" content="#faf9f6" />
     <meta name="generator" content={Astro.generator} />
     <meta name="description" content={description} />
     {shouldNoindex && <meta name="robots" content="noindex,nofollow,noarchive" />}
@@ -84,7 +83,7 @@ const siteSchema = {
     <meta property="og:image" content={socialImage} />
     <meta property="og:image:width" content="1200" />
     <meta property="og:image:height" content="630" />
-    <meta property="og:image:alt" content="A luminous architectural passage with a premium epoxy floor" />
+    <meta property="og:image:alt" content="Final Finish Epoxy — a luminous architectural floor concept" />
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:image" content={socialImage} />
     <script is:inline type="application/ld+json" data-site-schema set:html={JSON.stringify(siteSchema)} />
@@ -94,6 +93,5 @@ const siteSchema = {
   <body>
     <a class="skip-link" href="#main-content">Skip to content</a>
     <slot />
-    <SiteChrome client:idle />
   </body>
 </html>

@@ -1,50 +1,89 @@
-import { lazy, Suspense, useEffect, useState } from 'react';
-import { choosePassageQuality, type PassageQuality } from '../../lib/motion/passage';
+import { lazy, Suspense, useEffect, useState, useSyncExternalStore } from 'react';
+import { journeyControls } from '../../lib/motion/journey-controls';
+import { shouldUseFilmVeil, thresholdHdrSupported } from '../../lib/motion/journey-media';
+import { resolveThresholdStudyOptIn } from '../../lib/motion/journey-threshold';
+import MotionErrorBoundary from './MotionErrorBoundary';
 
 const FilmVeil = lazy(() => import('./FilmVeil'));
 
-function detectWebGL2(): boolean {
+function detectWebGLCapabilities(): { webgl2: boolean; thresholdHdr: boolean } {
   try {
-    return Boolean(document.createElement('canvas').getContext('webgl2'));
+    const context = document.createElement('canvas').getContext('webgl2');
+    if (!context) return { webgl2: false, thresholdHdr: false };
+    const thresholdHdr = thresholdHdrSupported({
+      webgl2: true,
+      colorBufferFloat: Boolean(context.getExtension('EXT_color_buffer_float')),
+    });
+    context.getExtension('WEBGL_lose_context')?.loseContext();
+    return { webgl2: true, thresholdHdr };
   } catch {
-    return false;
+    return { webgl2: false, thresholdHdr: false };
   }
 }
 
-function detectQuality(): PassageQuality {
+function detectMotionCapability(webgl2: boolean, reducedMotion: boolean): boolean {
   const connection = (navigator as Navigator & { connection?: { saveData?: boolean } }).connection;
   const deviceMemory = (navigator as Navigator & { deviceMemory?: number }).deviceMemory ?? null;
-  return choosePassageQuality({
-    webgl2: detectWebGL2(),
-    reducedMotion: window.matchMedia('(prefers-reduced-motion: reduce)').matches,
+  return shouldUseFilmVeil({
+    webgl2,
+    reducedMotion,
     saveData: Boolean(connection?.saveData),
-    coarsePointer: window.matchMedia('(pointer: coarse)').matches,
     deviceMemory,
   });
 }
 
-export default function FilmVeilLoader() {
-  const [quality, setQuality] = useState<PassageQuality>('still');
+export default function FilmVeilLoader({ enableThresholdStudy = resolveThresholdStudyOptIn() }: {
+  readonly enableThresholdStudy?: boolean;
+}) {
+  const controls = useSyncExternalStore(
+    journeyControls.subscribe,
+    journeyControls.getSnapshot,
+    journeyControls.getServerSnapshot,
+  );
+  const [webglCapable, setWebglCapable] = useState(false);
+  const [thresholdHdrCapable, setThresholdHdrCapable] = useState(false);
+  const [motionCapable, setMotionCapable] = useState(false);
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
-    setQuality(detectQuality());
+    const reduced = window.matchMedia('(prefers-reduced-motion: reduce)');
+    const capabilities = detectWebGLCapabilities();
+    const updateMotion = () => {
+      setWebglCapable(capabilities.webgl2);
+      setThresholdHdrCapable(capabilities.thresholdHdr);
+      setMotionCapable(detectMotionCapability(capabilities.webgl2, reduced.matches));
+    };
+    reduced.addEventListener('change', updateMotion);
+    updateMotion();
     if (window.requestIdleCallback) {
       const handle = window.requestIdleCallback(() => setReady(true), { timeout: 1_500 });
-      return () => window.cancelIdleCallback(handle);
+      return () => {
+        reduced.removeEventListener('change', updateMotion);
+        window.cancelIdleCallback(handle);
+      };
     }
     const handle = window.setTimeout(() => setReady(true), 180);
-    return () => window.clearTimeout(handle);
+    return () => {
+      reduced.removeEventListener('change', updateMotion);
+      window.clearTimeout(handle);
+    };
   }, []);
 
-  const enhanced = ready && quality !== 'still';
+  const renderCanvas = ready && webglCapable;
+  const enhanced = renderCanvas && motionCapable && controls.motionPreference === 'auto';
 
   return (
     <div className="film-veil" data-film-veil={enhanced ? 'on' : 'still'} aria-hidden="true">
-      {enhanced ? (
-        <Suspense fallback={null}>
-          <FilmVeil />
-        </Suspense>
+      {renderCanvas ? (
+        <MotionErrorBoundary>
+          <Suspense fallback={null}>
+            <FilmVeil
+              motionEnabled={motionCapable}
+              thresholdHdrEnabled={thresholdHdrCapable}
+              enableThresholdStudy={resolveThresholdStudyOptIn(enableThresholdStudy)}
+            />
+          </Suspense>
+        </MotionErrorBoundary>
       ) : null}
     </div>
   );

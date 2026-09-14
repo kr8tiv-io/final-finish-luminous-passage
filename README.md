@@ -1,129 +1,143 @@
 <p align="center">
-  <img src="public/images/brand/luminous-passage-keyframe.jpg" alt="A bright, classical-contemporary passage with a luminous blue epoxy floor" width="100%" />
+  <img src="public/images/brand/epoxy-pour-poster.jpg" alt="Concept film: pearlescent epoxy pouring across a surface" width="100%" />
 </p>
 
-<h1 align="center">Final Finish Epoxy</h1>
+<h1 align="center">Final Finish Epoxy · Follow the Floor</h1>
 
 <p align="center">
-  <strong>A luminous, scroll-driven 3D rebuild for Edmonton concrete coatings.</strong><br />
-  Real project proof, a private-by-default 30-finish visualizer, and 50 sourced planning guides—inside one very bright building.
+  <strong>A little theatre. A very practical transformation.</strong><br />
+  A material-led digital experience for an Edmonton flooring client—<br />
+  from the first pour to a conversation about the customer's own space.
 </p>
 
 <p align="center">
-  <img alt="Astro" src="https://img.shields.io/badge/Astro-7-BC52EE?style=flat-square" />
-  <img alt="React" src="https://img.shields.io/badge/React-19-149ECA?style=flat-square" />
-  <img alt="Three.js" src="https://img.shields.io/badge/Three.js-adaptive_3D-173D59?style=flat-square" />
-  <img alt="Resources" src="https://img.shields.io/badge/SEO_guides-50-2F88AD?style=flat-square" />
-  <img alt="Visualizer finishes" src="https://img.shields.io/badge/floor_finishes-30-D4A943?style=flat-square" />
+  Astro · React · Three.js · GSAP · Blender<br />
+  Warm white / architectural typography / real project evidence
 </p>
 
----
+## The idea
 
-This is not a theme with a spinning cube dropped on top. It is an intentionally layered experience: a fast, semantic Astro site paints the first frame; authored photography carries the realism; lightweight GSAP movement connects the rooms; and capability-gated Three.js geometry adds depth only when a visitor’s device can comfortably handle it.
+The floor is the thread. A flowing material becomes a finished room; a room becomes a possibility; a real project brings that possibility back to earth. Every invitation should lead somewhere useful: explore preparation, reclaim a garage or basement, choose a finish, or talk to Denis.
 
-The result should feel like walking from a sunlit portico into a sequence of contemporary halls—then arriving at something wonderfully practical: Denis’s work, the finish options, and a clear way to ask for a quote.
+The opening is the **pouring epoxy film**, visible immediately and drawn forward by native scrolling. There is deliberately no artificial floor-colour selector over the film. Finish exploration belongs in the studio, where the visitor has a stable view and meaningful controls.
 
-## The rooms
+Manrope provides one precise typographic voice. Warm white gives the work space; charcoal keeps the reading clear; cobalt identifies actions. Architectural films are labelled concepts and kept distinct from the client's project photographs.
 
-<table>
-  <tr>
-    <td width="33%"><img src="public/images/brand/foundation-chamber.jpg" alt="A bright architectural room introducing concrete preparation" /></td>
-    <td width="33%"><img src="public/images/brand/luminous-finish-hall.jpg" alt="A luminous gallery with a reflective blue floor" /></td>
-    <td width="33%"><img src="public/images/brand/consultation-court.jpg" alt="A welcoming consultation hall with a polished floor" /></td>
-  </tr>
-  <tr>
-    <td><strong>01 · Foundation Chamber</strong><br />Preparation and system thinking before decoration.</td>
-    <td><strong>02 · Luminous Finish Hall</strong><br />Flake, solid, metallic, and quartz inspiration.</td>
-    <td><strong>03 · Consultation Court</strong><br />Thirty finishes, one room photo, and a direct path to Denis.</td>
-  </tr>
-</table>
+## In the browser
 
-The homepage follows five architectural chapters: Portico, Foundation Chamber, Luminous Finish Hall, Proof Arcade, and Consultation Court. Motion enhances this semantic structure; it never replaces it.
+![Implemented desktop opening](docs/follow-the-floor/images/opening-desktop.png)
 
-## What is inside
+*Actual local browser capture. The pouring imagery is concept footage, not a photographed Final Finish installation.*
 
-- **Adaptive 3D passage.** Six compressed GLB scenes and 45 authored textures load after the useful page. Reduced-motion, save-data, low-memory, mobile, and missing-WebGL paths receive a polished static experience.
-- **Real project archive.** Ninety-six source photographs are preserved outside the public bundle with provenance. Six close-viewpoint candidates become accessible before/after comparisons with hover, drag, touch, and arrow-key control.
-- **30-finish floor visualizer.** Manual perspective mapping stays entirely in the browser. Optional AI floor detection requires explicit consent before a photo leaves the device.
-- **50-resource SEO library.** Long-form Edmonton floor-planning guides include inline primary-source citations, canonical URLs, related reading, `BlogPosting` schema, and a fail-closed editorial gate.
-- **Quote journey.** A six-step lead form uses validation, rate limiting, a honeypot, escaped email output, Hostinger SMTP first, and Resend as an optional fallback.
-- **Truthful search layer.** Organization and website schema, sitemap support, `robots.txt`, `llms.txt`, social metadata, and no fabricated ratings or warranty claims.
+### Proof, then possibility
 
-## A fast building, not a heavy demo reel
+The pouring film now gives way to a generous white customer stage: **17 genuine, individually attributed Google excerpts**, equal-size cards, native horizontal exploration, and controls that stop for reading. The rating is dated evidence, not an invented live feed: Google showed **5.0 from 30 reviews** when checked on September 8, 2026 in Edmonton.
 
-```text
-HTML + critical imagery
-        ↓
-semantic chapters and conversion paths
-        ↓ idle / capability check
-GSAP + Lenis movement
-        ↓ capable desktop only
-progressive Three.js passage chunks
-```
+Three selected before/after pairs now form a horizontal project gallery. GSAP carries the gallery between projects; each photograph has its own independent, keyboard-accessible comparison divider. Original proportions and complete portrait frames are retained, with wide asymmetric edges dissolving into the paper background. Pairing selections are based on visible geometry and remain subject to Denis's confirmation. A separate preparation story keeps differently angled photographs side by side.
 
-The high-priority first frame is a compressed AVIF/WebP/JPEG picture, not a WebGL render. Heavy scene code is dynamically imported. Project photography is lazy-loaded in AVIF and WebP with an optimized JPEG fallback. Every visual route remains useful without JavaScript.
+The shared navigation has a moving material inset, a fine reading-progress line and direct chapter links beneath the opening. Following the latest client direction, titles and subtitles sit directly on the imagery **without white shadows or backdrop panels**. Seventeen review cards now include editorial topic labels and discreet initials; a new HTML planning section answers useful questions about concrete condition, room use and quoting.
 
-## Local development
+![Implemented Google customer-proof stage](docs/follow-the-floor/images/customer-proof-desktop.png)
 
-Node.js 22.12 or newer is required.
+*Actual desktop browser capture; the phone layout and touch targets are also covered by browser emulation, not yet physical-device certification.*
 
-```bash
-npm install
-cp .env.example .env.local
-npm run dev
-```
+![Pearl-grey stair concept used in the implemented surface study](public/images/brand/pearl-stair-v2.jpg)
 
-Useful checks:
+*The new stair material study: luminous pearl-grey epoxy, pale architecture, and intentional daylight. This generated concept replaces the dark-speckled stair film with a still and a moving square detail lens; it is not client project evidence or a new video.*
 
-| Command | Purpose |
+Wider asymmetric transitions, a stable shader edge and locked media handoffs replace drifting visual noise. [The iteration notes](docs/follow-the-floor/PROOF-AND-MOTION-POLISH.md) record source evidence, image provenance and the limits of this implementation.
+
+| Surface | What this implementation does |
 | --- | --- |
-| `npm run check` | Astro and TypeScript diagnostics |
-| `npm test` | Vitest unit suite |
-| `npm run test:content` | Publishing and resource-library tests |
-| `npm run test:project-assets` | Photo provenance and transaction tests |
-| `npm run test:e2e` | Chromium and WebKit browser journeys |
-| `npm run validate:3d` | Verify committed GLBs, textures, and manifest |
-| `npm run assets:validate` | Verify project derivatives and archive boundaries |
-| `npm run validate:content` | Enforce exactly 50 sourced guides at 900–1300 words |
-| `npm run build` | Build only when `SITE_ENV` is explicitly `staging` or `production` |
-| `npm run build:staging` | Cross-platform staging build; sets `SITE_ENV=staging` |
-| `npm run build:production` | Cross-platform production build; sets `SITE_ENV=production` |
+| Opening and journey | Native-scroll director, decoded-frame readiness, aspect-correct film compositing, direct chapter links, and a persistent motion control. |
+| Spatial study | A small Blender-authored threshold with an exported camera track. It did not meet the visual gate and is available only at `/?study=threshold#garage` in local development, not the default journey. |
+| Private finish studio | Thirty stable inspiration IDs, perspective-correct floor projection, local photo normalization, manual corners, original/preview comparison, and local object erase/restore with undo. |
+| Consultation | Three stages, selected-finish handoff, optional photographs with explicit attachment consent, and the chosen contact channel required. |
+| Evidence | Seventeen genuine review excerpts immediately after the opening; three visually selected overlay comparisons and one separate preparation story, eight real photographs in total. Source and pending client confirmation are explicit. |
+| Search foundation | Useful server-rendered headings, descriptions, links and business identity; staging indexing is disabled. Original evidence and editorial review remain essential. |
 
-## Editorial and project-photo gates
-
-All 50 resources currently remain `draft: true` with `reviewStatus: needs-review`. Staging renders them with `noindex`; production omits anything that is not both approved and non-draft. Denis should verify company-specific service, system, timing, warranty, credential, pricing, and performance language before changing either field.
-
-The six project comparisons are also explicitly marked for pairing review. Their source photographs are authentic, but the “before” and “after” roles must be confirmed by Denis before the production-domain switch.
-
-## Environment and deployment
-
-Copy `.env.example` and configure only the services being used. Set `PUBLIC_SITE_URL` to the actual origin of that deployment, and set `SITE_ENV` to `staging` or `production`. `SITE_ENV` is required and is the single source of truth for draft visibility, page `noindex`, and crawler directives; `PUBLIC_SITE_URL` is the single URL source for the sitemap, canonical URLs, social URLs, and structured-data URLs. Important remaining values include Hostinger SMTP credentials, optional Resend credentials, and an optional FAL key for consented floor masking.
-
-The production output uses Astro’s standalone Node adapter:
+## Motion with one owner
 
 ```text
-Staging build:    npm run build:staging
-Production build: npm run build:production
-Output:        dist
-Start file:    dist/server/entry.mjs
+Native scroll → journey director → ready media + spatial camera
+                         ↓
+                 GSAP editorial reveals
+
+Local interaction → React state → stable studio / quote controls
 ```
 
-The intended staging target is a fresh Hostinger temporary subdomain. Set `PUBLIC_SITE_URL` to that exact HTTPS subdomain and run `npm run build:staging`; staging emits `noindex,nofollow,noarchive`, disallows crawling in `robots.txt`, and can show review-gated resources. For production, set `PUBLIC_SITE_URL=https://www.finalfinishepoxy.ca` and run `npm run build:production`; only non-draft resources with an approved or published status can be emitted. Do not use plain `npm run build` until both required values are set—the build fails closed when `SITE_ENV` is missing or invalid.
+Three.js renders the imagery and spatial study; GSAP handles editorial choreography; Framer Motion is confined to local interface transitions. Reading and editing surfaces stay steady. The homepage has one demand-rendered WebGL canvas, with useful HTML and posters when enhancement is unavailable.
 
-## Asset provenance
+Current and adjacent media are staged rather than loading the whole film library on arrival. Local H.264 encodes use 24 fps, six-frame keyframe intervals, fast-start and no audio:
 
-- Cinematic architectural plates were art-directed for this build and optimized locally.
-- Blender source, export scripts, validation contracts, GLBs, and textures live in `tools/blender`, `assets/3d`, and `public/3d`.
-- Client project originals live under `assets/source-project-photos/originals` in Git LFS and are never served directly.
-- Runtime project derivatives live under `public/images/projects/generated`; their large binary history is stored in Git LFS so the repository itself stays responsive.
-- The complete pairing and provenance record lives in `src/data/project-photo-pairs.json`.
+| Complete six-film variant set | Encoded media only |
+| --- | --- |
+| 480p | 5.28 MiB |
+| 720p | 10.96 MiB |
+| 1080p | 19.02 MiB; not the default |
 
-## The humans
+These are file sizes, not measured route transfer or Core Web Vitals results. Device testing and field performance gates are still open.
 
-**Final Finish Epoxy**<br />
-Denis · Edmonton, Alberta<br />
+## Status: first visual gate, not launch-ready
+
+The original Grok checkout is preserved; implementation is isolated on `feature/follow-the-floor`. The [30-package implementation ledger](docs/follow-the-floor/IMPLEMENTATION.md) distinguishes working features from remaining work.
+
+The important unfinished gates include production-quality material samples and architecture, the studio's opening room example, full cinematic route templates, the fifty-guide editorial review, physical Apple/Android checks, and production abuse protection. Browser emulation does not establish physical-device compatibility.
+
+A new local Blender stair-ascent study also failed its visual-quality gate. No new stair film was published: the stronger pearl-grey still remains in place. Its reproducible study and future hold/walk/landing timing contract are documented in [the stair production notes](tools/blender/PEARL_STAIR_ASCENT.md).
+
+The existing fifty guides currently carry production-emittable metadata. **That metadata is not proof of editorial approval.** This branch has not reverified every article or Denis's company-specific claims. Do not publish the redesign until the content gate is closed.
+
+No live-domain cutover has occurred. A protected, temporary Hostinger environment is the intended staging destination, not a completed deployment.
+
+## Run the isolated preview
+
+Node.js 22.12 or newer is required. Use the appropriate existing environment configuration; do not commit credentials.
+
+```powershell
+$env:SITE_ENV = 'staging'
+$env:PUBLIC_SITE_URL = 'http://127.0.0.1:4333'
+npm run dev -- --host 127.0.0.1 --port 4333 --background
+npm run dev -- status
+```
+
+Use `npm run dev -- logs` and `npm run dev -- stop` from this worktree only.
+
+| Check | Command |
+| --- | --- |
+| Unit regressions | `npm test` |
+| Astro / TypeScript | `npm run check` |
+| Current first-gate browser suite | `npx playwright test --config=playwright.gate.config.ts` |
+| Existing content checks | `npm run test:content` |
+| Project asset checks | `npm run test:project-assets` |
+| Legacy asset contract | `npm run validate:3d` |
+| New threshold contract | `node --test tools/blender/tests/test_follow_floor_threshold.mjs` |
+| Staging build | `npm run build:staging` |
+| Recoverable working-tree copy | `node scripts/checkpoint-follow-floor.mjs` |
+
+The first-gate browser suite uses the already-running local server and does not send real email or call an image provider. Its Chromium/WebKit phone profiles are emulations. The older full-site browser suite still needs reconciliation with the redesigned journey.
+
+## Privacy and reliability
+
+Photos remain local unless the visitor explicitly attaches them to a quote. The shared admission path checks encoded type, dimensions and size before bitmap allocation; normalized image geometry is shared by corners and projection. Animated images are rejected. Replacement invalidates prior photo work.
+
+Automatic detection is **disabled** until provider terms, spending limits and production processing controls are approved. Manual preview is available without it.
+
+Quote delivery has same-origin JSON validation, bounded payloads, explicit attachment handling and delivery deadlines. Network uncertainty is reported honestly rather than silently inviting a duplicate enquiry. Remaining release requirements include a shared abuse store, bot protection, trusted proxy configuration and isolated native image processing. This is not a completed penetration test.
+
+## Assets and provenance
+
+- Existing films and source photographs are preserved. Responsive film derivatives have their own hash manifest under `public/videos/follow-floor`.
+- The new threshold's Blender builder, transaction tests and GLB contract live under `tools/blender`; runtime assets and their manifest are in `public/scenes/follow-floor-threshold`.
+- Client project derivatives live under `public/images/projects/generated`; pairing records are separate from presentation.
+- Concept architecture is not project evidence. Procedural finish previews are not verified supplier samples.
+- GSAP uses its own commercial license; do not describe the entire dependency stack as MIT-licensed.
+
+## The people behind the floor
+
+**Final Finish Epoxy** · Denis · Edmonton, Alberta<br />
 [(780) 991-1651](tel:+17809911651) · [finalfinishepoxy@gmail.com](mailto:finalfinishepoxy@gmail.com)
 
-Concept, architecture, engineering, and launch system by **[kr8tiv.io](https://kr8tiv.io)**.
+Design direction and implementation for the client by **[kr8tiv.io](https://kr8tiv.io)**.
 
-<p align="center"><em>Good concrete deserves a little theatre.</em></p>
+<p align="center"><em>Follow the floor. Find what the room could become.</em></p>

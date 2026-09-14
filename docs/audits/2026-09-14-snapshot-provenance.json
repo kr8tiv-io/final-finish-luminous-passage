@@ -1,0 +1,19 @@
+{
+  "status": "Unreleased audit snapshot; not a deployment",
+  "capturedAt": "2026-09-14T06:09:42.694Z",
+  "sourceBranch": "feature/follow-the-floor",
+  "sourceHead": "275710b9b3b2cc85b18f61ba75e8d2786b6dcb98",
+  "parentRemoteCommit": "e182dcf775eefcf17d0f6a4292df1edcdeab3664",
+  "excluded": [
+    "_seo_rewrite_resources.py",
+    "continue.md"
+  ],
+  "workflowArchives": [
+    {
+      "original": ".github/workflows/quality.yml",
+      "archive": "docs/audits/2026-09-14-workflow-archive/quality.yml.txt",
+      "sha256": "b1e1120a78148c76dc6ead28c7263a427609b44f80468aa84fb53b91d7a5d4c8"
+    }
+  ],
+  "note": "Private snapshot made through GitHub Git Data API because both local object databases rejected writes. SHA-256 source inventory checked; text CRLF normalized to LF, binary media unchanged, LFS pointers preserve source SHA-256. Existing main, local branches/indexes and live domain unchanged. Active workflow archived as exact inactive text because current OAuth lacks workflow scope."
+}

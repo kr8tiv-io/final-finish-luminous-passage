@@ -1,4 +1,5 @@
 import type { QuoteRequest } from './schema';
+import { finishPresets } from '../visualizer/finishes';
 
 const labels: Record<string, string> = {
   'other-residential': 'other residential space',
@@ -29,6 +30,7 @@ export function createQuoteReference(isoDate = new Date().toISOString(), random 
 }
 
 export function buildQuoteEmail(request: QuoteRequest, reference: string) {
+  const finish = finishPresets.find((entry) => entry.id === request.visualizerFinishId);
   const details = [
     ['Reference', reference],
     ['Location', request.location],
@@ -39,16 +41,16 @@ export function buildQuoteEmail(request: QuoteRequest, reference: string) {
     ['Timing', humanize(request.timeline)],
     ['Contact preference', humanize(request.contactPreference)],
     ['Name', request.name],
-    ['Email', request.email],
-    ['Phone', request.phone],
-    ['Visualizer finish', request.visualizerFinishId || 'none'],
+    ['Email', request.email || 'not provided'],
+    ['Phone', request.phone || 'not provided'],
+    ['Visualizer finish', finish ? `${finish.name} (${finish.id}) · inspiration, physical sample to confirm` : 'none'],
     ['Notes', request.notes || 'none'],
     ['Photos', request.photos?.length ? `${request.photos.length} attached` : 'none'],
   ] as const;
   const text = details.map(([label, value]) => `${label}: ${value}`).join('\n');
   const rows = details.map(([label, value]) => `<tr><th style="padding:8px 16px 8px 0;text-align:left;vertical-align:top">${escapeHtml(label)}</th><td style="padding:8px 0">${escapeHtml(value)}</td></tr>`).join('');
   const attachments = (request.photos ?? []).map((photo, index) => ({
-    filename: photo.name || `floor-${index + 1}.jpg`,
+    filename: `floor-${index + 1}.jpg`,
     content: Buffer.from(photo.data.replace(/^data:image\/jpeg;base64,/, ''), 'base64'),
     contentType: 'image/jpeg' as const,
   }));
@@ -57,7 +59,7 @@ export function buildQuoteEmail(request: QuoteRequest, reference: string) {
     subject: `New Final Finish quote request · ${reference}`,
     text,
     html: `<div style="font:15px/1.5 Arial,sans-serif;color:#17222a"><h1 style="font:32px Georgia,serif">New floor project</h1><table>${rows}</table></div>`,
-    replyTo: request.email,
+    replyTo: request.email || undefined,
     attachments,
   };
 }

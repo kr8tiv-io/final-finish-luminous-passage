@@ -6,6 +6,8 @@
   ],
   "exclude": [
     "dist",
+    "output",
+    ".worktrees",
     "tmp-sign-frames"
   ],
   "compilerOptions": {

@@ -32,7 +32,7 @@ test.describe('Final Finish homepage', () => {
     await expect(page.getByRole('heading', { name: 'The finish begins below the surface.' })).toBeVisible();
     await expect(page.getByRole('heading', { name: 'Real floors. Revealed honestly.' })).toBeVisible();
     await expect(page.getByRole('heading', { name: 'Bring us the floor you have.' })).toBeVisible();
-    await expect(page.getByRole('heading', { name: 'Five stars on Google. The work holds up in person.' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Five stars on Google.' })).toBeVisible();
     await expect(page.getByRole('link', { name: 'Read reviews' })).toHaveAttribute('href', /google\.com\/maps/);
     await expect(page.getByRole('link', { name: 'Write a review' })).toHaveAttribute('href', /writereview/);
   });
@@ -118,7 +118,7 @@ test.describe('Final Finish homepage', () => {
     await expect(page.locator('.floor-film-poster[src="/images/brand/epoxy-garage-poster.jpg"]')).toHaveCount(1);
     await expect(page.locator('.floor-film-video source[src="/videos/epoxy-walkway.mp4"]')).toHaveCount(1);
     await expect(page.locator('.floor-film-video source[src="/videos/epoxy-garage.mp4"]')).toHaveCount(1);
-    await expect(page.locator('.floor-film-video source[src="/videos/epoxy-mancave.mp4"]')).toHaveCount(1);
+    await expect(page.locator('.floor-film-video source[src="/videos/epoxy-basement.mp4"]')).toHaveCount(1);
     await expect(page.locator('.floor-film-video source[src="/videos/epoxy-finish.mp4"]')).toHaveCount(1);
     await expect(page.locator('.floor-film-video source[src="/videos/epoxy-consultation.mp4"]')).toHaveCount(1);
   });

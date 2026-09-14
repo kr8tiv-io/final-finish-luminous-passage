@@ -1,15 +1,9 @@
-@import '@fontsource/instrument-serif/400.css';
-@import '@fontsource/instrument-serif/400-italic.css';
-@import '@fontsource/bricolage-grotesque/400.css';
-@import '@fontsource/bricolage-grotesque/500.css';
-@import '@fontsource/bricolage-grotesque/600.css';
-@import '@fontsource/bricolage-grotesque/700.css';
-@import '@fontsource-variable/source-serif-4';
+@import '@fontsource-variable/manrope';
 
 :root {
   color-scheme: light;
-  --paper: #f4f1e9;
-  --paper-bright: #fffef9;
+  --paper: #faf9f6;
+  --paper-bright: #ffffff;
   --limestone: #d8d1c3;
   --stone: #ada495;
   --ink: #17222a;
@@ -20,9 +14,11 @@
   --bronze: #a57d42;
   --line: rgba(23, 34, 42, 0.16);
   --shadow: 0 28px 80px rgba(31, 39, 42, 0.12);
-  --serif: 'Instrument Serif', 'Iowan Old Style', Georgia, serif;
-  --sans: 'Bricolage Grotesque', 'Segoe UI', sans-serif;
-  --body: 'Source Serif 4 Variable', 'Iowan Old Style', Georgia, serif;
+  --sans: 'Manrope Variable', 'Segoe UI', sans-serif;
+  --serif: var(--sans);
+  --body: var(--sans);
+  --ease-out: cubic-bezier(.22, 1, .36, 1);
+  --control-height: 2.75rem;
   --max: 1440px;
   --gutter: clamp(1.25rem, 3.2vw, 4rem);
 }
@@ -30,8 +26,10 @@
 * { box-sizing: border-box; }
 
 html {
-  scroll-behavior: smooth;
+  scroll-behavior: auto;
   background: var(--paper);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
   transition: background-color 700ms ease;
 }
 
@@ -39,9 +37,7 @@ body {
   margin: 0;
   min-width: 320px;
   color: var(--ink);
-  background:
-    radial-gradient(circle at var(--spec-x, 70%) var(--spec-y, 9%), rgba(255, 255, 255, 0.34) 0 12%, transparent 36%),
-    var(--paper);
+  background: var(--paper);
   font-family: var(--body);
   font-optical-sizing: auto;
   line-height: 1.65;
@@ -164,12 +160,13 @@ button, input, textarea, select { font: inherit; }
 }
 
 .eyebrow {
-  margin: 0 0 1.85rem;
+  margin: 0 0 1.35rem;
   color: var(--cobalt);
   font-family: var(--sans);
-  font-size: 0.78rem;
-  font-weight: 600;
-  letter-spacing: 0.08em;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
 }
 
 .display-title {
@@ -195,11 +192,15 @@ button, input, textarea, select { font: inherit; }
 }
 
 .lead {
-  max-width: 40rem;
-  color: var(--muted);
-  font-family: var(--body);
-  font-size: clamp(1.12rem, 1.7vw, 1.42rem);
-  line-height: 1.55;
+  max-width: 28rem;
+  margin-top: 1.6rem;
+  color: var(--ink);
+  font-family: var(--sans);
+  font-size: clamp(1.2rem, 1.55vw, 1.38rem);
+  font-weight: 500;
+  letter-spacing: -0.021em;
+  line-height: 1.32;
+  text-wrap: pretty;
 }
 
 .button-row { display: flex; flex-wrap: wrap; gap: 1rem; margin-top: 3.25rem; }
@@ -425,27 +426,10 @@ body:has(.journey) .shop-sound { display: none; }
 :focus-visible { outline: 2px solid var(--cobalt); outline-offset: 3px; }
 
 @media (max-width: 880px) {
-  .header-phone {
-    display: inline-flex;
-    position: fixed;
-    z-index: 60;
-    right: 1rem;
-    bottom: 1rem;
-    left: 1rem;
-    align-items: center;
-    justify-content: center;
-    min-height: 3.25rem;
-    border-radius: 999px;
-    background: var(--cobalt);
-    color: var(--paper-bright);
-    font-size: 0.78rem;
-    font-weight: 760;
-    letter-spacing: 0.08em;
-    text-decoration: none;
-    text-transform: uppercase;
-    box-shadow: var(--shadow);
-  }
-  .site-header { grid-template-columns: 1fr auto auto; }
+  /* Phone links remain in the hero/contact. A fixed child of this filtered
+     header creates its own containing block in Safari and covers navigation. */
+  .header-phone { display: none; }
+  .site-header { grid-template-columns: 1fr auto auto; column-gap: .65rem; }
   .menu-toggle { display: inline-flex; align-items: center; justify-content: center; min-height: 2.75rem; padding: .55rem .8rem; border: 1px solid var(--cobalt); border-radius: 999px; background: transparent; color: var(--cobalt-dark); font-size: .68rem; font-weight: 750; letter-spacing: .09em; text-transform: uppercase; }
   .site-header nav { position: absolute; top: calc(100% + 1px); right: var(--gutter); left: var(--gutter); display: none; padding: 1rem; border: 1px solid var(--line); background: var(--paper-bright); box-shadow: var(--shadow); }
   .site-header[data-menu-open] nav { display: block; }

@@ -1,0 +1,148 @@
+{
+  "rating": {
+    "value": 5,
+    "count": 30,
+    "verifiedAt": "2026-09-09T02:08:00Z",
+    "source": "https://www.google.com/maps?cid=7470239776211762202",
+    "verification": "Public Google Maps listing, inspected in browser; all 30 displayed ratings are five stars.",
+    "refreshAfterDays": 30
+  },
+  "reviews": [
+    {
+      "name": "Fred Hoetmer",
+      "excerpt": "The care and detail from Denis and his team is exceptional.",
+      "rating": 5,
+      "source": "Google Maps",
+      "verifiedAt": "2026-09-09",
+      "isExcerpt": true
+    },
+    {
+      "name": "Nate Whalen",
+      "excerpt": "Super knowledgeable and absolutely nailed the custom coloring to match the paint.",
+      "rating": 5,
+      "source": "Google Maps",
+      "verifiedAt": "2026-09-09",
+      "isExcerpt": true
+    },
+    {
+      "name": "Antony Bubalo",
+      "excerpt": "Professional, reliable, and the results speak for themselves — our floors look incredible.",
+      "rating": 5,
+      "source": "Google Maps",
+      "verifiedAt": "2026-09-09",
+      "isExcerpt": true
+    },
+    {
+      "name": "sameer jadavji",
+      "excerpt": "Denis and his team did an amazing job in our garage! We are thrilled with the results",
+      "rating": 5,
+      "source": "Google Maps",
+      "verifiedAt": "2026-09-09",
+      "isExcerpt": true
+    },
+    {
+      "name": "Marrabout 123",
+      "excerpt": "From start to finish, the experience was smooth and professional.",
+      "rating": 5,
+      "source": "Google Maps",
+      "verifiedAt": "2026-09-09",
+      "isExcerpt": true
+    },
+    {
+      "name": "Glenda Clarke",
+      "excerpt": "Denis took the time to do the job right, ensuring the surface was properly prepared before applying the epoxy.",
+      "rating": 5,
+      "source": "Google Maps",
+      "verifiedAt": "2026-09-09",
+      "isExcerpt": true
+    },
+    {
+      "name": "Andrew McCready",
+      "excerpt": "I was very pleased with the price, process, and result.",
+      "rating": 5,
+      "source": "Google Maps",
+      "verifiedAt": "2026-09-09",
+      "isExcerpt": true
+    },
+    {
+      "name": "Johnathon Medurecan",
+      "excerpt": "What an amazing job! Excellent quality and great team to work with.",
+      "rating": 5,
+      "source": "Google Maps",
+      "verifiedAt": "2026-09-09",
+      "isExcerpt": true
+    },
+    {
+      "name": "Jesse Aumiller",
+      "excerpt": "Denis smashed this out of the park!",
+      "rating": 5,
+      "source": "Google Maps",
+      "verifiedAt": "2026-09-09",
+      "isExcerpt": true
+    },
+    {
+      "name": "Joseph Ingram",
+      "excerpt": "Awesome job prepping and repairing concrete before applying the epoxy. Clean and courteous workers",
+      "rating": 5,
+      "source": "Google Maps",
+      "verifiedAt": "2026-09-09",
+      "isExcerpt": true
+    },
+    {
+      "name": "Christian Elkjer",
+      "excerpt": "These guys were great to deal with!",
+      "rating": 5,
+      "source": "Google Maps",
+      "verifiedAt": "2026-09-09",
+      "isExcerpt": true
+    },
+    {
+      "name": "Ernesto Giordano",
+      "excerpt": "Denis and his Father did a great job with the epoxy flooring. Thank you!",
+      "rating": 5,
+      "source": "Google Maps",
+      "verifiedAt": "2026-09-09",
+      "isExcerpt": true
+    },
+    {
+      "name": "Sean Schaefer",
+      "excerpt": "Extremely happy with the job. I went away for vacation for a week, came back and it was perfect.",
+      "rating": 5,
+      "source": "Google Maps",
+      "verifiedAt": "2026-09-09",
+      "isExcerpt": true
+    },
+    {
+      "name": "garry askin",
+      "excerpt": "Very personable to work with, excellent job and incredible attention to detail",
+      "rating": 5,
+      "source": "Google Maps",
+      "verifiedAt": "2026-09-09",
+      "isExcerpt": true
+    },
+    {
+      "name": "Frank Santoro",
+      "excerpt": "Communication was great, fair pricing and a fantastic finished product.",
+      "rating": 5,
+      "source": "Google Maps",
+      "verifiedAt": "2026-09-09",
+      "isExcerpt": true
+    },
+    {
+      "name": "Kyle Fulton",
+      "excerpt": "He is very good at communication and letting me know what was going on. Great outcome.",
+      "rating": 5,
+      "source": "Google Maps",
+      "verifiedAt": "2026-09-09",
+      "isExcerpt": true
+    },
+    {
+      "name": "Paul Tran",
+      "excerpt": "My general contractor hired Final Finish to epoxy the showroom in my dealership. They did a tremendous job.",
+      "rating": 5,
+      "source": "Google Maps",
+      "verifiedAt": "2026-09-09",
+      "isExcerpt": true
+    }
+  ]
+}

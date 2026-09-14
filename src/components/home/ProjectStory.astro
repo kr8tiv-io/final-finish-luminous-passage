@@ -1,0 +1,23 @@
+---
+import archive from '../../data/project-photo-pairs.json';
+interface Props { story: { id:string; number:string; eyebrow:string; title:string; body:string; detail:string; href:string; link:string; pairingApproved:boolean; photos:{id:string;caption:string;alt:string}[] } }
+const { story } = Astro.props;
+const photos = story.photos.map(photo => ({ ...photo, asset: archive.assets.find(asset => asset.id === photo.id)! }));
+---
+<section class={`white-stage project-story project-story--${story.number}`} id={story.id} data-journey-white-stage aria-labelledby={`${story.id}-title`}>
+  <div class="story-heading editorial-width" data-editorial-reveal>
+    <div><p class="eyebrow">{story.eyebrow}</p><h2 id={`${story.id}-title`} class="interlude-title">{story.title}</h2></div>
+    <p class="story-intro">{story.body}</p>
+  </div>
+  <div class="story-photographs editorial-width">
+    {photos.map((photo,index) => (
+      <figure class={`story-photo story-photo--${index === 0 ? 'preparation' : 'finish'}`} data-story-photo>
+        <a href={photo.asset.variants.jpeg} aria-label={`Open full photograph: ${photo.caption}`}>
+          <picture><source type="image/avif" srcset={photo.asset.variants.avif} /><source type="image/webp" srcset={photo.asset.variants.webp} /><img src={photo.asset.variants.jpeg} alt={photo.alt} width={photo.asset.width} height={photo.asset.height} loading="lazy" decoding="async" /></picture>
+        </a>
+        <figcaption><span>{index === 0 ? '01' : '02'} / {photo.caption}</span><span>Final Finish archive</span></figcaption>
+      </figure>
+    ))}
+  </div>
+  <div class="story-detail editorial-width" data-editorial-reveal><p>{story.detail}</p><div><a class="chapter-link" href={story.href}>{story.link} <span aria-hidden="true">↗</span></a><small>Original project photography. Views shown separately; project pairing and specifications await confirmation.</small></div></div>
+</section>

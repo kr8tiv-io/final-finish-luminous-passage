@@ -1,0 +1,6 @@
+/* The material catches the pointer; the words and clickable geometry stay still. */
+[data-intent-motion] { position: relative; isolation: isolate; overflow: clip; }
+.intent-glint { position: absolute; z-index: -1; left: 0; top: 0; width: 9rem; height: 9rem; margin: -4.5rem 0 0 -4.5rem; border-radius: 50%; pointer-events: none; opacity: 0; background: radial-gradient(circle,rgba(255,255,255,.22),rgba(255,255,255,.08) 35%,transparent 68%); }
+.chapter-link .intent-glint,.hero-ribbon .intent-glint { background: radial-gradient(circle,rgba(22,79,131,.11),rgba(22,79,131,.03) 38%,transparent 68%); }
+.journey a.button[data-intent-motion]:hover,.journey a.button[data-intent-motion]:focus-visible { transform: none; }
+@media (prefers-reduced-motion: reduce) { .intent-glint { display: none; } }

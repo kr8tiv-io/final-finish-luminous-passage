@@ -1,4 +1,4 @@
-import { useState, type CSSProperties, type MouseEvent } from 'react';
+import { useState, type CSSProperties } from 'react';
 import './before-after-project.css';
 
 type ProjectImage = {
@@ -13,16 +13,23 @@ type Props = {
   label: string;
   featured?: boolean;
   stage?: boolean;
+  pairingApproved?: boolean;
 };
 
-export default function BeforeAfterProject({ before, after, label, featured = false, stage = false }: Props) {
+export default function BeforeAfterProject({ before, after, label, featured = false, stage = false, pairingApproved = false }: Props) {
   const [reveal, setReveal] = useState(50);
   const style = { '--reveal': `${reveal}%` } as CSSProperties;
 
-  function followMouse(event: MouseEvent<HTMLDivElement>) {
-    const bounds = event.currentTarget.getBoundingClientRect();
-    const next = Math.round(((event.clientX - bounds.left) / bounds.width) * 100);
-    setReveal(Math.min(100, Math.max(0, next)));
+  if (!pairingApproved) {
+    return <figure className="project-comparison project-evidence">
+      <div className="project-evidence-views">
+        {[before, after].map((photo, index) => <figure key={photo.variants.jpeg}>
+          <picture><source type="image/webp" srcSet={photo.variants.webp} /><img src={photo.variants.jpeg} alt={`${label}: ${index === 0 ? 'concrete preparation' : 'finished floor'}`} width={photo.width} height={photo.height} loading="lazy" decoding="async" /></picture>
+          <figcaption>{index === 0 ? 'Concrete preparation' : 'Finished surface'}</figcaption>
+        </figure>)}
+      </div>
+      <figcaption>{label}<small>Project pairing awaiting confirmation</small></figcaption>
+    </figure>;
   }
 
   return (
@@ -32,7 +39,7 @@ export default function BeforeAfterProject({ before, after, label, featured = fa
       data-featured-project-comparison={featured ? '' : undefined}
       style={style}
     >
-      <div className="comparison-stage" data-comparison-stage onMouseMove={followMouse}>
+      <div className="comparison-stage" data-comparison-stage>
         <picture className="comparison-picture comparison-before">
           <source media="(max-width: 767px)" type="image/webp" srcSet={before.variants.thumbnail} sizes="100vw" />
           <source media="(min-width: 768px)" type="image/avif" srcSet={before.variants.avif} sizes="(max-width: 1440px) 50vw, 720px" />
@@ -56,6 +63,7 @@ export default function BeforeAfterProject({ before, after, label, featured = fa
           step="1"
           value={reveal}
           aria-label={`Reveal the finished floor for ${label}`}
+          aria-valuetext={`${reveal}% finished floor`}
           onChange={(event) => setReveal(Number(event.currentTarget.value))}
         />
       </div>

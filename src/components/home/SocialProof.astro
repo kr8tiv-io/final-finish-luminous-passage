@@ -1,0 +1,49 @@
+---
+import proof from '../../data/customer-proof.json';
+import { ratingIsCurrent } from '../../lib/content/review-navigation';
+const { rating, reviews } = proof;
+const currentRating = ratingIsCurrent(rating.verifiedAt, rating.refreshAfterDays);
+const checked = new Intl.DateTimeFormat('en-CA', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'America/Edmonton' }).format(new Date(rating.verifiedAt));
+// Editorial topics describe the adjacent excerpt, not extra customer claims.
+const topics: Record<string,string> = {
+  'Fred Hoetmer': 'Care & detail', 'Nate Whalen': 'Colour & finish',
+  'Antony Bubalo': 'The finished floor', 'sameer jadavji': 'A garage transformed',
+  'Marrabout 123': 'The experience', 'Glenda Clarke': 'Preparation first',
+  'Andrew McCready': 'Process & result', 'Johnathon Medurecan': 'Quality & teamwork',
+  'Jesse Aumiller': 'Working with Denis', 'Joseph Ingram': 'Preparation & repair',
+  'Christian Elkjer': 'Working together', 'Ernesto Giordano': 'The finished floor',
+  'Sean Schaefer': 'The result', 'garry askin': 'Attention to detail',
+  'Frank Santoro': 'Clear communication', 'Kyle Fulton': 'Kept in the loop',
+  'Paul Tran': 'A commercial showroom',
+};
+---
+<section id="customer-reviews" class="white-stage social-proof" data-journey-white-stage aria-labelledby="social-title">
+  <div class="social-heading editorial-width" data-editorial-reveal>
+    <div class="google-rating">
+      {currentRating ? <><a href={rating.source} class="rating-number" aria-label={`${rating.value.toFixed(1)} out of 5 from ${rating.count} Google reviews`}>{rating.value.toFixed(1)}<span aria-hidden="true">/ 5</span></a><span class="review-stars" aria-hidden="true">★★★★★</span><a href={rating.source} class="rating-count">{rating.count}+ reviews on Google <span aria-hidden="true">↗</span></a><small>Checked {checked} · {rating.count} reviews</small></> : <><p class="eyebrow">Customer perspectives</p><a href={rating.source} class="chapter-link">See our latest Google rating ↗</a><small>See Google for the current rating and review count.</small></>}
+    </div>
+    <div class="social-intro">
+      <p class="eyebrow">Final Finish, in their words</p>
+      <h2 id="social-title" class="interlude-title">The word from<br />our customers.</h2>
+      <p>From the first conversation to the finished floor. Hear what customers say about working with Denis and the team.</p>
+      <a class="chapter-link" href={rating.source}>Leave a Google review <span aria-hidden="true">↗</span></a>
+      <small class="review-link-help">Opens Google Maps. Choose “Write a review.”</small>
+    </div>
+  </div>
+  <div class="review-window" data-review-window>
+    <div class="review-gallery" id="review-gallery" role="region" aria-label="Customer review excerpts; scroll horizontally for more" tabindex="0">
+      {reviews.map((review, index) => (
+        <blockquote class="review-card">
+          <div class="review-card-top"><span>{String(index + 1).padStart(2, '0')}</span><span class="review-stars" role="img" aria-label="5 out of 5 stars">★★★★★</span></div>
+          <p>“{review.excerpt}”</p>
+          <footer><div class="review-person"><span class="review-monogram" aria-hidden="true">{review.name.split(' ').filter(Boolean).slice(0,2).map(part => part[0]).join('').toUpperCase()}</span><div><strong>{review.name}</strong><a href={rating.source}>Google review excerpt <span aria-hidden="true">↗</span></a></div></div><p class="review-topic"><span aria-hidden="true"></span>{topics[review.name] || 'Customer experience'}</p></footer>
+        </blockquote>
+      ))}
+    </div>
+  </div>
+  <div class="review-bottom editorial-width">
+    <div><p>Real voices. Individual experiences.</p><a href={rating.source}>Read {currentRating ? `all ${rating.count} reviews` : 'the reviews'} on Google ↗</a></div>
+    <div class="review-controls"><span class="review-position" aria-live="polite" aria-atomic="true">01 / {String(reviews.length).padStart(2, '0')}</span><button type="button" disabled data-review-direction="-1" aria-controls="review-gallery" aria-label="Previous customer review">←</button><button type="button" disabled data-review-direction="1" aria-controls="review-gallery" aria-label="Next customer review">→</button></div>
+  </div>
+  <div class="review-progress editorial-width" aria-hidden="true"><span></span></div>
+</section>

@@ -4,6 +4,7 @@ import sharp from 'sharp';
 import { ConcurrencyGate, SlidingWindowRateLimiter } from '../../../lib/security/request-guards';
 import { createMaskRequestHandler, MaskHandlerError } from '../../../lib/visualizer/mask-handler';
 import { getVisualizerSessionSecret, VISUALIZER_SESSION_MAX_AGE_MS } from '../../../lib/visualizer/session';
+import { automaticDetectionEnabled } from '../../../lib/visualizer/detection-gate';
 
 export const prerender = false;
 
@@ -40,4 +41,7 @@ const handleMaskRequest = createMaskRequestHandler({
   },
 });
 
-export const POST: APIRoute = ({ request, clientAddress }) => handleMaskRequest(request, clientAddress || 'unknown');
+export const POST: APIRoute = ({ request, clientAddress }) => {
+  if (!automaticDetectionEnabled()) return Response.json({ code: 'AI_DETECTION_DISABLED' }, { status: 503, headers: { 'cache-control': 'no-store' } });
+  return handleMaskRequest(request, clientAddress || 'unknown');
+};

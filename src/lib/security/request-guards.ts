@@ -1,6 +1,6 @@
 import { createHmac, timingSafeEqual } from 'node:crypto';
 
-export type RequestGuardCode = 'INVALID_CONTENT_LENGTH' | 'PAYLOAD_TOO_LARGE';
+export type RequestGuardCode = 'INVALID_CONTENT_LENGTH' | 'PAYLOAD_TOO_LARGE' | 'REQUEST_TIMEOUT' | 'REQUEST_ABORTED';
 
 export class RequestGuardError extends Error {
   readonly code: RequestGuardCode;
@@ -21,33 +21,39 @@ export function inspectContentLength(value: string | null, maxBytes: number): { 
   return { ok: true };
 }
 
-export async function readBodyWithLimit(request: Request, maxBytes: number): Promise<Uint8Array> {
+export async function readBodyWithLimit(request: Request, maxBytes: number, { timeoutMs = 15_000 }: { timeoutMs?: number } = {}): Promise<Uint8Array> {
   const framing = inspectContentLength(request.headers.get('content-length'), maxBytes);
   if (!framing.ok) throw new RequestGuardError(framing.code);
+  if (request.signal.aborted) throw new RequestGuardError('REQUEST_ABORTED');
   if (!request.body) return new Uint8Array();
-
   const reader = request.body.getReader();
   const chunks: Uint8Array[] = [];
   let totalBytes = 0;
-
-  while (true) {
-    const { done, value } = await reader.read();
-    if (done) break;
-    totalBytes += value.byteLength;
-    if (totalBytes > maxBytes) {
-      await reader.cancel();
-      throw new RequestGuardError('PAYLOAD_TOO_LARGE');
+  let interrupt!: (error: RequestGuardError) => void;
+  const interrupted = new Promise<never>((_, reject) => { interrupt = reject; });
+  const abort = () => interrupt(new RequestGuardError('REQUEST_ABORTED'));
+  request.signal.addEventListener('abort', abort, { once: true });
+  const timer = setTimeout(() => interrupt(new RequestGuardError('REQUEST_TIMEOUT')), timeoutMs);
+  try {
+    while (true) {
+      const { done, value } = await Promise.race([reader.read(), interrupted]);
+      if (done) break;
+      totalBytes += value.byteLength;
+      if (totalBytes > maxBytes) throw new RequestGuardError('PAYLOAD_TOO_LARGE');
+      chunks.push(value);
     }
-    chunks.push(value);
+    const body = new Uint8Array(totalBytes);
+    let offset = 0;
+    for (const chunk of chunks) { body.set(chunk, offset); offset += chunk.byteLength; }
+    return body;
+  } catch (error) {
+    void reader.cancel(error).catch(() => {});
+    throw error;
+  } finally {
+    clearTimeout(timer);
+    request.signal.removeEventListener('abort', abort);
+    reader.releaseLock();
   }
-
-  const body = new Uint8Array(totalBytes);
-  let offset = 0;
-  for (const chunk of chunks) {
-    body.set(chunk, offset);
-    offset += chunk.byteLength;
-  }
-  return body;
 }
 
 interface RateLimiterOptions {

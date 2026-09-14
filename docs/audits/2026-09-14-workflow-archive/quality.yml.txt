@@ -1,0 +1,59 @@
+name: Quality
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: quality-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      SITE_ENV: staging
+      PUBLIC_SITE_URL: https://staging.example.com
+
+    steps:
+      - name: Check out repository and photo archive
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          lfs: true
+
+      - name: Use Node.js 24
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install locked dependencies
+        run: npm ci
+
+      - name: Static analysis
+        run: npm run check
+
+      - name: Unit and publishing tests
+        run: |
+          npm test
+          npm run test:content
+          npm run test:project-assets
+
+      - name: Validate assets, content, and staging build
+        run: npm run build:staging
+
+      - name: Validate production publishing gate
+        run: npm run build:production
+        env:
+          PUBLIC_SITE_URL: https://www.finalfinishepoxy.ca
+
+      - name: Install browser engines
+        run: npx playwright install --with-deps chromium webkit
+
+      - name: Browser journeys
+        run: npm run test:e2e

@@ -5,43 +5,34 @@ import SiteHeader from '../components/SiteHeader.astro';
 import BaseLayout from '../layouts/BaseLayout.astro';
 
 const title = 'Epoxy Floor Visualizer | Final Finish Epoxy Edmonton';
-const description = 'Upload a garage or room photo and explore 30 flake, solid and metallic epoxy-floor inspirations in a private visualizer.';
+const description = 'Explore 30 epoxy-floor inspirations in your own garage or room photo. Private local preview, practical finish comparisons, and a clear next step with Denis.';
 ---
-
 <BaseLayout title={title} description={description} canonicalPath="/floor-visualizer" imagePath="/images/brand/luminous-finish-hall.jpg">
   <SiteHeader />
   <main id="main-content">
     <section class="visualizer-hero">
-      <div class="alcove-frame" aria-hidden="true">
-        <span></span><span></span><span></span><span></span>
-      </div>
       <div class="visualizer-intro">
-        <p class="eyebrow">The Finish Alcove · 30 inspirations</p>
-        <h1>See the room you have. Try the floor it could become.</h1>
-        <p>Start with a photo from your phone. Choose a finish family, compare the result, and bring the idea into a conversation with Denis.</p>
+        <div>
+          <p class="eyebrow">The Finish Studio · Edmonton</p>
+          <h1>Your space.<br />A new surface.</h1>
+        </div>
+        <p>Explore 30 finish inspirations. Add your room, define the floor, and compare your favourites. Your photo stays on this device unless you choose to send it.</p>
       </div>
     </section>
-
-    <FloorVisualizer client:visible />
+    <FloorVisualizer client:load />
   </main>
   <SiteFooter />
 </BaseLayout>
-
 <style>
-  .visualizer-hero { position: relative; display: grid; place-items: center; min-height: 78svh; padding: 10rem var(--gutter) 5rem; overflow: hidden; background: radial-gradient(ellipse at 50% 14%, white, transparent 34%), linear-gradient(145deg, #f8f5ed, #d7d1c7); }
-  .visualizer-intro { position: relative; z-index: 2; width: min(100%, 68rem); text-align: center; }
-  .visualizer-intro h1 { max-width: 12ch; margin: 0 auto; font-family: var(--serif); font-size: clamp(4rem, 8.4vw, 9.2rem); font-weight: 400; letter-spacing: -.056em; line-height: .84; text-wrap: balance; }
-  .visualizer-intro > p:last-child { max-width: 42rem; margin: 2rem auto 0; color: var(--muted); font-size: clamp(1rem, 1.4vw, 1.22rem); }
-  .alcove-frame { position: absolute; inset: 7rem 5vw 0; display: grid; grid-template-columns: 1fr 8fr 1fr; border: 1px solid rgba(22,79,131,.13); border-bottom: 0; border-radius: 50% 50% 0 0 / 20% 20% 0 0; opacity: .82; }
-  .alcove-frame span { border-inline: 1px solid rgba(22,79,131,.13); }
-  .alcove-frame span:nth-child(2) { grid-column: 3; }
-  .alcove-frame span:nth-child(3) { position: absolute; top: 17%; left: 12%; width: 76%; height: 1px; background: rgba(22,79,131,.12); }
-  .alcove-frame span:nth-child(4) { position: absolute; bottom: 11%; left: 7%; width: 86%; height: 1px; background: rgba(22,79,131,.12); }
-  @media (max-width: 1440px) {
-    .visualizer-hero { min-height: 48svh; padding: 7rem var(--gutter) 2.25rem; }
-    .visualizer-intro h1 { font-size: clamp(2.6rem, 5.6vw, 5.4rem); }
-    .visualizer-intro > p:last-child { margin-top: 1.2rem; }
-    .alcove-frame { inset: 5.5rem 4vw 0; }
+  .visualizer-hero { padding: clamp(7rem,11vw,10rem) var(--gutter) 3rem; }
+  .visualizer-intro { display: grid; grid-template-columns: 1.2fr 1fr; align-items: end; gap: 3rem; width: min(100%,1450px); margin: auto; }
+  .eyebrow { font-size: .65rem; letter-spacing: .13em; margin-bottom: 1.25rem; }
+  .visualizer-intro h1 { margin: 0; font-family: var(--sans); font-size: clamp(2.8rem,5.5vw,5.8rem); font-weight: 470; letter-spacing: -.065em; line-height: 1.04; }
+  .visualizer-intro > p { max-width: 29rem; margin: 0 0 .35rem; color: var(--muted); font-size: 1rem; line-height: 1.75; }
+  @media(max-width:700px) {
+    .visualizer-hero { padding: 6rem var(--gutter) 1.8rem; }
+    .visualizer-intro { grid-template-columns: 1fr; gap: 1.25rem; }
+    .visualizer-intro h1 { font-size: clamp(2.65rem,10vw,4rem); }
+    .visualizer-intro > p { font-size: .85rem; line-height: 1.65; }
   }
-  @media (max-width: 620px) { .visualizer-hero { min-height: 70svh; padding-inline: 1rem; } .alcove-frame { inset-inline: .75rem; } }
 </style>

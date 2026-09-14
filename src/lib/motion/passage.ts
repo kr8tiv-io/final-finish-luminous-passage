@@ -124,15 +124,17 @@ export function pourTimeFromProgress(progress: number, duration: number): number
   return t * duration;
 }
 
+const PAPER_GRADE = { paper: '#f4f1e9', ink: '#17222a', cobalt: '#164f83' };
+
 export const ROOM_GRADE: Record<string, { paper: string; ink: string; cobalt: string }> = {
-  portico: { paper: '#f7f3e9', ink: '#17222a', cobalt: '#164f83' },
-  foundation: { paper: '#e4ddd2', ink: '#1b2428', cobalt: '#1a4a6e' },
-  garage: { paper: '#ebe6dc', ink: '#17222a', cobalt: '#164f83' },
-  vault: { paper: '#1a1c1e', ink: '#f4f1e9', cobalt: '#8bb8d0' },
-  'finish-hall': { paper: '#16324a', ink: '#17222a', cobalt: '#6fa6ca' },
-  commercial: { paper: '#e8e4db', ink: '#17222a', cobalt: '#164f83' },
-  proof: { paper: '#fbfaf5', ink: '#17222a', cobalt: '#164f83' },
-  consultation: { paper: '#ded8cc', ink: '#17222a', cobalt: '#164f83' },
+  portico: PAPER_GRADE,
+  foundation: PAPER_GRADE,
+  garage: PAPER_GRADE,
+  vault: PAPER_GRADE,
+  'finish-hall': PAPER_GRADE,
+  commercial: PAPER_GRADE,
+  proof: PAPER_GRADE,
+  consultation: PAPER_GRADE,
 };
 
 export const DOM_TO_WALK: Record<string, WalkChapter> = {

@@ -1,5 +1,5 @@
-const PIN_HOLD = 0.72;
-const PIN_SHARE = 0.55;
+const PIN_HOLD = 0.38;
+const PIN_SHARE = 0.72;
 
 function clamp01(value: number): number {
   if (!Number.isFinite(value)) return 0;

@@ -1,22 +1,76 @@
 ---
-import BaseLayout from '../layouts/BaseLayout.astro'; import SiteHeader from '../components/SiteHeader.astro'; import SiteFooter from '../components/SiteFooter.astro'; import QuoteForm from '../components/quote/QuoteForm';
+import BaseLayout from '../layouts/BaseLayout.astro';
+import SiteHeader from '../components/SiteHeader.astro';
+import SiteFooter from '../components/SiteFooter.astro';
+import QuoteForm from '../components/quote/QuoteForm';
 ---
-<BaseLayout title="Request an Epoxy Flooring Quote | Final Finish Edmonton" description="Tell Denis about your Edmonton epoxy flooring project or call Final Finish at 780-991-1651." canonicalPath="/contact" imagePath="/images/brand/consultation-court.jpg"><SiteHeader /><main id="main-content" class="contact-page"><section class="contact-intro"><p class="eyebrow">A useful first conversation</p><h1>Tell Denis about the floor.</h1><p>Share the place, type of space, rough size, current condition, timing and finish direction. Photos are welcome but optional.</p><ul class="quote-factors"><li>Square footage</li><li>Moisture and oil</li><li>Old coating</li><li>Cove and stairs</li><li>Furniture move-out</li></ul><div class="direct-contact"><a href="tel:+17809911651">Call Denis · (780) 991-1651</a><a href="mailto:finalfinishepoxy@gmail.com">finalfinishepoxy@gmail.com</a></div></section><section id="quote" class="quote-panel quote-desk"><QuoteForm client:load /></section></main><SiteFooter /></BaseLayout>
-<style>.contact-page{display:grid;grid-template-columns:minmax(0,.8fr) minmax(24rem,1.2fr);gap:clamp(3rem,7vw,8rem);width:min(100%,var(--max));margin:0 auto;padding:12rem var(--gutter) 7rem}.contact-intro h1{max-width:9ch;margin:0;font-family:var(--serif);font-size:clamp(4rem,8vw,8rem);font-weight:400;letter-spacing:-.055em;line-height:.85}.contact-intro>p{max-width:32rem;color:var(--muted)}.quote-factors{display:flex;flex-wrap:wrap;gap:.4rem .9rem;margin:1.4rem 0 0;padding:0;list-style:none;color:var(--muted);font-size:.72rem;letter-spacing:.08em;text-transform:uppercase}.direct-contact{display:flex;flex-direction:column;align-items:flex-start;gap:.5rem;margin-top:2rem}.quote-panel{padding:clamp(1.5rem,4vw,4rem);border:1px solid var(--line);background:#fbfaf5;box-shadow:var(--shadow)}.quote-desk{background:linear-gradient(180deg,#fffef8,#f4efe4 62%,#efe8da);box-shadow:var(--shadow),inset 0 1px 0 rgba(255,255,255,.7)}:global(.quote-form){display:grid;gap:2rem}:global(.quote-progress){display:flex;align-items:center;justify-content:space-between;gap:1rem}:global(.quote-progress p){margin:0;color:var(--cobalt);font-size:.7rem;font-weight:780;letter-spacing:.12em;text-transform:uppercase}:global(.quote-progress progress){width:50%;accent-color:var(--cobalt)}:global(.quote-form fieldset){display:grid;gap:1rem;margin:0;padding:0;border:0}:global(.quote-form legend){font-family:var(--serif);font-size:3rem;line-height:1}:global(.quote-form fieldset>p){color:var(--muted);font-size:.85rem}:global(.quote-form label){display:grid;gap:.5rem;font-size:.72rem;font-weight:760;letter-spacing:.08em;text-transform:uppercase}:global(.quote-form input){min-height:3.4rem;padding:.8rem 1rem;border:1px solid var(--line);background:white}:global(.quote-actions){display:flex;justify-content:flex-end}:global(.quote-actions button){min-height:3.2rem;padding:.8rem 1.2rem;border:0;border-radius:999px;background:var(--cobalt);color:white;font-size:.72rem;font-weight:760;letter-spacing:.08em;text-transform:uppercase}:global(.quote-actions button:disabled){opacity:.36}@media(max-width:840px){.contact-page{grid-template-columns:1fr;padding-top:9rem}}</style>
+<BaseLayout title="Request an Epoxy Flooring Quote | Final Finish Edmonton" description="Plan your Edmonton garage, basement, workshop or commercial floor with Denis. Tell Final Finish about your concrete, finish preferences, and project scope." canonicalPath="/contact" imagePath="/images/brand/consultation-court.jpg">
+  <SiteHeader />
+  <main id="main-content" class="contact-page">
+    <section class="contact-intro">
+      <p class="eyebrow">A useful first conversation</p>
+      <h1>Let’s talk about your space.</h1>
+      <p>You do not need all the answers. Start with where the room is and how you would like to use it. Denis can help clarify the preparation, finish, and scope.</p>
+      <div class="direct-contact">
+        <a href="tel:+17809911651">Call Denis · (780) 991-1651</a>
+        <a href="mailto:finalfinishepoxy@gmail.com">finalfinishepoxy@gmail.com</a>
+      </div>
+      <div class="quote-context">
+        <h2>What shapes a quote?</h2>
+        <p>Floor area, concrete condition, old coatings, repairs, the chosen finish, and access to the space. Photos are helpful, but always optional.</p>
+        <a href="/services/concrete-solutions">Understand the preparation ↗</a>
+      </div>
+    </section>
+    <section id="quote" class="quote-panel" aria-label="Your project brief"><QuoteForm client:load /></section>
+  </main>
+  <SiteFooter />
+</BaseLayout>
 <style>
-  :global(.choice-grid) { display: grid; grid-template-columns: repeat(2, 1fr); gap: .65rem; }
-  :global(.choice-grid label), :global(.consent-row) { display: flex !important; align-items: center; gap: .7rem !important; min-height: 3rem; padding: .7rem; border: 1px solid var(--line); background: white; cursor: pointer; }
-  :global(.choice-grid input), :global(.consent-row input) { width: 1rem; min-height: 1rem !important; padding: 0 !important; accent-color: var(--cobalt); }
-  :global(.choice-grid.compact) { grid-template-columns: repeat(3, 1fr); }
-  :global(.quote-form h3) { margin: 1rem 0 0; font-family: var(--serif); font-size: 1.5rem; font-weight: 400; }
-  :global(.quote-form textarea) { resize: vertical; padding: .8rem 1rem; border: 1px solid var(--line); background: white; }
-  :global(.contact-fields) { display: grid; gap: .8rem; }
+  .contact-page { display: grid; grid-template-columns: minmax(0,.9fr) minmax(24rem,1fr); gap: clamp(3rem,8vw,9rem); width: min(100%,var(--max)); margin: auto; padding: 10rem var(--gutter) 8rem; }
+  .contact-intro h1 { max-width: 10ch; margin: 0; font-family: var(--sans); font-size: clamp(3rem,5.4vw,6rem); font-weight: 470; letter-spacing: -.06em; line-height: 1.04; }
+  .contact-intro > p:not(.eyebrow) { max-width: 29rem; color: var(--muted); line-height: 1.8; margin-top: 2rem; }
+  .direct-contact { display: grid; gap: .4rem; margin-top: 1.6rem; font-size: .85rem; }
+  .direct-contact a { display: inline-flex; align-items: center; min-height: 44px; color: var(--cobalt); text-underline-offset: .3rem; }
+  .quote-context { margin-top: 4rem; max-width: 26rem; }
+  .quote-context h2 { font-size: 1.1rem; font-weight: 600; }
+  .quote-context p { font-size: .88rem; color: var(--muted); line-height: 1.8; }
+  .quote-context a { font-size: .8rem; color: var(--cobalt); text-underline-offset: .3rem; }
+  .quote-panel { min-width: 0; scroll-margin-top: 6rem; }
+  :global(.quote-form) { display: grid; gap: 1.6rem; background: transparent; box-shadow: none; }
+  :global(.quote-progress) { display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
+  :global(.quote-progress p) { margin: 0; color: var(--cobalt); font-size: .65rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }
+  :global(.quote-progress progress) { width: 45%; height: 3px; accent-color: var(--cobalt); }
+  :global(.quote-selected-finish) { font-size: .85rem; line-height: 1.6; padding: 1.1rem 1.2rem; margin: 0; border-radius: .5rem; background: #eef2f4; }
+  :global(.quote-selected-finish small) { color: var(--muted); }
+  :global(.quote-form fieldset) { display: grid; gap: 1rem; margin: 0; padding: 0; border: 0; min-width: 0; }
+  :global(.quote-form legend) { font: 500 clamp(1.7rem,2.5vw,2.4rem)/1.16 var(--sans); letter-spacing: -.04em; margin-bottom: 1.8rem; max-width: 22ch; }
+  :global(.quote-form fieldset > p) { color: var(--muted); font-size: .85rem; }
+  :global(.quote-form label) { display: grid; gap: .5rem; font-size: .8rem; font-weight: 600; }
+  :global(.quote-form input:not([type="checkbox"]):not([type="radio"])), :global(.quote-form select), :global(.quote-form textarea) { width: 100%; min-height: 48px; padding: .8rem 1rem; border: 1px solid #bcc6cb; border-radius: .3rem; background: white; color: var(--ink); font: 400 16px/1.4 var(--sans); }
+  :global(.quote-form textarea) { resize: vertical; }
+  :global(.quote-form summary) { padding-block: .8rem; min-height: 44px; cursor: pointer; color: var(--cobalt); font-size: .85rem; }
+  :global(.quote-form details p) { font-size: .8rem; line-height: 1.7; color: var(--muted); }
+  :global(.quote-form h3) { margin: 1rem 0 0; font: 600 .9rem/1.4 var(--sans); }
+  :global(.choice-grid) { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: .6rem; }
+  :global(.choice-grid.compact) { grid-template-columns: repeat(3,minmax(0,1fr)); }
+  :global(.quote-form .choice-grid label), :global(.quote-form .consent-row) { display: flex; align-items: center; gap: .6rem; min-height: 48px; padding: .75rem; border: 1px solid var(--line); border-radius: .3rem; background: white; cursor: pointer; font-size: .78rem; font-weight: 500; }
+  :global(.choice-grid label:has(input:checked)) { border-color: var(--cobalt); background: #eff4f7; }
+  :global(.choice-grid input), :global(.consent-row input) { width: 1rem; height: 1rem; flex-shrink: 0; margin: 0; accent-color: var(--cobalt); }
   :global(.quote-honeypot) { position: absolute !important; left: -10000px !important; width: 1px !important; height: 1px !important; overflow: hidden !important; }
-  :global(.quote-actions) { gap: .7rem; }
+  :global(.quote-actions) { display: flex; gap: .7rem; justify-content: flex-end; align-items: center; }
+  :global(.quote-actions button) { min-height: 48px; padding: .8rem 1.3rem; border: 0; border-radius: 999px; background: var(--cobalt); color: white; font-size: .78rem; font-weight: 600; cursor: pointer; }
+  :global(.quote-actions button:disabled) { opacity: .45; cursor: not-allowed; }
   :global(.quote-actions .back-button) { margin-right: auto; border: 1px solid var(--line); background: transparent; color: var(--ink); }
-  :global(.form-error) { margin: 0; color: #8c2f25; }
-  :global(.quote-success h2) { max-width: 9ch; margin: 0; font-family: var(--serif); font-size: clamp(3rem, 5vw, 5rem); font-weight: 400; line-height: .92; }
+  :global(.form-error) { margin: 0; color: #8c2f25; font-size: .88rem; line-height: 1.6; }
+  :global(.quote-success h2) { font: 470 clamp(2rem,3.5vw,3.5rem)/1.1 var(--sans); letter-spacing: -.045em; }
   :global(.quote-success p) { color: var(--muted); }
-  :global(.quote-success a) { color: var(--cobalt-dark); text-underline-offset: .3rem; }
-  @media (max-width: 560px) { :global(.choice-grid), :global(.choice-grid.compact) { grid-template-columns: 1fr; } }
+  @media(max-width:840px) {
+    .contact-page { grid-template-columns: 1fr; padding-top: 7rem; gap: 3rem; }
+    .contact-intro h1 { max-width: 15ch; }
+    .quote-context { display: none; }
+  }
+  @media(max-width:420px) {
+    :global(.choice-grid.compact) { grid-template-columns: repeat(2,minmax(0,1fr)); }
+    :global(.quote-actions button) { padding-inline: 1rem; }
+  }
 </style>

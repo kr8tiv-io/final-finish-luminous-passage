@@ -1,8 +1,32 @@
-import { Canvas, useFrame, useThree } from '@react-three/fiber';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { Canvas, useThree } from '@react-three/fiber';
+import { Suspense, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
 import * as THREE from 'three';
-import { SVGLoader } from 'three/examples/jsm/loaders/SVGLoader.js';
-import { CHAPTER_ORDER } from '../../lib/motion/passage';
+import { journeyControls } from '../../lib/motion/journey-controls';
+import {
+  JOURNEY_CHAPTER_IDS,
+  JOURNEY_COMPOSITOR_READY_EVENT,
+  journeyDirector,
+  removeJourneyEnhancement,
+  type JourneyChapterId,
+} from '../../lib/motion/journey-director';
+import {
+  coverUvTransform,
+  endpointBlend,
+  journeyEnhancementReady,
+  advanceVeilPaintConfirmation,
+  transitionPlateChoice,
+  veilCanvasShouldHide,
+  veilFrameRequired,
+  veilVisible,
+} from '../../lib/motion/journey-media';
+import { thresholdStudyEnabled } from '../../lib/motion/journey-threshold';
+import {
+  resolveJourneyTransition,
+  transitionBoundaryKey,
+  transitionLockAction,
+  transitionRenderKey,
+} from '../../lib/motion/journey-transitions';
+import ThresholdTravel from './ThresholdTravel';
 
 const VERT = /* glsl */ `
 varying vec2 vUv;
@@ -12,250 +36,505 @@ void main() {
 }
 `;
 
-const FRAG = /* glsl */ `
+export const FILM_VEIL_FRAGMENT_SHADER = /* glsl */ `
 uniform sampler2D tFrom;
 uniform sampler2D tTo;
 uniform float uProgress;
-uniform float uTime;
+uniform float uVisible;
+uniform float uMode;
+uniform float uDirection;
+uniform float uAspect;
+uniform vec2 uEndpointBlend;
+uniform vec2 uFromScale;
+uniform vec2 uFromOffset;
+uniform vec2 uToScale;
+uniform vec2 uToOffset;
 varying vec2 vUv;
 
-float hash(vec2 p) {
-  return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453123);
+float easeInOut(float value) {
+  float t = clamp(value, 0.0, 1.0);
+  return t * t * (3.0 - 2.0 * t);
 }
 
-float noise(vec2 p) {
-  vec2 i = floor(p);
-  vec2 f = fract(p);
-  f = f * f * (3.0 - 2.0 * f);
-  float a = hash(i);
-  float b = hash(i + vec2(1.0, 0.0));
-  float c = hash(i + vec2(0.0, 1.0));
-  float d = hash(i + vec2(1.0, 1.0));
-  return mix(mix(a, b, f.x), mix(c, d, f.x), f.y);
-}
-
-float fbm(vec2 p) {
-  float v = 0.0;
-  float a = 0.5;
-  for (int i = 0; i < 4; i++) {
-    v += a * noise(p);
-    p *= 2.07;
-    a *= 0.5;
-  }
-  return v;
+float staticUndulation(vec2 uv) {
+  float broad = sin(uv.y * 6.2831853 + sin(uv.x * 3.1415927) * 0.7);
+  float fine = sin(uv.y * 12.5663706 - uv.x * 4.7123890);
+  return broad * 0.018 + fine * 0.007;
 }
 
 void main() {
-  float p = clamp(uProgress, 0.0, 1.0);
-  vec4 from = texture2D(tFrom, vUv);
-  vec4 to = texture2D(tTo, vUv);
-  float luma = dot(from.rgb, vec3(0.299, 0.587, 0.114));
-  float n = fbm(vUv * 3.2 + vec2(uTime * 0.02, p * 0.35));
-  float edge = smoothstep(p - 0.18, p + 0.22, n * 0.55 + luma * 0.25);
-  vec3 color = mix(from.rgb, to.rgb, edge);
-  float alpha = sin(p * 3.14159265) * 0.92;
-  gl_FragColor = vec4(color, alpha);
+  vec4 fromColor = texture2D(tFrom, vUv * uFromScale + uFromOffset);
+  vec4 toColor = texture2D(tTo, vUv * uToScale + uToOffset);
+  vec4 outputColor;
+  if (uVisible <= 0.0) {
+    outputColor = vec4(0.0);
+  } else if (uEndpointBlend.y <= 0.0) {
+    outputColor = vec4(fromColor.rgb, 0.0);
+  } else if (uEndpointBlend.x <= 0.0) {
+    outputColor = vec4(toColor.rgb, 0.0);
+  } else {
+    float progress = clamp(uProgress, 0.0, 1.0);
+    float eased = easeInOut(progress);
+    float organic = staticUndulation(vUv);
+    float toWeight;
+    float light = 0.0;
+
+    if (uMode < 0.5) {
+      toWeight = smoothstep(0.22, 0.78, progress + organic);
+      light = pow(sin(progress * 3.14159265), 1.45) * 0.62;
+    } else if (uMode < 1.5) {
+      vec2 centred = abs(vUv - 0.5) * vec2(min(uAspect, 1.65), 1.0);
+      float apertureDistance = max(centred.x * 0.82, centred.y) + organic;
+      float aperture = mix(-0.25, 1.05, eased);
+      toWeight = 1.0 - smoothstep(aperture - 0.16, aperture + 0.16, apertureDistance);
+      light = exp(-pow((apertureDistance - aperture) / 0.17, 2.0)) * sin(progress * 3.14159265) * 0.16;
+    } else {
+      float axis = uDirection > 0.0 ? vUv.x : 1.0 - vUv.x;
+      float fold = mix(-0.24, 1.24, eased);
+      float foldedAxis = axis + organic;
+      toWeight = 1.0 - smoothstep(fold - 0.15, fold + 0.15, foldedAxis);
+      light = exp(-pow((foldedAxis - fold) / 0.16, 2.0)) * sin(progress * 3.14159265) * 0.13;
+    }
+
+    vec3 composite = mix(fromColor.rgb, toColor.rgb, clamp(toWeight, 0.0, 1.0));
+    composite = mix(composite, vec3(0.973, 0.969, 0.952), clamp(light, 0.0, 0.72));
+    outputColor = vec4(composite, 1.0);
+  }
+  gl_FragColor = outputColor;
+  #include <colorspace_fragment>
 }
 `;
 
-type Plate = {
-  video: HTMLVideoElement | null;
-  image: HTMLImageElement | null;
+type PlateDom = {
+  readonly video: HTMLVideoElement | null;
+  readonly image: HTMLImageElement | null;
+  objectPosition: readonly [number, number];
 };
 
-function readPlates(): Plate[] {
-  return CHAPTER_ORDER.map((key) => {
-    const chapter = document.querySelector<HTMLElement>(`[data-journey-chapter="${key}"]`);
-    if (!chapter) return { video: null, image: null };
-    const video = chapter.querySelector<HTMLVideoElement>('.pour-film, .floor-film-video');
-    const image =
-      chapter.querySelector<HTMLImageElement>('.floor-film-poster, .pour-poster') ??
-      chapter.querySelector<HTMLImageElement>('picture img, img');
-    return { video, image };
+type PlateBinding = PlateDom & {
+  posterTexture: THREE.Texture | null;
+  videoTexture: THREE.VideoTexture | null;
+  posterReady: boolean;
+  readonly cleanups: Array<() => void>;
+};
+
+type LockedTransition = {
+  readonly key: string;
+  readonly from: { readonly binding: PlateBinding | null; readonly texture: THREE.Texture };
+  readonly to: { readonly binding: PlateBinding | null; readonly texture: THREE.Texture };
+};
+
+function parseObjectPosition(element: Element | null): readonly [number, number] {
+  if (!element) return [0.55, 0.58];
+  const values = getComputedStyle(element).objectPosition.split(/\s+/).map((value) => Number.parseFloat(value) / 100);
+  return [Number.isFinite(values[0]) ? values[0] : 0.55, Number.isFinite(values[1]) ? values[1] : 0.58];
+}
+
+function readPlates(): PlateDom[] {
+  return JOURNEY_CHAPTER_IDS.map((id) => {
+    const chapter = document.querySelector<HTMLElement>(`.journey [data-journey-chapter="${id}"]`);
+    const video = chapter?.querySelector<HTMLVideoElement>('.pour-film, .floor-film-video') ?? null;
+    const image = chapter?.querySelector<HTMLImageElement>('.floor-film-poster, .pour-poster, picture img, img') ?? null;
+    return { video, image, objectPosition: parseObjectPosition(video ?? image) };
   });
 }
 
-function bindPlate(plate: Plate, fallback: THREE.Texture, invalidate: () => void): THREE.Texture {
-  if (plate.video) {
-    const texture = new THREE.VideoTexture(plate.video);
-    texture.colorSpace = THREE.SRGBColorSpace;
-    texture.minFilter = THREE.LinearFilter;
-    texture.magFilter = THREE.LinearFilter;
-    texture.generateMipmaps = false;
-    return texture;
+function textureDimensions(binding: PlateBinding | null, texture: THREE.Texture): readonly [number, number] {
+  if (!binding) return [1, 1];
+  if (texture === binding.videoTexture && binding.video) return [binding.video.videoWidth, binding.video.videoHeight];
+  if (texture === binding.posterTexture) {
+    const image = binding.posterTexture.image as { width?: number; height?: number } | undefined;
+    return [image?.width ?? 1, image?.height ?? 1];
   }
-  if (plate.image?.currentSrc || plate.image?.src) {
-    const texture = new THREE.TextureLoader().load(plate.image.currentSrc || plate.image.src, () => invalidate());
-    texture.colorSpace = THREE.SRGBColorSpace;
-    texture.minFilter = THREE.LinearFilter;
-    texture.magFilter = THREE.LinearFilter;
-    texture.generateMipmaps = false;
-    return texture;
-  }
-  return fallback;
+  return [1, 1];
 }
 
-function MixMesh({ active }: { active: boolean }) {
+function MixMesh({ active, onFirstPlateReady }: { active: boolean; onFirstPlateReady: () => void }) {
   const invalidate = useThree((state) => state.invalidate);
+  const gl = useThree((state) => state.gl);
+  const size = useThree((state) => state.size);
+  const snapshot = useSyncExternalStore(
+    journeyDirector.subscribe,
+    journeyDirector.getSnapshot,
+    journeyDirector.getServerSnapshot,
+  );
   const fallback = useMemo(() => {
-    const texture = new THREE.Texture();
+    const texture = new THREE.DataTexture(new Uint8Array([250, 249, 246, 255]), 1, 1, THREE.RGBAFormat);
     texture.colorSpace = THREE.SRGBColorSpace;
+    texture.needsUpdate = true;
     return texture;
   }, []);
-  const texturesRef = useRef<THREE.Texture[]>([]);
-  const last = useRef({ progress: -1, from: -1, to: -1 });
-
-  const material = useMemo(() => {
-    return new THREE.ShaderMaterial({
-      uniforms: {
-        tFrom: { value: fallback },
-        tTo: { value: fallback },
-        uProgress: { value: 0 },
-        uTime: { value: 0 },
-      },
-      vertexShader: VERT,
-      fragmentShader: FRAG,
-      transparent: true,
-      depthTest: false,
-      depthWrite: false,
-    });
-  }, [fallback]);
+  const bindings = useRef<PlateBinding[]>([]);
+  const lockedTransition = useRef<LockedTransition | null>(null);
+  const previousVeilVisible = useRef(false);
+  const renderedBoundary = useRef<string | null>(null);
+  const paintConfirmation = useRef({ renderKey: null as string | null, passes: 0 });
+  const firstReadySent = useRef(false);
+  const [mediaRevision, setMediaRevision] = useState(0);
+  const [transitionReady, setTransitionReady] = useState(false);
+  const material = useMemo(() => new THREE.ShaderMaterial({
+    uniforms: {
+      tFrom: { value: fallback },
+      tTo: { value: fallback },
+      uProgress: { value: 0 },
+      uVisible: { value: 0 },
+      uMode: { value: 0 },
+      uDirection: { value: 1 },
+      uAspect: { value: 1 },
+      uEndpointBlend: { value: new THREE.Vector2(1, 0) },
+      uFromScale: { value: new THREE.Vector2(1, 1) },
+      uFromOffset: { value: new THREE.Vector2(0, 0) },
+      uToScale: { value: new THREE.Vector2(1, 1) },
+      uToOffset: { value: new THREE.Vector2(0, 0) },
+    },
+    vertexShader: VERT,
+    fragmentShader: FILM_VEIL_FRAGMENT_SHADER,
+    transparent: true,
+    depthTest: false,
+    depthWrite: false,
+    toneMapped: false,
+  }), [fallback]);
 
   useEffect(() => {
-    const plates = readPlates();
-    const textures = plates.map((plate) => bindPlate(plate, fallback, invalidate));
-    texturesRef.current = textures;
-    material.uniforms.tFrom.value = textures[0] ?? fallback;
-    material.uniforms.tTo.value = textures[1] ?? textures[0] ?? fallback;
-    invalidate();
-    return () => {
-      for (const texture of textures) {
-        if (texture !== fallback) texture.dispose();
+    const loader = new THREE.TextureLoader();
+    let disposed = false;
+    const nextBindings = readPlates().map<PlateBinding>((plate) => ({
+      ...plate,
+      posterTexture: null,
+      videoTexture: null,
+      posterReady: false,
+      cleanups: [],
+    }));
+    bindings.current = nextBindings;
+
+    nextBindings.forEach((binding) => {
+      const posterUrl = binding.image?.currentSrc || binding.image?.src;
+      if (posterUrl) {
+        binding.posterTexture = loader.load(posterUrl, (texture) => {
+          if (disposed) {
+            texture.dispose();
+            return;
+          }
+          texture.colorSpace = THREE.SRGBColorSpace;
+          texture.minFilter = THREE.LinearFilter;
+          texture.magFilter = THREE.LinearFilter;
+          texture.generateMipmaps = false;
+          binding.posterReady = true;
+          setMediaRevision((revision) => revision + 1);
+        });
       }
-      texturesRef.current = [];
+      if (binding.video) {
+        binding.videoTexture = new THREE.VideoTexture(binding.video);
+        binding.videoTexture.colorSpace = THREE.SRGBColorSpace;
+        binding.videoTexture.minFilter = THREE.LinearFilter;
+        binding.videoTexture.magFilter = THREE.LinearFilter;
+        binding.videoTexture.generateMipmaps = false;
+        const ready = () => setMediaRevision((revision) => revision + 1);
+        ['loadeddata', 'canplay', 'resize', 'seeked'].forEach((event) => {
+          binding.video?.addEventListener(event, ready);
+          binding.cleanups.push(() => binding.video?.removeEventListener(event, ready));
+        });
+      }
+    });
+    setMediaRevision((revision) => revision + 1);
+
+    return () => {
+      disposed = true;
+      nextBindings.forEach((binding) => {
+        binding.cleanups.forEach((cleanup) => cleanup());
+        binding.posterTexture?.dispose();
+        binding.videoTexture?.dispose();
+      });
+      bindings.current = [];
     };
-  }, [fallback, invalidate, material]);
+  }, []);
 
-  useEffect(() => () => material.dispose(), [material]);
+  useEffect(() => {
+    bindings.current.forEach((binding) => {
+      binding.objectPosition = parseObjectPosition(binding.video ?? binding.image);
+    });
+    setMediaRevision((revision) => revision + 1);
+  }, [size.height, size.width]);
 
-  useFrame(({ clock }) => {
-    if (!active) return;
-    const journey = document.querySelector<HTMLElement>('.journey');
-    if (!journey) return;
-    const style = getComputedStyle(journey);
-    const progress = Math.min(1, Math.max(0, parseFloat(style.getPropertyValue('--dissolve')) || 0));
-    const from = Math.min(texturesRef.current.length - 1, Math.max(0, Number.parseInt(style.getPropertyValue('--dissolve-from'), 10) || 0));
-    const to = Math.min(texturesRef.current.length - 1, Math.max(0, Number.parseInt(style.getPropertyValue('--dissolve-to'), 10) || 0));
-    const fromTex = texturesRef.current[from] ?? fallback;
-    const toTex = texturesRef.current[to] ?? fromTex;
-    if (material.uniforms.tFrom.value !== fromTex) material.uniforms.tFrom.value = fromTex;
-    if (material.uniforms.tTo.value !== toTex) material.uniforms.tTo.value = toTex;
-    material.uniforms.uProgress.value = progress;
-    material.uniforms.uTime.value = clock.elapsedTime;
-    if (progress !== last.current.progress || from !== last.current.from || to !== last.current.to || progress > 0.02) {
-      last.current = { progress, from, to };
-      invalidate();
+  useLayoutEffect(() => {
+    const bindingFor = (id: JourneyChapterId) => bindings.current[JOURNEY_CHAPTER_IDS.indexOf(id)] ?? null;
+    const textureFor = (binding: PlateBinding | null, outgoing: boolean) => {
+      if (!binding) return null;
+      const posterImage = binding.posterTexture?.image as { width?: number; height?: number } | undefined;
+      const choice = transitionPlateChoice({
+        image: binding.posterReady ? {
+          complete: true,
+          naturalWidth: posterImage?.width ?? binding.image?.naturalWidth ?? 0,
+          naturalHeight: posterImage?.height ?? binding.image?.naturalHeight ?? 0,
+        } : null,
+        video: binding.video,
+      }, outgoing);
+      if (choice === 'video') return binding.videoTexture;
+      if (choice === 'poster') return binding.posterTexture;
+      return null;
+    };
+    const activeBinding = bindingFor(snapshot.activeChapter);
+    const activeTexture = textureFor(activeBinding, true);
+    if (!firstReadySent.current && activeTexture) {
+      firstReadySent.current = true;
+      onFirstPlateReady();
     }
-  });
+
+    const interior = snapshot.transitionProgress > 0 && snapshot.transitionProgress < 1;
+    const key = transitionRenderKey(
+      snapshot.fromChapter,
+      snapshot.toChapter,
+      snapshot.transitionFromWhite,
+    );
+    const lockAction = transitionLockAction(
+      lockedTransition.current?.key ?? null,
+      key,
+      interior,
+      snapshot.whiteStageActive,
+    );
+    if (lockAction === 'clear') {
+      lockedTransition.current = null;
+    } else if (lockAction === 'acquire') {
+      const fromBinding = bindingFor(snapshot.fromChapter);
+      const toBinding = bindingFor(snapshot.toChapter);
+      const movingForward = snapshot.scrollDirection >= 0;
+      const fromTexture = snapshot.transitionFromWhite ? fallback : textureFor(fromBinding, movingForward);
+      const toTexture = textureFor(toBinding, !movingForward);
+      lockedTransition.current = (snapshot.transitionFromWhite || fromBinding) && toBinding && fromTexture && toTexture
+        ? {
+            key,
+            from: { binding: snapshot.transitionFromWhite ? null : fromBinding, texture: fromTexture },
+            to: { binding: toBinding, texture: toTexture },
+          }
+        : null;
+    }
+
+    const locked = lockedTransition.current?.key === key ? lockedTransition.current : null;
+    setTransitionReady(Boolean(locked));
+    material.userData.renderKey = locked ? key : null;
+    material.userData.boundaryKey = locked
+      ? transitionBoundaryKey(snapshot.fromChapter, snapshot.toChapter)
+      : null;
+    material.userData.snapshotRevision = snapshot.revision;
+    material.userData.transitionProgress = snapshot.transitionProgress;
+    if (locked) {
+      const style = resolveJourneyTransition(snapshot.fromChapter, snapshot.toChapter);
+      material.uniforms.tFrom.value = locked.from.texture;
+      material.uniforms.tTo.value = locked.to.texture;
+      material.uniforms.uMode.value = style.mode;
+      material.uniforms.uDirection.value = style.direction;
+      material.uniforms.uAspect.value = size.width / Math.max(1, size.height);
+      const fromDimensions = textureDimensions(locked.from.binding, locked.from.texture);
+      const toDimensions = textureDimensions(locked.to.binding, locked.to.texture);
+      const fromUv = coverUvTransform(
+        fromDimensions[0],
+        fromDimensions[1],
+        size.width,
+        size.height,
+        locked.from.binding?.objectPosition,
+      );
+      const toUv = coverUvTransform(
+        toDimensions[0],
+        toDimensions[1],
+        size.width,
+        size.height,
+        locked.to.binding?.objectPosition,
+      );
+      material.uniforms.uFromScale.value.set(...fromUv.scale);
+      material.uniforms.uFromOffset.value.set(...fromUv.offset);
+      material.uniforms.uToScale.value.set(...toUv.scale);
+      material.uniforms.uToOffset.value.set(...toUv.offset);
+    }
+    material.uniforms.uProgress.value = snapshot.transitionProgress;
+    material.uniforms.uEndpointBlend.value.set(...endpointBlend(snapshot.transitionProgress));
+
+  }, [active, fallback, invalidate, material, mediaRevision, onFirstPlateReady, size.height, size.width, snapshot]);
+
+  const veilIsVisible = veilVisible(
+    snapshot.transitionProgress,
+    active,
+    snapshot.whiteStageActive,
+    transitionReady,
+  );
+
+  const requestedRenderKey = veilIsVisible
+    ? transitionRenderKey(snapshot.fromChapter, snapshot.toChapter, snapshot.transitionFromWhite)
+    : null;
+
+  useLayoutEffect(() => {
+    const materialBoundary = typeof material.userData.renderKey === 'string'
+      ? material.userData.renderKey
+      : null;
+    const frameCanShow = veilIsVisible && materialBoundary === requestedRenderKey;
+    material.uniforms.uVisible.value = frameCanShow ? 1 : 0;
+    if (veilCanvasShouldHide(renderedBoundary.current, requestedRenderKey, veilIsVisible)) {
+      gl.domElement.style.opacity = '0';
+    }
+    if (veilFrameRequired(previousVeilVisible.current, veilIsVisible)) invalidate();
+    previousVeilVisible.current = veilIsVisible;
+    if (!veilIsVisible) renderedBoundary.current = null;
+  }, [
+    gl,
+    invalidate,
+    material,
+    mediaRevision,
+    requestedRenderKey,
+    size.height,
+    size.width,
+    snapshot.fromChapter,
+    snapshot.toChapter,
+    snapshot.transitionProgress,
+    veilIsVisible,
+  ]);
+
+  useEffect(() => () => {
+    gl.domElement.style.removeProperty('opacity');
+    delete gl.domElement.dataset.renderedBoundary;
+    delete gl.domElement.dataset.renderedProgress;
+    delete gl.domElement.dataset.renderedRevision;
+  }, [gl]);
+
+  useEffect(() => () => {
+    material.dispose();
+    fallback.dispose();
+  }, [fallback, material]);
 
   return (
-    <mesh material={material}>
+    <mesh
+      onAfterRender={() => {
+        const paintedRenderKey = material.uniforms.uVisible.value > 0
+          && typeof material.userData.renderKey === 'string'
+          ? material.userData.renderKey
+          : null;
+        const paintedProgress = Number(material.userData.transitionProgress);
+        if (!paintedRenderKey) {
+          paintConfirmation.current = { renderKey: null, passes: 0 };
+          renderedBoundary.current = null;
+          gl.domElement.dataset.renderedBoundary = 'clear';
+          gl.domElement.dataset.renderedProgress = '0.0000';
+          gl.domElement.dataset.renderedRevision = String(material.userData.snapshotRevision ?? 0);
+          gl.domElement.style.opacity = '1';
+          return;
+        }
+
+        const confirmation = advanceVeilPaintConfirmation(paintConfirmation.current, paintedRenderKey);
+        paintConfirmation.current = confirmation.state;
+        if (!confirmation.confirmed) {
+          gl.domElement.dataset.renderedBoundary = 'pending';
+          gl.domElement.style.opacity = '0';
+          invalidate();
+          return;
+        }
+
+        renderedBoundary.current = paintedRenderKey;
+        gl.domElement.dataset.renderedBoundary = String(material.userData.boundaryKey);
+        gl.domElement.dataset.renderedProgress = Number.isFinite(paintedProgress)
+          ? paintedProgress.toFixed(4)
+          : '0.0000';
+        gl.domElement.dataset.renderedRevision = String(material.userData.snapshotRevision ?? 0);
+        gl.domElement.style.opacity = '1';
+      }}
+    >
       <planeGeometry args={[2, 2]} />
+      <primitive object={material} attach="material" />
     </mesh>
   );
 }
 
-function CraftDrift({ active }: { active: boolean }) {
-  const group = useRef<THREE.Group>(null);
-  const invalidate = useThree((state) => state.invalidate);
-
-  useEffect(() => {
-    const loader = new SVGLoader();
-    let disposed = false;
-    const meshes: THREE.Mesh[] = [];
-    loader.load('/images/brand/craft-marks.svg', (data) => {
-      if (disposed || !group.current) return;
-      const ink = new THREE.Color(getComputedStyle(document.documentElement).getPropertyValue('--cobalt').trim() || '#164f83');
-      data.paths.slice(0, 6).forEach((path, index) => {
-        const shapes = SVGLoader.createShapes(path);
-        shapes.forEach((shape) => {
-          const geometry = new THREE.ShapeGeometry(shape);
-          geometry.center();
-          const mesh = new THREE.Mesh(
-            geometry,
-            new THREE.MeshBasicMaterial({
-              color: ink,
-              transparent: true,
-              opacity: 0.22,
-              side: THREE.DoubleSide,
-              depthWrite: false,
-            }),
-          );
-          mesh.scale.setScalar(0.0028);
-          mesh.position.set((index % 3) * 1.15 - 1.15, Math.floor(index / 3) * 0.7 - 0.2, 0);
-          meshes.push(mesh);
-          group.current?.add(mesh);
-        });
-      });
-      invalidate();
-    });
-    return () => {
-      disposed = true;
-      for (const mesh of meshes) {
-        mesh.geometry.dispose();
-        (mesh.material as THREE.Material).dispose();
-      }
-    };
-  }, [invalidate]);
-
-  useFrame(({ clock }) => {
-    if (!active || !group.current) return;
-    const journey = document.querySelector<HTMLElement>('.journey');
-    const progress = Math.min(1, Math.max(0, parseFloat(getComputedStyle(journey ?? document.documentElement).getPropertyValue('--dissolve')) || 0));
-    const t = clock.elapsedTime;
-    group.current.rotation.z = Math.sin(t * 0.07) * 0.08;
-    group.current.position.y = Math.sin(t * 0.11) * 0.04;
-    group.current.visible = progress > 0.04 && progress < 0.96;
-    group.current.children.forEach((child, index) => {
-      child.rotation.z = t * 0.04 * (index % 2 === 0 ? 1 : -1);
-      const material = (child as THREE.Mesh).material as THREE.MeshBasicMaterial;
-      material.opacity = 0.08 + Math.sin(progress * Math.PI) * 0.18;
-    });
-    if (progress > 0.02) invalidate();
+export default function FilmVeil({ motionEnabled, thresholdHdrEnabled, enableThresholdStudy }: {
+  readonly motionEnabled: boolean;
+  readonly thresholdHdrEnabled: boolean;
+  readonly enableThresholdStudy: boolean;
+}) {
+  const controls = useSyncExternalStore(
+    journeyControls.subscribe,
+    journeyControls.getSnapshot,
+    journeyControls.getServerSnapshot,
+  );
+  const journeySnapshot = useSyncExternalStore(
+    journeyDirector.subscribe,
+    journeyDirector.getSnapshot,
+    journeyDirector.getServerSnapshot,
+  );
+  const [journeyVisible, setJourneyVisible] = useState(true);
+  const [documentVisible, setDocumentVisible] = useState(true);
+  const [contextReady, setContextReady] = useState(false);
+  const [plateReady, setPlateReady] = useState(false);
+  const [canvasElement, setCanvasElement] = useState<HTMLCanvasElement | null>(null);
+  const active = journeyVisible && documentVisible && motionEnabled && controls.motionPreference === 'auto';
+  const onFirstPlateReady = useCallback(() => setPlateReady(true), []);
+  const onThresholdReady = useCallback(() => undefined, []);
+  const shouldMountThreshold = thresholdStudyEnabled(journeySnapshot, {
+    optIn: enableThresholdStudy,
+    hdrSupported: thresholdHdrEnabled,
+    motionEnabled: active,
+  });
+  const enhancementReady = journeyEnhancementReady({
+    contextReady,
+    plateReady,
+    directorRevision: journeySnapshot.revision,
+    motionEnabled,
+    motionPreference: controls.motionPreference,
   });
 
-  return <group ref={group} />;
-}
-
-export default function FilmVeil() {
-  const [active, setActive] = useState(true);
+  useEffect(() => {
+    if (!motionEnabled) setPlateReady(false);
+  }, [motionEnabled]);
 
   useEffect(() => {
     const journey = document.querySelector('.journey');
     if (!journey) return;
-    const io = new IntersectionObserver(([entry]) => setActive(Boolean(entry?.isIntersecting)), { threshold: 0.01 });
-    io.observe(journey);
-    return () => io.disconnect();
+    const intersection = new IntersectionObserver(([entry]) => setJourneyVisible(Boolean(entry?.isIntersecting)), { threshold: 0.01 });
+    const onVisibility = () => setDocumentVisible(document.visibilityState !== 'hidden');
+    intersection.observe(journey);
+    document.addEventListener('visibilitychange', onVisibility);
+    onVisibility();
+    return () => {
+      intersection.disconnect();
+      document.removeEventListener('visibilitychange', onVisibility);
+    };
   }, []);
+
+  useEffect(() => {
+    if (!canvasElement) return;
+    const onContextLost = () => {
+      setContextReady(false);
+      removeJourneyEnhancement(document);
+    };
+    canvasElement.addEventListener('webglcontextlost', onContextLost);
+    return () => canvasElement.removeEventListener('webglcontextlost', onContextLost);
+  }, [canvasElement]);
+
+  useEffect(() => {
+    const journey = document.querySelector<HTMLElement>('.journey');
+    journey?.toggleAttribute('data-journey-enhanced', enhancementReady);
+    journeyDirector.invalidateGeometry();
+    window.dispatchEvent(new Event(JOURNEY_COMPOSITOR_READY_EVENT));
+    return () => journey?.removeAttribute('data-journey-enhanced');
+  }, [enhancementReady]);
 
   return (
     <Canvas
       orthographic
       camera={{ position: [0, 0, 1], near: 0.1, far: 10 }}
       dpr={[1, 1.5]}
-      frameloop={active ? 'always' : 'never'}
-      gl={{
-        alpha: true,
-        antialias: false,
-        powerPreference: 'high-performance',
-      }}
+      frameloop="demand"
+      gl={{ alpha: true, antialias: false, powerPreference: 'high-performance' }}
       onCreated={({ gl }) => {
         gl.setClearColor(0x000000, 0);
         gl.outputColorSpace = THREE.SRGBColorSpace;
+        gl.toneMapping = THREE.AgXToneMapping;
+        gl.toneMappingExposure = 1;
+        setCanvasElement(gl.domElement);
+        setContextReady(true);
       }}
     >
-      <MixMesh active={active} />
-      <CraftDrift active={active} />
+      {motionEnabled ? <MixMesh active={active} onFirstPlateReady={onFirstPlateReady} /> : null}
+      {shouldMountThreshold ? (
+        <Suspense fallback={null}>
+          <ThresholdTravel motionEnabled={active} onReady={onThresholdReady} />
+        </Suspense>
+      ) : null}
     </Canvas>
   );
 }
