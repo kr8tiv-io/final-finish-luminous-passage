@@ -2,49 +2,161 @@
 import proof from '../../data/customer-proof.json';
 import { ratingIsCurrent } from '../../lib/content/review-navigation';
 import '../../styles/review-stage.css';
-const { rating, reviews } = proof;
+
+/**
+ * Act 2 — "The proof" (`EXPERIENCE-STORYBOARD.md` §2): the rating block, the headline,
+ * then seventeen same-height cards in rows that arrive from alternating directions and
+ * then stop. Every word on this stage is a dated snapshot of the public Google listing
+ * held in `customer-proof.json`: seventeen verbatim excerpts and the 5.0 / 30 rating
+ * checked on 2026-09-09. Nothing is written on a customer's behalf — no invented review,
+ * no invented review date, no invented topic. Section copy is `COPY-DECK.md` Act 2.
+ */
+interface ProofReview {
+  readonly name: string;
+  readonly excerpt: string;
+  readonly rating: number;
+  readonly source: string;
+  readonly verifiedAt: string;
+  readonly isExcerpt: boolean;
+  /**
+   * The longer body of an excerpt, if a later data pass can source it verbatim. It is the
+   * only thing that turns on the "Read more" control below — no `full`, no control, so the
+   * page never ships an affordance that reveals nothing. Nothing in the file has one today.
+   */
+  readonly full?: string;
+}
+
+const { rating } = proof;
+const reviews = proof.reviews as readonly ProofReview[];
+
+/**
+ * Freshness (Step 10's contract, read here rather than re-derived): the block always
+ * renders, and when the snapshot is older than its own `refreshAfterDays` it drops the
+ * review count and says only when it was checked. No "current", "live" or "up to date"
+ * language in either state — this page shows a dated snapshot, never a Google feed.
+ *
+ * Refresh hook: this component is the only reader of `rating.verifiedAt` /
+ * `rating.refreshAfterDays`. If a Google Places API key ever lands in the build env, the
+ * place to refresh from is here, at build time — read the live listing, write it back into
+ * `customer-proof.json`, and `scripts/check-review-freshness.mjs` keeps failing the build a
+ * week before the snapshot expires. This component makes no network call, by design.
+ */
 const currentRating = ratingIsCurrent(rating.verifiedAt, rating.refreshAfterDays);
-const checked = new Intl.DateTimeFormat('en-CA', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'America/Edmonton' }).format(new Date(rating.verifiedAt));
-// Editorial topics describe the adjacent excerpt, not extra customer claims.
-const topics: Record<string,string> = {
-  'Fred Hoetmer': 'Care & detail', 'Nate Whalen': 'Colour & finish',
-  'Antony Bubalo': 'The finished floor', 'sameer jadavji': 'A garage transformed',
-  'Marrabout 123': 'The experience', 'Glenda Clarke': 'Preparation first',
-  'Andrew McCready': 'Process & result', 'Johnathon Medurecan': 'Quality & teamwork',
-  'Jesse Aumiller': 'Working with Denis', 'Joseph Ingram': 'Preparation & repair',
-  'Christian Elkjer': 'Working together', 'Ernesto Giordano': 'The finished floor',
-  'Sean Schaefer': 'The result', 'garry askin': 'Attention to detail',
-  'Frank Santoro': 'Clear communication', 'Kyle Fulton': 'Kept in the loop',
-  'Paul Tran': 'A commercial showroom',
+
+// The snapshot is stored as a UTC instant and `CLAIMS-LEDGER.md` / `COPY-DECK.md` both
+// call it 2026-09-09, so it is formatted in UTC: the page says the day the ledger says.
+const stamp = (iso: string) => new Intl.DateTimeFormat('en-GB', {
+  day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC',
+}).format(new Date(iso));
+const checked = stamp(rating.verifiedAt);
+
+/**
+ * Featured order — `COPY-DECK.md` Act 2, "Featured order (front row, no exclamation
+ * points)". The names are the editorial running order; the words are still read from the
+ * data. `quiet()` applies the deck's own front-row rule to the data rather than trusting
+ * the list: an excerpt that contains an exclamation point cannot lead, so if one of these
+ * excerpts ever changes, it drops to the back instead of quietly breaking the voice rule.
+ */
+const FEATURED_ORDER = [
+  'Glenda Clarke', 'Fred Hoetmer', 'Nate Whalen', 'Joseph Ingram',
+  'Antony Bubalo', 'Kyle Fulton', 'garry askin', 'Sean Schaefer',
+  'Marrabout 123', 'Frank Santoro', 'Andrew McCready', 'Paul Tran',
+];
+const quiet = (review: ProofReview) => !review.excerpt.includes('!');
+const featured = FEATURED_ORDER
+  .map((name) => reviews.find((review) => review.name === name))
+  .filter((review): review is ProofReview => review !== undefined && quiet(review));
+const ordered = [...featured, ...reviews.filter((review) => !featured.includes(review))];
+
+/**
+ * Topic tags are DERIVED FROM THE EXCERPT'S OWN WORDS, never assigned to a customer.
+ * A tag renders only when one of its phrases is literally present in that excerpt, and
+ * the matched phrase is printed into `data-topic-source` so the derivation is checkable
+ * from the rendered DOM (`tests/e2e/reviews.spec.ts` asserts every tag's phrase is inside
+ * its own quote). A review whose words say nothing about a topic gets no tag at all —
+ * eleven of the seventeen carry one. Labels come from `COPY-DECK.md` Act 2's two approved
+ * sets: the Google topic chips (Job quality, Epoxy flooring, Attention to detail) and the
+ * excerpt-derived labels (Preparation, Communication, Commercial). First rule wins.
+ */
+const TOPIC_RULES: readonly { readonly label: string; readonly phrases: readonly string[] }[] = [
+  { label: 'Preparation', phrases: ['properly prepared', 'prepping', 'prepared before'] },
+  { label: 'Attention to detail', phrases: ['attention to detail', 'care and detail'] },
+  { label: 'Communication', phrases: ['communication'] },
+  { label: 'Commercial', phrases: ['showroom', 'dealership'] },
+  { label: 'Epoxy flooring', phrases: ['epoxy flooring'] },
+  { label: 'Job quality', phrases: ['excellent quality', 'amazing job', 'happy with the job', 'tremendous job'] },
+];
+const topicFor = (excerpt: string) => {
+  const words = excerpt.toLowerCase();
+  for (const rule of TOPIC_RULES) {
+    const phrase = rule.phrases.find((candidate) => words.includes(candidate));
+    if (phrase) return { label: rule.label, phrase };
+  }
+  return null;
+};
+
+const monogram = (name: string) => name.split(' ').filter(Boolean).slice(0, 2).map((part) => part[0]).join('').toUpperCase();
+const longerText = (review: ProofReview) => {
+  const full = review.full?.trim();
+  return full && full.length > review.excerpt.trim().length ? full : null;
 };
 ---
 <section id="customer-reviews" class="white-stage social-proof" data-journey-white-stage data-review-stage aria-labelledby="social-title">
   <div class="social-heading editorial-width" data-editorial-reveal>
-    <div class="google-rating">
-      {currentRating ? <><span class="rating-clip" data-rating-clip><a href={rating.source} class="rating-number" aria-label={`${rating.value.toFixed(1)} out of 5 from ${rating.count} Google reviews`}>{rating.value.toFixed(1)}<span aria-hidden="true">/ 5</span></a></span><span class="review-stars rating-stars" aria-hidden="true" data-rating-stars>{Array.from({ length: 5 }).map(() => <i>★</i>)}</span><a href={rating.source} class="rating-count">{rating.count}+ reviews on Google <span aria-hidden="true">↗</span></a><small>Checked {checked} · {rating.count} reviews</small></> : <><p class="eyebrow">Customer perspectives</p><a href={rating.source} class="chapter-link">See our latest Google rating ↗</a><small>See Google for the current rating and review count.</small></>}
+    <div class="google-rating" data-rating-block data-rating-fresh={String(currentRating)}>
+      <span class="rating-clip" data-rating-clip><a href={rating.source} class="rating-number" aria-label={`${rating.value.toFixed(1)} out of 5 on Google, checked ${checked}`}>{rating.value.toFixed(1)}<span aria-hidden="true">/ 5</span></a></span>
+      <span class="review-stars rating-stars" aria-hidden="true" data-rating-stars>{Array.from({ length: 5 }).map(() => <i>★</i>)}</span>
+      {currentRating
+        ? <a href={rating.source} class="rating-count">{rating.count} reviews on Google <span aria-hidden="true">↗</span></a>
+        : <a href={rating.source} class="rating-count">See our latest Google rating <span aria-hidden="true">↗</span></a>}
+      <small>Checked {checked}</small>
     </div>
     <div class="social-intro">
       <p class="eyebrow" data-review-eyebrow>Final Finish, in their words</p>
       <h2 id="social-title" class="interlude-title">The word from our customers.</h2>
-      <p>From the first conversation to the finished floor. Hear what customers say about working with Denis and the team.</p>
+      <p>From the first conversation to the finished floor. What customers say about working with Denis and the team.</p>
       <a class="chapter-link" href={rating.source}>Leave a Google review <span aria-hidden="true">↗</span></a>
       <small class="review-link-help">Opens Google Maps. Choose “Write a review.”</small>
     </div>
   </div>
-  <div class="review-window" data-review-window>
-    <div class="review-gallery" id="review-gallery" role="region" aria-label="Customer review excerpts; scroll horizontally for more" tabindex="0">
-      {reviews.map((review, index) => (
-        <blockquote class="review-card">
-          <div class="review-card-top"><span>{String(index + 1).padStart(2, '0')}</span><span class="review-stars" role="img" aria-label="5 out of 5 stars">★★★★★</span></div>
-          <p>“{review.excerpt}”</p>
-          <footer><div class="review-person"><span class="review-monogram" aria-hidden="true">{review.name.split(' ').filter(Boolean).slice(0,2).map(part => part[0]).join('').toUpperCase()}</span><div><strong>{review.name}</strong><a href={rating.source} data-review-link>Google review excerpt <span aria-hidden="true">↗</span><span class="link-rule" aria-hidden="true"></span></a></div></div><p class="review-topic"><span aria-hidden="true"></span>{topics[review.name] || 'Customer experience'}</p></footer>
-        </blockquote>
-      ))}
-    </div>
+
+  {/* Rows of equal-height cards. `data-hold-window`: nothing in this list is scroll-linked
+      — every card arrives once on a `toggleActions` entrance and is then physically still
+      while its row is read. No marquee, no autoplay, no scrub (storyboard §7, §8.6). */}
+  <div class="review-window editorial-width" data-review-window>
+    <ul class="review-gallery" id="review-gallery" data-hold-window>
+      {ordered.map((review, index) => {
+        const topic = topicFor(review.excerpt);
+        const longer = longerText(review);
+        return (
+          <li class="review-cell">
+            <blockquote class="review-card" data-review-card data-review-position={index + 1}>
+              <div class="review-card-top"><span>{String(index + 1).padStart(2, '0')}</span><span class="review-stars" role="img" aria-label="5 out of 5 stars">★★★★★</span></div>
+              <p data-review-quote>“{review.excerpt}”</p>
+              {longer && (
+                <details class="review-more">
+                  <summary><span data-more-open>Read more</span><span data-more-close>Less</span></summary>
+                  <p data-review-quote>“{longer}”</p>
+                </details>
+              )}
+              <footer data-review-caption>
+                <div class="review-person">
+                  <span class="review-monogram" aria-hidden="true">{monogram(review.name)}</span>
+                  <div>
+                    <strong>{review.name}</strong>
+                    <a href={rating.source} data-review-link>Google review excerpt <span aria-hidden="true">↗</span><span class="link-rule" aria-hidden="true"></span></a>
+                  </div>
+                </div>
+                <p class="review-meta">{topic && <><span class="review-tag" data-topic-source={topic.phrase}>{topic.label}</span><span class="review-meta-dot" aria-hidden="true">·</span></>}<span>Verified {stamp(review.verifiedAt)}</span></p>
+              </footer>
+            </blockquote>
+          </li>
+        );
+      })}
+    </ul>
   </div>
+
   <div class="review-bottom editorial-width">
-    <div><p>Real voices. Individual experiences.</p><a href={rating.source}>Read {currentRating ? `all ${rating.count} reviews` : 'the reviews'} on Google ↗</a></div>
-    <div class="review-controls"><span class="review-position" aria-live="polite" aria-atomic="true">01 / {String(reviews.length).padStart(2, '0')}</span><button type="button" disabled data-review-direction="-1" aria-controls="review-gallery" aria-label="Previous customer review">←</button><button type="button" disabled data-review-direction="1" aria-controls="review-gallery" aria-label="Next customer review">→</button></div>
+    <div><p>Real voices. Individual experiences.</p><a href={rating.source}>Read every review on Google ↗</a></div>
   </div>
-  <div class="review-progress editorial-width" aria-hidden="true"><span></span></div>
 </section>

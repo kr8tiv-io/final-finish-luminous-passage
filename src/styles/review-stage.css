@@ -77,22 +77,115 @@ body .journey .social-proof .rating-stars i {
   font-style: normal;
 }
 
-/* --- review window ------------------------------------------------ */
+/* --- the rows ------------------------------------------------------
+   Storyboard §2 Act 2: seventeen same-height cards in rows — three columns
+   at ≥ 1200 px, two at 768 px, one below. The row is what makes the heights
+   equal: grid stretches every cell in a row to that row's height, and the
+   card fills its cell, so max(h) − min(h) across a row is 0 by construction
+   rather than by a magic min-height that a type-token change could break.
 
-body .journey .social-proof .review-gallery {
-  gap: clamp(1.25rem, 2vw, 2rem);
-  padding-block: clamp(1.75rem, 3vw, 3rem);
+   Row heights are per row, not one height for the whole grid, because the
+   `content-visibility` below means rows below the fold are measured late;
+   with one shared height a late row could resize every row above it and move
+   copy the visitor is already reading. Independent rows only ever settle
+   downward of the reader. */
+
+body .journey .social-proof .review-window {
+  margin-inline: auto;
+  mask-image: none;
 }
 
-/* The cobalt ring is declared here at zero alpha so the hover tween has a
-   numeric start value to interpolate from — GSAP cannot tween out of the
-   `none` that `readable-experience.css` leaves on the card. */
+body .journey .social-proof .review-gallery {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: clamp(1rem, 1.6vw, 1.75rem);
+  margin: 0;
+  padding: clamp(1.75rem, 3vw, 3rem) 0;
+  overflow: visible;
+  overscroll-behavior-x: auto;
+  scroll-snap-type: none;
+  list-style: none;
+}
+
+body .journey .social-proof .review-cell {
+  display: flex;
+  min-width: 0;
+}
+
 body .journey .social-proof .review-card {
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 0;
+  height: 100%;
+  scroll-snap-align: none;
+  padding: clamp(1.35rem, 1.7vw, 1.9rem);
+  /* The cobalt ring is declared here at zero alpha so the hover tween has a
+     numeric start value to interpolate from — GSAP cannot tween out of the
+     `none` that `readable-experience.css` leaves on the card. */
   box-shadow: 0 0 0 1px rgba(22, 79, 131, 0);
 }
 
 body .journey .social-proof .review-card > p {
   opacity: 1;
+  margin: 1.2rem 0 1.4rem;
+}
+
+/* Everything after the first row is skipped until it is near the viewport
+   (storyboard §6, act 2: "cards lazy-split, content-visibility:auto"). The
+   first-row count changes with the column count, so each breakpoint restates
+   which cells are exempt. The intrinsic size is deliberately a little under a
+   real card so a skipped row can only ever grow into place, never shrink. */
+body .journey .social-proof .review-cell:nth-child(n + 2) {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 19rem;
+}
+
+/* --- card interior ------------------------------------------------ */
+
+body .journey .social-proof .review-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: .5rem;
+  margin: .9rem 0 0;
+  padding-top: 1rem;
+  border-top: 1px solid rgba(23, 34, 42, .08);
+  font-size: var(--type-caption);
+  line-height: 1.4;
+  letter-spacing: 0;
+  color: #61717a;
+}
+
+/* Derived from the excerpt's own words — see the `TOPIC_RULES` comment in
+   SocialProof.astro. The matched phrase travels with the tag in
+   `data-topic-source`, so a tag that drifts away from its quote is a test
+   failure, not a design opinion. */
+body .journey .social-proof .review-tag {
+  color: var(--cobalt);
+  font-weight: 650;
+}
+
+body .journey .social-proof .review-meta-dot {
+  color: #b49875;
+}
+
+body .journey .social-proof .review-more {
+  margin-top: -.4rem;
+}
+
+body .journey .social-proof .review-more summary {
+  width: fit-content;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  color: var(--cobalt);
+  font-size: var(--type-caption);
+  cursor: pointer;
+}
+
+body .journey .social-proof .review-more:not([open]) [data-more-close],
+body .journey .social-proof .review-more[open] [data-more-open] {
+  display: none;
 }
 
 body .journey .social-proof .review-card footer a {
@@ -114,6 +207,36 @@ body .journey .social-proof .link-rule {
 
 body .journey .social-proof .review-bottom {
   margin-top: clamp(1.5rem, 3vw, 3rem);
+}
+
+/* --- widths -------------------------------------------------------- */
+
+@media (min-width: 768px) {
+  body .journey .social-proof .review-gallery {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  body .journey .social-proof .review-cell:nth-child(-n + 2) {
+    content-visibility: visible;
+    contain-intrinsic-size: none;
+  }
+  body .journey .social-proof .review-cell:nth-child(n + 3) {
+    content-visibility: auto;
+    contain-intrinsic-size: auto 19rem;
+  }
+}
+
+@media (min-width: 1200px) {
+  body .journey .social-proof .review-gallery {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  body .journey .social-proof .review-cell:nth-child(-n + 3) {
+    content-visibility: visible;
+    contain-intrinsic-size: none;
+  }
+  body .journey .social-proof .review-cell:nth-child(n + 4) {
+    content-visibility: auto;
+    contain-intrinsic-size: auto 17rem;
+  }
 }
 
 @media (max-width: 1100px) {

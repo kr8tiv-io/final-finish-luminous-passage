@@ -29,13 +29,21 @@ test('the consultation chapter is one poster composition with both next steps', 
   await expect(consultation.getByRole('link', { name: 'Request a quote' })).toHaveAttribute('href', '/contact#quote');
 });
 
-test('social proof remains scrollable and does not create narrow-screen overflow', async ({ page }) => {
+/**
+ * Step 19 replaced the horizontal review pager with the storyboard's rows of cards, so the
+ * narrow-screen contract changed shape: the seventeen excerpts are now read by scrolling
+ * the page itself, one column wide, with no sideways scroller and no pager buttons to
+ * strand a thumb on. The overflow half of this test is unchanged and is the point of it.
+ */
+test('social proof reads as one column on a narrow screen without sideways scrolling', async ({ page }) => {
+  test.slow(); // A 320 px WebKit emulation loads the whole journey well past the 30 s default.
   await page.setViewportSize({ width: 320, height: 740 });
   await page.goto('/#customer-reviews', { waitUntil: 'domcontentloaded' });
   await expect(page.locator('.review-card')).toHaveCount(17);
-  const next = page.getByRole('button', { name: 'Next customer review', exact: true });
-  await expect(next).toBeEnabled();
-  await next.click();
-  await expect.poll(() => page.locator('.review-gallery').evaluate((element) => element.scrollLeft)).toBeGreaterThan(0);
+  await expect(page.locator('[data-review-direction]')).toHaveCount(0);
+  expect(await page.locator('.review-gallery').evaluate((element) => {
+    const style = getComputedStyle(element);
+    return { columns: style.gridTemplateColumns.split(' ').length, overflowX: style.overflowX, scrollable: element.scrollWidth > element.clientWidth + 1 };
+  })).toEqual({ columns: 1, overflowX: 'visible', scrollable: false });
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth + 1)).toBe(true);
 });
