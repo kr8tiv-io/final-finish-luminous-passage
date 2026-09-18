@@ -9,7 +9,7 @@ import {
   shouldInvalidateForMediaReadiness,
   shouldRequestVideo,
   thresholdHdrSupported,
-  transitionPlateChoice,
+  veilPlateChoice,
   videoVisualReady,
   videoSeekTarget,
   advanceVeilPaintConfirmation,
@@ -73,14 +73,27 @@ describe('cinematic plate sampling', () => {
     expect(plateMediaChoice({ image, video })).toBe('video');
   });
 
-  it('locks the outgoing decoded frame but starts an incoming transition from its poster', () => {
+  it('samples whichever plate the document is presenting, never a second opinion', () => {
     const image = { complete: true, naturalWidth: 1_920, naturalHeight: 1_080 };
-    const video = { readyState: 2, videoWidth: 1_920, videoHeight: 1_080, currentTime: 3, seeking: false };
+    const decodedFilm = { readyState: 2, videoWidth: 1_280, videoHeight: 720 };
 
-    expect(transitionPlateChoice({ image, video }, true)).toBe('video');
-    expect(transitionPlateChoice({ image, video }, false)).toBe('poster');
-    expect(transitionPlateChoice({ image: null, video: { ...video, currentTime: 0.05 } }, false)).toBe('video');
-    expect(transitionPlateChoice({ image: null, video }, false)).toBe('fallback');
+    // The defect this rule replaces: finish-hall's film is on screen
+    // (`data-video-ready`) while its poster is a different picture entirely, and the
+    // old rule still handed the veil the poster for an incoming room.
+    expect(veilPlateChoice({ image, video: { ...decodedFilm, presented: true } })).toBe('video');
+    // Not yet promoted: the DOM is showing the poster, so the veil shows the poster.
+    expect(veilPlateChoice({ image, video: { ...decodedFilm, presented: false } })).toBe('poster');
+    // A room with no usable poster still gets its film rather than blank paper.
+    expect(veilPlateChoice({ image: null, video: { ...decodedFilm, presented: false } })).toBe('video');
+    // A film with nothing decoded is not a plate at all.
+    expect(veilPlateChoice({
+      image: null,
+      video: { readyState: 1, videoWidth: 0, videoHeight: 0, presented: true },
+    })).toBe('fallback');
+    // Falsifiable: `presented` has to be the deciding input, or the first two
+    // assertions would pass on any rule that simply preferred one plate.
+    expect(veilPlateChoice({ image, video: { ...decodedFilm, presented: true } }))
+      .not.toBe(veilPlateChoice({ image, video: { ...decodedFilm, presented: false } }));
   });
 
   it('crossfades the incoming plate around the midpoint instead of switching at it', () => {

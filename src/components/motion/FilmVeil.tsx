@@ -1,5 +1,4 @@
-import { Canvas, useThree } from '@react-three/fiber';
-import { Suspense, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
 import * as THREE from 'three';
 import { journeyControls } from '../../lib/motion/journey-controls';
 import {
@@ -15,17 +14,47 @@ import {
   journeyEnhancementReady,
   journeyMediaResidents,
   advanceVeilPaintConfirmation,
-  transitionPlateChoice,
   veilCanvasShouldHide,
   veilFrameRequired,
+  veilPlateChoice,
   veilVisible,
 } from '../../lib/motion/journey-media';
-import { thresholdStudyEnabled } from '../../lib/motion/journey-threshold';
 import {
   resolveJourneyTransitionFrame,
   transitionLockAction,
 } from '../../lib/motion/journey-transitions';
-import ThresholdTravel from './ThresholdTravel';
+import { surfaceStore, type SurfaceViewRenderContext } from '../../lib/motion/surface-store';
+
+/**
+ * The boundary compositor — a view of the one layout-level canvas (Step 18a).
+ *
+ * WHAT MOVED, AND WHAT DID NOT. This file used to own a second `<canvas>` with its
+ * own WebGL context, mounted as an R3F `<Canvas frameloop="demand">`. The context is
+ * gone; everything the compositor actually is stayed:
+ *
+ *  - the five shader modes 0-4 and their uniforms, byte for byte;
+ *  - `transitionLockAction`, so a boundary's plates are chosen once on entry;
+ *  - `advanceVeilPaintConfirmation` — two completed passes for a render key before
+ *    the director is told the veil owns the picture, still with no framebuffer read;
+ *  - the "paint only inside 0 < p < 1" rule (`veilVisible`);
+ *  - demand rendering: `surfaceStore.invalidate()` in place of R3F's `invalidate`.
+ *
+ * Two things are deliberately different, and both are consequences of sharing a
+ * canvas with the floor and the menu:
+ *
+ *  1. NOTHING HERE WRITES `canvas.style.opacity`. It used to, to hide an unconfirmed
+ *     frame. On a shared element that would hide the floor and the menu too. A view
+ *     that wants to disappear writes transparent pixels instead: `uVisible` 0 makes
+ *     the shader emit `vec4(0)` and the plates below show through untouched, which is
+ *     what the old opacity flip was standing in for. `renderedBoundary` /
+ *     `renderedProgress` / `renderedRevision` move with it, onto `.film-veil` — the
+ *     element this compositor does own.
+ *  2. `ThresholdTravel` is no longer mounted from here. It was an R3F component and
+ *     there is no R3F context left to mount it into. It was reachable only at
+ *     `import.meta.env.DEV` with `?study=threshold` (index.astro:26), never on a
+ *     built page, and Step 20 decides whether that study survives at all. The
+ *     component is untouched on disk.
+ */
 
 const VERT = /* glsl */ `
 varying vec2 vUv;
@@ -80,7 +109,13 @@ void main() {
 
     if (uMode < 0.5) {
       toWeight = smoothstep(0.22, 0.78, progress + organic);
-      light = pow(sin(progress * 3.14159265), 1.45) * 0.62;
+      // Mode 0 is the only bloom that lifts the WHOLE frame rather than travelling
+      // with a front, so its envelope has to be the one that closes at the ends.
+      // The exponent was 1.45, which still lifted every pixel by 8.3% at p = 0.92 and
+      // then dropped it in one frame when the veil retired — an 8% step at the exact
+      // moment the picture goes back to the DOM plate. Cubed, the peak at p = 0.5 is
+      // unchanged at 0.62 and the lift at p = 0.92 is 0.95%.
+      light = pow(sin(progress * 3.14159265), 3.0) * 0.62;
     } else if (uMode < 1.5) {
       vec2 centred = abs(vUv - 0.5) * vec2(min(uAspect, 1.65), 1.0);
       float apertureDistance = max(centred.x * 0.82, centred.y) + organic;
@@ -129,10 +164,18 @@ type PlateBinding = PlateDom & {
   readonly cleanups: Array<() => void>;
 };
 
+/**
+ * What a boundary locks: which rooms take part, and which way the visitor entered.
+ *
+ * It does NOT lock a texture. The plate each room shows is re-read every frame from
+ * the room's own `data-video-ready`, so the veil can never be sampling a poster while
+ * the document has already promoted that room's film — the 17.1% mismatch measured at
+ * `vault:finish-hall`. See `veilPlateChoice` in journey-media.ts.
+ */
 type LockedTransition = {
   readonly key: string;
-  readonly from: { readonly binding: PlateBinding | null; readonly texture: THREE.Texture };
-  readonly to: { readonly binding: PlateBinding | null; readonly texture: THREE.Texture };
+  readonly from: { readonly binding: PlateBinding | null; readonly white: boolean };
+  readonly to: { readonly binding: PlateBinding | null };
 };
 
 function parseObjectPosition(element: Element | null): readonly [number, number] {
@@ -162,17 +205,44 @@ function textureDimensions(binding: PlateBinding | null, texture: THREE.Texture)
   return [1, 1];
 }
 
-function MixMesh({ active, onFirstPlateReady }: { active: boolean; onFirstPlateReady: () => void }) {
-  const invalidate = useThree((state) => state.invalidate);
-  const gl = useThree((state) => state.gl);
-  const scene = useThree((state) => state.scene);
-  const camera = useThree((state) => state.camera);
-  const size = useThree((state) => state.size);
+function viewportSize(): { readonly width: number; readonly height: number } {
+  if (typeof window === 'undefined') return { width: 1, height: 1 };
+  return { width: window.innerWidth, height: window.innerHeight };
+}
+
+export default function FilmVeil({ host, motionEnabled }: {
+  readonly host: HTMLElement;
+  readonly motionEnabled: boolean;
+}) {
+  const controls = useSyncExternalStore(
+    journeyControls.subscribe,
+    journeyControls.getSnapshot,
+    journeyControls.getServerSnapshot,
+  );
   const snapshot = useSyncExternalStore(
     journeyDirector.subscribe,
     journeyDirector.getSnapshot,
     journeyDirector.getServerSnapshot,
   );
+  const surface = useSyncExternalStore(
+    surfaceStore.subscribe,
+    surfaceStore.getSnapshot,
+    surfaceStore.getServerSnapshot,
+  );
+  const [journeyVisible, setJourneyVisible] = useState(true);
+  const [documentVisible, setDocumentVisible] = useState(true);
+  const [plateReady, setPlateReady] = useState(false);
+  const [size, setSize] = useState(viewportSize);
+  const [mediaRevision, setMediaRevision] = useState(0);
+  const [transitionReady, setTransitionReady] = useState(false);
+
+  const active = journeyVisible && documentVisible && motionEnabled && controls.motionPreference === 'auto';
+  // The renderer is the shared one. Until it reports `webgl` there is no context to
+  // draw into, and the DOM plate crossfade is the whole transition — exactly as on a
+  // `balanced` device that never downloads this chunk.
+  const rendererLive = surface.renderer === 'webgl';
+  const invalidate = useCallback(() => surfaceStore.invalidate(), []);
+
   /**
    * Every plate the veil samples is tagged `NoColorSpace`, and the shader writes
    * its result out untouched (no `colorspace_fragment`).
@@ -184,9 +254,7 @@ function MixMesh({ active, onFirstPlateReady }: { active: boolean; onFirstPlateR
    * rendered the same room brighter or darker depending on which plate it had
    * picked. Measured against the DOM plate at the identical scroll position:
    * foundation:garage centre rgb(93,53,21) came out rgb(163,126,82) (+43% mean
-   * luminance), vault:finish-hall -17%. Every time the compositor handed the
-   * frame back to the DOM crossfade the picture stepped by that much, which is
-   * the flicker visible at each end of a boundary.
+   * luminance), vault:finish-hall -17%.
    *
    * Sampling and writing raw sRGB bytes makes the veil byte-identical to the
    * CSS plates it blends between. It trades linear-light mixing for a picture
@@ -199,17 +267,7 @@ function MixMesh({ active, onFirstPlateReady }: { active: boolean; onFirstPlateR
     texture.needsUpdate = true;
     return texture;
   }, []);
-  const bindings = useRef<PlateBinding[]>([]);
-  const lockedTransition = useRef<LockedTransition | null>(null);
-  const previousVeilVisible = useRef(false);
-  const renderedBoundary = useRef<string | null>(null);
-  const paintConfirmation = useRef({ renderKey: null as string | null, passes: 0 });
-  const firstReadySent = useRef(false);
-  const [mediaRevision, setMediaRevision] = useState(0);
-  const [transitionReady, setTransitionReady] = useState(false);
-  const residentChapters = journeyMediaResidents(snapshot);
-  const residentKey = residentChapters.join(':');
-  const transitionFrame = resolveJourneyTransitionFrame(snapshot);
+
   const material = useMemo(() => new THREE.ShaderMaterial({
     uniforms: {
       tFrom: { value: fallback },
@@ -233,6 +291,29 @@ function MixMesh({ active, onFirstPlateReady }: { active: boolean; onFirstPlateR
     toneMapped: false,
   }), [fallback]);
 
+  // The vertex shader writes clip space directly, so the camera carries no meaning
+  // beyond giving `WebGLRenderer.render` something with matrices to dereference.
+  const stage = useMemo(() => {
+    const scene = new THREE.Scene();
+    const camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
+    const mesh = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), material);
+    mesh.frustumCulled = false;
+    scene.add(mesh);
+    return { scene, camera, mesh };
+  }, [material]);
+
+  const bindings = useRef<PlateBinding[]>([]);
+  const lockedTransition = useRef<LockedTransition | null>(null);
+  const lastTextures = useRef<{ from: THREE.Texture; to: THREE.Texture }>({ from: fallback, to: fallback });
+  const previousVeilVisible = useRef(false);
+  const renderedBoundary = useRef<string | null>(null);
+  const paintConfirmation = useRef({ renderKey: null as string | null, passes: 0 });
+
+  const residentChapters = journeyMediaResidents(snapshot);
+  const residentKey = residentChapters.join(':');
+  const transitionFrame = resolveJourneyTransitionFrame(snapshot);
+
+  /* ---- plate discovery and residency: unchanged from the standalone canvas ---- */
   useEffect(() => {
     const nextBindings = readPlates().map<PlateBinding>((plate) => ({
       ...plate,
@@ -296,6 +377,9 @@ function MixMesh({ active, onFirstPlateReady }: { active: boolean; onFirstPlateR
         binding.videoTexture.magFilter = THREE.LinearFilter;
         binding.videoTexture.generateMipmaps = false;
         const ready = () => setMediaRevision((revision) => revision + 1);
+        // `data-video-ready` is what decides which plate this veil samples, and
+        // `JourneyMotion` writes it from these same events, so the compositor has to
+        // be woken by them too or it would keep the poster a frame or two too long.
         ['loadeddata', 'canplay', 'resize', 'seeked'].forEach((event) => {
           binding.video?.addEventListener(event, ready);
           binding.cleanups.push(() => binding.video?.removeEventListener(event, ready));
@@ -306,39 +390,49 @@ function MixMesh({ active, onFirstPlateReady }: { active: boolean; onFirstPlateR
   }, [active, residentKey]);
 
   useEffect(() => {
-    if (!active) firstReadySent.current = false;
+    if (!active) setPlateReady(false);
   }, [active]);
 
   useEffect(() => {
-    bindings.current.forEach((binding) => {
-      binding.objectPosition = parseObjectPosition(binding.video ?? binding.image);
-    });
-    setMediaRevision((revision) => revision + 1);
-  }, [size.height, size.width]);
+    const onResize = () => {
+      setSize(viewportSize());
+      bindings.current.forEach((binding) => {
+        binding.objectPosition = parseObjectPosition(binding.video ?? binding.image);
+      });
+      setMediaRevision((revision) => revision + 1);
+    };
+    window.addEventListener('resize', onResize);
+    onResize();
+    return () => window.removeEventListener('resize', onResize);
+  }, []);
 
+  /* ---- uniforms: lock the rooms on entry, resolve their plates every frame ---- */
   useLayoutEffect(() => {
     const bindingFor = (id: JourneyChapterId) => bindings.current[JOURNEY_CHAPTER_IDS.indexOf(id)] ?? null;
-    const textureFor = (binding: PlateBinding | null, outgoing: boolean) => {
+    const plateTexture = (binding: PlateBinding | null): THREE.Texture | null => {
       if (!binding) return null;
       const posterImage = binding.posterTexture?.image as { width?: number; height?: number } | undefined;
-      const choice = transitionPlateChoice({
+      const video = binding.video;
+      const choice = veilPlateChoice({
         image: binding.posterReady ? {
           complete: true,
           naturalWidth: posterImage?.width ?? binding.image?.naturalWidth ?? 0,
           naturalHeight: posterImage?.height ?? binding.image?.naturalHeight ?? 0,
         } : null,
-        video: binding.video,
-      }, outgoing);
+        video: video ? {
+          readyState: video.readyState,
+          videoWidth: video.videoWidth,
+          videoHeight: video.videoHeight,
+          presented: video.hasAttribute('data-video-ready'),
+        } : null,
+      });
       if (choice === 'video') return binding.videoTexture;
       if (choice === 'poster') return binding.posterTexture;
       return null;
     };
-    const activeBinding = bindingFor(snapshot.activeChapter);
-    const activeTexture = textureFor(activeBinding, true);
-    if (!firstReadySent.current && activeTexture) {
-      firstReadySent.current = true;
-      onFirstPlateReady();
-    }
+
+    const activeTexture = plateTexture(bindingFor(snapshot.activeChapter));
+    if (!plateReady && activeTexture) setPlateReady(true);
 
     const interior = active && transitionFrame.progress > 0 && transitionFrame.progress < 1;
     const key = transitionFrame.key;
@@ -353,16 +447,15 @@ function MixMesh({ active, onFirstPlateReady }: { active: boolean; onFirstPlateR
     } else if (lockAction === 'acquire') {
       const fromBinding = bindingFor(transitionFrame.from);
       const toBinding = transitionFrame.to ? bindingFor(transitionFrame.to) : null;
-      const movingForward = snapshot.scrollDirection >= 0;
-      const fromTexture = transitionFrame.fromWhite ? fallback : textureFor(fromBinding, movingForward);
-      const toTexture = transitionFrame.to ? textureFor(toBinding, !movingForward) : fallback;
+      const fromTexture = transitionFrame.fromWhite ? fallback : plateTexture(fromBinding);
+      const toTexture = transitionFrame.to ? plateTexture(toBinding) : fallback;
       lockedTransition.current = (transitionFrame.fromWhite || fromBinding)
         && (transitionFrame.to === null || toBinding)
         && fromTexture && toTexture
         ? {
             key,
-            from: { binding: transitionFrame.fromWhite ? null : fromBinding, texture: fromTexture },
-            to: { binding: toBinding, texture: toTexture },
+            from: { binding: transitionFrame.fromWhite ? null : fromBinding, white: transitionFrame.fromWhite },
+            to: { binding: toBinding },
           }
         : null;
     }
@@ -374,13 +467,19 @@ function MixMesh({ active, onFirstPlateReady }: { active: boolean; onFirstPlateR
     material.userData.snapshotRevision = snapshot.revision;
     material.userData.transitionProgress = transitionFrame.progress;
     if (locked) {
-      material.uniforms.tFrom.value = locked.from.texture;
-      material.uniforms.tTo.value = locked.to.texture;
+      // Re-resolved, not replayed: if the document promoted a room's film since the
+      // lock was taken, the veil follows it in the same frame the DOM does. A null
+      // resolution keeps the last good texture rather than dropping to paper.
+      const fromTexture = (locked.from.white ? fallback : plateTexture(locked.from.binding)) ?? lastTextures.current.from;
+      const toTexture = (locked.to.binding ? plateTexture(locked.to.binding) : fallback) ?? lastTextures.current.to;
+      lastTextures.current = { from: fromTexture, to: toTexture };
+      material.uniforms.tFrom.value = fromTexture;
+      material.uniforms.tTo.value = toTexture;
       material.uniforms.uMode.value = transitionFrame.style.mode;
       material.uniforms.uDirection.value = transitionFrame.style.direction;
       material.uniforms.uAspect.value = size.width / Math.max(1, size.height);
-      const fromDimensions = textureDimensions(locked.from.binding, locked.from.texture);
-      const toDimensions = textureDimensions(locked.to.binding, locked.to.texture);
+      const fromDimensions = textureDimensions(locked.from.binding, fromTexture);
+      const toDimensions = textureDimensions(locked.to.binding, toTexture);
       const fromUv = coverUvTransform(
         fromDimensions[0],
         fromDimensions[1],
@@ -402,45 +501,35 @@ function MixMesh({ active, onFirstPlateReady }: { active: boolean; onFirstPlateR
     }
     material.uniforms.uProgress.value = transitionFrame.progress;
     material.uniforms.uEndpointBlend.value.set(...endpointBlend(transitionFrame.progress));
-
-  }, [active, fallback, invalidate, material, mediaRevision, onFirstPlateReady, size.height, size.width, snapshot]);
+  }, [active, fallback, material, mediaRevision, plateReady, size.height, size.width, snapshot, transitionFrame]);
 
   const veilIsVisible = veilVisible(
     transitionFrame.progress,
-    active,
+    active && rendererLive,
     snapshot.whiteStageActive,
     transitionReady,
   );
-
-  const requestedRenderKey = veilIsVisible
-    ? transitionFrame.key
-    : null;
+  const requestedRenderKey = veilIsVisible ? transitionFrame.key : null;
 
   useLayoutEffect(() => {
     const materialBoundary = typeof material.userData.renderKey === 'string'
       ? material.userData.renderKey
       : null;
-    const frameCanShow = veilIsVisible && materialBoundary === requestedRenderKey;
+    material.uniforms.uVisible.value = veilIsVisible && materialBoundary === requestedRenderKey ? 1 : 0;
+    // A confirmed frame for a boundary that is no longer wanted has to be replaced,
+    // not hidden: the shared canvas is cleared at the top of every frame, so asking
+    // for one more frame IS the retirement.
     if (renderedBoundary.current !== null
       && veilCanvasShouldHide(renderedBoundary.current, requestedRenderKey, veilIsVisible)) {
-      // A confirmed framebuffer for a boundary we no longer want. `onAfterRender`
-      // is the only writer of canvas opacity, so it is retired by actually
-      // clearing it through the renderer instead of by a second effect reaching
-      // for `gl.domElement.style` — the clear pass hands opacity back to its owner.
-      material.uniforms.uVisible.value = 0;
-      gl.render(scene, camera);
+      invalidate();
     }
-    material.uniforms.uVisible.value = frameCanShow ? 1 : 0;
     if (veilFrameRequired(previousVeilVisible.current, veilIsVisible)) invalidate();
     previousVeilVisible.current = veilIsVisible;
   }, [
-    camera,
-    gl,
     invalidate,
     material,
     mediaRevision,
     requestedRenderKey,
-    scene,
     size.height,
     size.width,
     transitionFrame.key,
@@ -448,111 +537,67 @@ function MixMesh({ active, onFirstPlateReady }: { active: boolean; onFirstPlateR
     veilIsVisible,
   ]);
 
-  useEffect(() => () => {
-    journeyDirector.reportVeil(null, false);
-    gl.domElement.style.removeProperty('opacity');
-    delete gl.domElement.dataset.renderedBoundary;
-    delete gl.domElement.dataset.renderedProgress;
-    delete gl.domElement.dataset.renderedRevision;
-  }, [gl]);
-
-  useEffect(() => () => {
-    material.dispose();
-    fallback.dispose();
-  }, [fallback, material]);
-
-  return (
-    <mesh
-      onAfterRender={() => {
-        const paintedRenderKey = material.uniforms.uVisible.value > 0
-          && typeof material.userData.renderKey === 'string'
-          ? material.userData.renderKey
-          : null;
-        const paintedBoundary = typeof material.userData.boundaryKey === 'string'
-          ? material.userData.boundaryKey
-          : null;
-        const paintedProgress = Number(material.userData.transitionProgress);
-        if (!paintedRenderKey) {
-          paintConfirmation.current = { renderKey: null, passes: 0 };
-          renderedBoundary.current = null;
-          journeyDirector.reportVeil(null, false);
-          gl.domElement.dataset.renderedBoundary = 'clear';
-          gl.domElement.dataset.renderedProgress = '0.0000';
-          gl.domElement.dataset.renderedRevision = String(material.userData.snapshotRevision ?? 0);
-          gl.domElement.style.opacity = '1';
-          return;
-        }
-
-        const confirmation = advanceVeilPaintConfirmation(paintConfirmation.current, paintedRenderKey);
-        paintConfirmation.current = confirmation.state;
-        if (!confirmation.confirmed) {
-          journeyDirector.reportVeil(paintedBoundary, false);
-          gl.domElement.dataset.renderedBoundary = 'pending';
-          gl.domElement.style.opacity = '0';
-          invalidate();
-          return;
-        }
-
-        renderedBoundary.current = paintedRenderKey;
-        journeyDirector.reportVeil(paintedBoundary, true);
-        gl.domElement.dataset.renderedBoundary = String(material.userData.boundaryKey);
-        gl.domElement.dataset.renderedProgress = Number.isFinite(paintedProgress)
-          ? paintedProgress.toFixed(4)
-          : '0.0000';
-        gl.domElement.dataset.renderedRevision = String(material.userData.snapshotRevision ?? 0);
-        gl.domElement.style.opacity = '1';
-      }}
-    >
-      <planeGeometry args={[2, 2]} />
-      <primitive object={material} attach="material" />
-    </mesh>
-  );
-}
-
-export default function FilmVeil({ motionEnabled, thresholdHdrEnabled, enableThresholdStudy }: {
-  readonly motionEnabled: boolean;
-  readonly thresholdHdrEnabled: boolean;
-  readonly enableThresholdStudy: boolean;
-}) {
-  const controls = useSyncExternalStore(
-    journeyControls.subscribe,
-    journeyControls.getSnapshot,
-    journeyControls.getServerSnapshot,
-  );
-  const journeySnapshot = useSyncExternalStore(
-    journeyDirector.subscribe,
-    journeyDirector.getSnapshot,
-    journeyDirector.getServerSnapshot,
-  );
-  const [journeyVisible, setJourneyVisible] = useState(true);
-  const [documentVisible, setDocumentVisible] = useState(true);
-  const [contextReady, setContextReady] = useState(false);
-  const [plateReady, setPlateReady] = useState(false);
-  const [canvasElement, setCanvasElement] = useState<HTMLCanvasElement | null>(null);
-  const active = journeyVisible && documentVisible && motionEnabled && controls.motionPreference === 'auto';
-  const onFirstPlateReady = useCallback(() => setPlateReady(true), []);
-  const onThresholdReady = useCallback(() => undefined, []);
-  const shouldMountThreshold = thresholdStudyEnabled(journeySnapshot, {
-    optIn: enableThresholdStudy,
-    hdrSupported: thresholdHdrEnabled,
-    motionEnabled: active,
-  });
-  const enhancementReady = journeyEnhancementReady({
-    contextReady,
-    plateReady,
-    directorRevision: journeySnapshot.revision,
-    motionEnabled: active,
-    motionPreference: controls.motionPreference,
-  });
-
+  /* ---- paint confirmation: the single owner of what the director is told ---- */
   useEffect(() => {
-    if (!active) setPlateReady(false);
-  }, [active]);
+    stage.mesh.onAfterRender = () => {
+      const paintedRenderKey = material.uniforms.uVisible.value > 0
+        && typeof material.userData.renderKey === 'string'
+        ? material.userData.renderKey
+        : null;
+      const paintedBoundary = typeof material.userData.boundaryKey === 'string'
+        ? material.userData.boundaryKey
+        : null;
+      const paintedProgress = Number(material.userData.transitionProgress);
+      if (!paintedRenderKey) {
+        paintConfirmation.current = { renderKey: null, passes: 0 };
+        renderedBoundary.current = null;
+        journeyDirector.reportVeil(null, false);
+        host.dataset.renderedBoundary = 'clear';
+        host.dataset.renderedProgress = '0.0000';
+        host.dataset.renderedRevision = String(material.userData.snapshotRevision ?? 0);
+        return;
+      }
+
+      const confirmation = advanceVeilPaintConfirmation(paintConfirmation.current, paintedRenderKey);
+      paintConfirmation.current = confirmation.state;
+      if (!confirmation.confirmed) {
+        journeyDirector.reportVeil(paintedBoundary, false);
+        host.dataset.renderedBoundary = 'pending';
+        invalidate();
+        return;
+      }
+
+      renderedBoundary.current = paintedRenderKey;
+      journeyDirector.reportVeil(paintedBoundary, true);
+      host.dataset.renderedBoundary = String(material.userData.boundaryKey);
+      host.dataset.renderedProgress = Number.isFinite(paintedProgress) ? paintedProgress.toFixed(4) : '0.0000';
+      host.dataset.renderedRevision = String(material.userData.snapshotRevision ?? 0);
+    };
+    const mesh = stage.mesh;
+    return () => {
+      mesh.onAfterRender = () => undefined;
+    };
+  }, [host, invalidate, material, stage]);
+
+  /* ---- the view: `.film-veil` is fixed inset 0, so its scissor is the viewport ---- */
+  useEffect(() => {
+    const render = ({ rect, gl }: SurfaceViewRenderContext) => {
+      material.uniforms.uAspect.value = rect.width / Math.max(1, rect.height);
+      gl.render(stage.scene, stage.camera);
+    };
+    // Priority 0: under the floor band, which is where `.surface-canvas-host`
+    // (z-index 1) has always sat relative to `.film-veil` inside `.journey`'s own
+    // stacking context. See the view table in surface-store.ts.
+    return surfaceStore.registerView('film-veil', host, { render, priority: 0 });
+  }, [host, material, stage]);
 
   useEffect(() => {
     const journey = document.querySelector('.journey');
     if (!journey) return;
-    const intersection = new IntersectionObserver(([entry]) => setJourneyVisible(Boolean(entry?.isIntersecting)), { threshold: 0.01 });
+    const intersection = new IntersectionObserver(
+      ([entry]) => setJourneyVisible(Boolean(entry?.isIntersecting)),
+      { threshold: 0.01 },
+    );
     const onVisibility = () => setDocumentVisible(document.visibilityState !== 'hidden');
     intersection.observe(journey);
     document.addEventListener('visibilitychange', onVisibility);
@@ -563,15 +608,23 @@ export default function FilmVeil({ motionEnabled, thresholdHdrEnabled, enableThr
     };
   }, []);
 
+  const enhancementReady = journeyEnhancementReady({
+    contextReady: rendererLive,
+    plateReady,
+    directorRevision: snapshot.revision,
+    motionEnabled: active,
+    motionPreference: controls.motionPreference,
+  });
+
   useEffect(() => {
-    if (!canvasElement) return;
-    const onContextLost = () => {
-      setContextReady(false);
-      removeJourneyEnhancement(document);
-    };
-    canvasElement.addEventListener('webglcontextlost', onContextLost);
-    return () => canvasElement.removeEventListener('webglcontextlost', onContextLost);
-  }, [canvasElement]);
+    if (rendererLive) return;
+    // The shared context went away (loss, or an admission that never happened).
+    // Hand the picture back to the DOM crossfade in the same breath.
+    removeJourneyEnhancement(document);
+    journeyDirector.reportVeil(null, false);
+    renderedBoundary.current = null;
+    paintConfirmation.current = { renderKey: null, passes: 0 };
+  }, [rendererLive]);
 
   useEffect(() => {
     const journey = document.querySelector<HTMLElement>('.journey');
@@ -581,28 +634,18 @@ export default function FilmVeil({ motionEnabled, thresholdHdrEnabled, enableThr
     return () => journey?.removeAttribute('data-journey-enhanced');
   }, [enhancementReady]);
 
-  return (
-    <Canvas
-      orthographic
-      camera={{ position: [0, 0, 1], near: 0.1, far: 10 }}
-      dpr={[1, 1.5]}
-      frameloop="demand"
-      gl={{ alpha: true, antialias: false, powerPreference: 'high-performance' }}
-      onCreated={({ gl }) => {
-        gl.setClearColor(0x000000, 0);
-        gl.outputColorSpace = THREE.SRGBColorSpace;
-        gl.toneMapping = THREE.AgXToneMapping;
-        gl.toneMappingExposure = 1;
-        setCanvasElement(gl.domElement);
-        setContextReady(true);
-      }}
-    >
-      {motionEnabled ? <MixMesh active={active} onFirstPlateReady={onFirstPlateReady} /> : null}
-      {shouldMountThreshold ? (
-        <Suspense fallback={null}>
-          <ThresholdTravel motionEnabled={active} onReady={onThresholdReady} />
-        </Suspense>
-      ) : null}
-    </Canvas>
-  );
+  useEffect(() => () => {
+    journeyDirector.reportVeil(null, false);
+    delete host.dataset.renderedBoundary;
+    delete host.dataset.renderedProgress;
+    delete host.dataset.renderedRevision;
+  }, [host]);
+
+  useEffect(() => () => {
+    stage.mesh.geometry.dispose();
+    material.dispose();
+    fallback.dispose();
+  }, [fallback, material, stage]);
+
+  return null;
 }

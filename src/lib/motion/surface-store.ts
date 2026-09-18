@@ -15,37 +15,49 @@
  * client calls.
  *
  * ---------------------------------------------------------------------------
- * VIEW REGISTRY — and how `FilmVeil`'s `MixMesh` migrates onto it
+ * VIEW REGISTRY — the whole page draws through one context (Step 18a)
  * ---------------------------------------------------------------------------
  * A "view" is a DOM element that claims a rectangle of the one layout-level canvas.
  * `registerView(id, element, { render })` records it; every rendered frame the canvas
  * walks the registry, skips views whose element does not intersect the viewport, sets
  * `gl.setViewport` + `gl.setScissor` to that element's rect (CSS pixels — Three.js
- * multiplies by the pixel ratio itself) and calls the view's own `render`. This is
- * drei's `<View>` contract, reimplemented here so the scissor rule, the visibility
- * rule and the demand-render rule all live in one testable place.
+ * multiplies by the pixel ratio itself) and calls the view's own `render` with the
+ * shared renderer. This is drei's `<View>` contract, reimplemented here so the scissor
+ * rule, the visibility rule and the demand-render rule all live in one testable place.
  *
- * `FilmVeil.tsx` today owns a *second* `<canvas>` with its own WebGL context. It is
- * not touched by this step (file ownership: Motion engineer A). The migration, when
- * Motion A takes it, is mechanical and needs no change to this file:
+ * Three views exist, and `priority` is their paint order inside a frame. It is not a
+ * free choice: it has to reproduce the z-order these elements had as separate canvases.
  *
- *   1. `MixMesh` keeps its `ShaderMaterial` and its `onAfterRender` paint-confirmation
- *      exactly as-is; only the `<Canvas>` wrapper in `FilmVeil`'s default export goes.
- *   2. `FilmVeil` renders `MixMesh` into a `scene` of its own (or a dedicated layer of
- *      the shared scene) and calls
- *        `surfaceStore.registerView('film-veil', document.querySelector('.film-veil'),
- *           { render: ({ gl }) => gl.render(veilScene, veilCamera), priority: 10 })`
- *      from the effect that currently sets `contextReady`.
- *   3. `.film-veil` already is `position: fixed; inset: 0`, so its rect is the whole
- *      viewport and the scissor is a no-op for it — the veil keeps full-bleed behaviour.
- *   4. `invalidate()` becomes `surfaceStore.invalidate()`; the veil's demand-render
- *      semantics are preserved because this canvas is also `frameloop="demand"`.
- *   5. `priority` orders the views within a frame; the veil (10) paints after the floor
- *      (0), which is the current z-order (`.film-veil` z-index 1 over the plates).
+ *   0  `film-veil`      `.film-veil`               — the boundary compositor, full
+ *                                                    viewport, so its scissor is a
+ *                                                    no-op and it keeps full bleed.
+ *                                                    It paints FIRST because `.journey`
+ *                                                    is `isolation: isolate` at z-index
+ *                                                    auto and `.surface-canvas-host` is
+ *                                                    z-index 1, so the floor band has
+ *                                                    always been above the veil. Giving
+ *                                                    the veil the higher priority was
+ *                                                    measured as a 16.9% luminance step
+ *                                                    in the bottom third of the frame
+ *                                                    each time a boundary handed back.
+ *   10 `surface-floor`  `[data-surface-fallback]`  — the journey's floor band, over it.
+ *   20 `nav-floor`      `[data-nav-menu-floor]`    — the menu's floor, registered on
+ *                                                    open and dropped on close. It
+ *                                                    paints last because an open menu
+ *                                                    covers everything under it.
  *
- * At that point `/` drops from two WebGL contexts to one and the CLAUDE.md
- * "one <canvas> element per page" lock is satisfied without any change here.
+ * The renderer is handed to the view rather than captured by it, which is what lets a
+ * view be registered from a *different React root*: `FilmVeil` is an island inside
+ * `.journey` and `SurfaceCanvas` is an island in `BaseLayout`, so they share no R3F
+ * context and could not otherwise reach the same `WebGLRenderer`.
+ *
+ * WHAT IS NOT HERE. No view writes `canvas.style.opacity`. The shared element belongs
+ * to the page, and a view that hid it would hide every other view with it; a view that
+ * wants to disappear writes transparent pixels (the veil sets `uVisible` to 0) or
+ * unregisters (the menu floor). See DEV-CONTRACT.md, "One canvas, three views".
  */
+
+import type { WebGLRenderer } from 'three';
 
 import {
   dominantSurfaceState,
@@ -80,11 +92,17 @@ export interface SurfaceViewRenderContext {
   readonly rect: SurfaceRect;
   readonly box: SurfaceScissorBox;
   readonly frame: number;
+  /**
+   * The one renderer, passed in rather than captured, so a view registered from
+   * another React root can draw into this canvas. Type-only import: nothing of
+   * three.js reaches this module at runtime.
+   */
+  readonly gl: WebGLRenderer;
 }
 
 export interface SurfaceViewOptions {
   readonly render: (context: SurfaceViewRenderContext) => void;
-  /** Lower paints first. The floor is 0; a migrated `FilmVeil` would be 10. */
+  /** Lower paints first: veil 0, floor band 10, menu floor 20. */
   readonly priority?: number;
 }
 
@@ -104,6 +122,12 @@ export interface SurfaceSnapshot {
   readonly camera: SurfaceCameraMode;
   readonly renderer: SurfaceRenderer;
   readonly settled: boolean;
+  /**
+   * The full-screen menu is open and has claimed a rectangle for its floor. The
+   * element itself is not in the snapshot — a DOM node has no value equality and
+   * would defeat `useSyncExternalStore` — so it is read with `getMenuFloor()`.
+   */
+  readonly menuOpen: boolean;
 }
 
 /**
@@ -285,6 +309,7 @@ const EMPTY_SNAPSHOT: SurfaceSnapshot = Object.freeze({
   camera: 'standing',
   renderer: 'none',
   settled: true,
+  menuOpen: false,
 });
 
 export function createSurfaceStore() {
@@ -294,6 +319,9 @@ export function createSurfaceStore() {
   let driver: SurfaceDriver | null = null;
   let frames = 0;
   let fallbackBand: HTMLElement | null = null;
+  let menuFloor: HTMLElement | null = null;
+  /** What the plane goes back to when the menu gives it up. */
+  let parkedTarget: SurfaceTarget | null = null;
 
   const publish = (next: Partial<Omit<SurfaceSnapshot, 'revision'>>) => {
     const merged: SurfaceSnapshot = Object.freeze({
@@ -307,7 +335,8 @@ export function createSurfaceStore() {
       || merged.horizon !== snapshot.horizon
       || merged.camera !== snapshot.camera
       || merged.renderer !== snapshot.renderer
-      || merged.settled !== snapshot.settled;
+      || merged.settled !== snapshot.settled
+      || merged.menuOpen !== snapshot.menuOpen;
     if (!changed) return;
     snapshot = merged;
     writeFallbackAttributes();
@@ -367,7 +396,7 @@ export function createSurfaceStore() {
       if (next) {
         next.setStates(snapshot.a, snapshot.b);
         next.setMix(snapshot.mix);
-        next.setHorizon(snapshot.horizon, 0);
+        next.setHorizon(snapshot.menuOpen ? false : snapshot.horizon, 0);
         next.setCamera(snapshot.camera);
         next.invalidate();
       }
@@ -413,6 +442,14 @@ export function createSurfaceStore() {
      * coordinate it already owns.
      */
     applyTarget: (target: SurfaceTarget) => {
+      // One owner at a time. While the menu holds the plane, the journey's scroll
+      // target is recorded and nothing else: two writers of `a`/`b`/`mix` is exactly
+      // the failure this codebase keeps having, and a director publish mid-hover
+      // would wipe the finish the visitor is pointing at.
+      if (snapshot.menuOpen) {
+        parkedTarget = target;
+        return;
+      }
       const current: SurfaceTarget = {
         a: snapshot.a, b: snapshot.b, mix: snapshot.mix, horizon: snapshot.horizon,
       };
@@ -424,6 +461,39 @@ export function createSurfaceStore() {
       if (horizonChanged) driver?.setHorizon(target.horizon, SURFACE_MORPH_DURATION);
       driver?.invalidate();
     },
+
+    /* ---- the full-screen menu's floor ---- */
+    /**
+     * The menu claims a second rectangle of the same canvas, rendering the same
+     * plane and the same material through a closer camera. `SurfaceFloor` watches
+     * `menuOpen` and registers/unregisters the `nav-floor` view; hover blends go
+     * through `morphTo`, so there is no second material system to keep in step.
+     *
+     * Opening parks whatever the plane was showing; closing puts it back, so a menu
+     * left on cobalt-metallic never leaks that floor onto the page behind it — on a
+     * route with no director to re-publish one, nothing else would.
+     */
+    setMenuFloor: (element: HTMLElement | null) => {
+      menuFloor = element;
+      const open = element !== null;
+      if (snapshot.menuOpen === open) return;
+      if (open) {
+        parkedTarget = { a: snapshot.a, b: snapshot.b, mix: snapshot.mix, horizon: snapshot.horizon };
+        publish({ menuOpen: true });
+        // The plane has to be on screen whatever the journey left behind it — a menu
+        // opened over a white stage would otherwise show the horizon line and no floor.
+        driver?.setHorizon(false, SURFACE_MORPH_DURATION);
+        driver?.invalidate();
+        return;
+      }
+      publish({ menuOpen: false });
+      const restore = parkedTarget;
+      parkedTarget = null;
+      if (restore) store.applyTarget(restore);
+      driver?.setHorizon(restore?.horizon ?? snapshot.horizon, SURFACE_MORPH_DURATION);
+      driver?.invalidate();
+    },
+    getMenuFloor: () => menuFloor,
 
     /** Director adapter entry point. `journey-director.ts` is never modified. */
     applyJourneySnapshot: (journeySnapshot: JourneySnapshot) => {
@@ -464,6 +534,8 @@ export function createSurfaceStore() {
       driver = null;
       frames = 0;
       fallbackBand = null;
+      menuFloor = null;
+      parkedTarget = null;
       snapshot = EMPTY_SNAPSHOT;
       listeners.clear();
     },
