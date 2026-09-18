@@ -78,7 +78,16 @@ async function settle(page: Page) {
  * "the view registry contains `film-veil`". Waiting on the first and asserting the
  * second still fails if the compositor never registers.
  */
-async function settleArrival(page: Page) {
+async function settleArrival(page: Page, expectedPath?: string) {
+  // First the navigation itself: a click starts a view transition and the swap can take
+  // well over a second on a loaded machine (brand hop measured at median 466 ms, max
+  // 797 ms in isolation, longer under parallel Playwright runs). Every wait below is
+  // satisfiable on the *outgoing* document, so without this the fixed settle could
+  // expire before the URL changed and "arrived" would fail on a page that simply had
+  // not swapped yet.
+  if (expectedPath) {
+    await page.waitForURL((url) => url.pathname === expectedPath, { timeout: 30_000 }).catch(() => {});
+  }
   // Three deferred things have to have landed, and none of them is what is asserted:
   //  - the `client:idle` island itself (`window.__ffeSurface`);
   //  - its lazy renderer chunk, which is what puts a <canvas> in the document at all;
@@ -154,7 +163,7 @@ test.describe('route transitions', () => {
         if (hop.label.startsWith('<-')) await page.goBack();
         else if (hop.path === '/') await page.getByRole('link', { name: 'Final Finish Epoxy home' }).click();
         else await page.getByRole('link', { name: hop.path === '/services' ? 'Services' : 'Projects', exact: true }).first().click();
-        await settleArrival(page);
+        await settleArrival(page, hop.path);
 
         const state = await page.evaluate(readRouteState);
         const control = fresh.get(hop.path)!;
@@ -193,7 +202,7 @@ test.describe('route transitions', () => {
     expect(await page.evaluate(() => document.querySelector('.journey'))).toBeNull();
 
     await page.goBack();
-    await settleArrival(page);
+    await settleArrival(page, '/');
     const revision = () => page.evaluate(() =>
       Number(document.querySelector<HTMLElement>('.journey')?.dataset.journeyRevision ?? '-1'));
     const before = await revision();
