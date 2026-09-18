@@ -133,6 +133,21 @@ export function verifyVisualizerSession(token: string, secret: string, subject: 
   }
 }
 
+/**
+ * A tolerant honeypot-style time trap: a genuine visitor takes measurable time to read and fill
+ * a form, so a submission whose own client-recorded start time is less than `minElapsedMs`
+ * before the request arrives is treated as automated.
+ *
+ * `startedAt` is optional, unauthenticated client input, so anything other than a finite number
+ * (missing, wrong type, `NaN`) is never treated as suspicious — that is what makes this
+ * "tolerant": no client sends this field yet (Step 27 adds it to the quote form), and every
+ * client that omits or malforms it must still be accepted.
+ */
+export function isImplausiblyFastSubmission(startedAt: unknown, now: number, minElapsedMs = 3_000): boolean {
+  if (typeof startedAt !== 'number' || !Number.isFinite(startedAt)) return false;
+  return now - startedAt < minElapsedMs;
+}
+
 export function isSameOriginBrowserRequest(request: Request): boolean {
   if (request.headers.get('sec-fetch-site') !== 'same-origin') return false;
   try {

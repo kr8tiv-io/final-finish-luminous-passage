@@ -4,6 +4,7 @@ import {
   SlidingWindowRateLimiter,
   createVisualizerSession,
   inspectContentLength,
+  isImplausiblyFastSubmission,
   isSameOriginBrowserRequest,
   readBodyWithLimit,
   verifyVisualizerSession,
@@ -101,5 +102,28 @@ describe('visualizer browser sessions', () => {
     });
     expect(() => isSameOriginBrowserRequest(request)).not.toThrow();
     expect(isSameOriginBrowserRequest(request)).toBe(false);
+  });
+});
+
+describe('tolerant submission time trap', () => {
+  test('flags a submission whose client-recorded start time is inside the minimum window', () => {
+    expect(isImplausiblyFastSubmission(1_000, 3_500)).toBe(true);
+    expect(isImplausiblyFastSubmission(1_000, 3_500, 2_000)).toBe(false);
+  });
+
+  test('accepts a submission at or beyond the minimum elapsed time', () => {
+    expect(isImplausiblyFastSubmission(0, 3_000)).toBe(false);
+    expect(isImplausiblyFastSubmission(0, 3_001)).toBe(false);
+  });
+
+  test('never flags a missing or malformed startedAt — no client sends it before Step 27', () => {
+    expect(isImplausiblyFastSubmission(undefined, 1_000)).toBe(false);
+    expect(isImplausiblyFastSubmission(null, 1_000)).toBe(false);
+    expect(isImplausiblyFastSubmission('1000', 1_000)).toBe(false);
+    expect(isImplausiblyFastSubmission(Number.NaN, 1_000)).toBe(false);
+  });
+
+  test('still flags an implausible future-dated startedAt (clock skew abuse)', () => {
+    expect(isImplausiblyFastSubmission(5_000, 1_000)).toBe(true);
   });
 });

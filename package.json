@@ -10,6 +10,7 @@
     "prebuild:assets": "npm run assets:validate",
     "prebuild": "node scripts/validate-deployment-env.mjs && npm run validate:3d && npm run prebuild:assets && npm run validate:content",
     "build": "astro build",
+    "postbuild": "node scripts/build-prerender-headers.mjs",
     "build:staging": "node scripts/build-with-env.mjs staging",
     "build:production": "node scripts/build-with-env.mjs production",
     "start": "node ./dist/server/entry.mjs",
@@ -29,7 +30,8 @@
     "assets:validate": "node scripts/validate-project-assets.mjs",
     "test:project-assets": "node --test tests/project-assets.test.mjs",
     "astro": "astro",
-    "validate:content": "node scripts/validate-content.mjs"
+    "validate:content": "node scripts/validate-content.mjs",
+    "check:reviews": "node scripts/check-review-freshness.mjs"
   },
   "dependencies": {
     "@astrojs/mdx": "^7.0.8",
@@ -45,12 +47,17 @@
     "astro": "^7.2.9",
     "framer-motion": "^13.2.0",
     "gsap": "^3.15.0",
+<<<<<<< HEAD
     "nodemailer": "^9.0.6",
+=======
+    "lenis": "^1.3.26",
+    "nodemailer": "^10.0.10",
+>>>>>>> phase1/step-10
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
     "resend": "^6.25.0",
     "sharp": "^0.35.4",
-    "three": "^0.185.1",
+    "three": "^0.182.0",
     "zod": "^4.5.4"
   },
   "allowScripts": {
@@ -59,8 +66,8 @@
   "devDependencies": {
     "@astrojs/check": "^0.9.10",
     "@playwright/test": "^1.62.1",
-    "@types/nodemailer": "^8.0.1",
-    "@types/three": "^0.185.4",
+    "@types/nodemailer": "^8.0.2",
+    "@types/three": "^0.182.0",
     "@vitest/coverage-v8": "^4.1.11",
     "axe-core": "^4.13.0",
     "typescript": "^6.0.3",
