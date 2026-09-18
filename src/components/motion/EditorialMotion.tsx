@@ -1,25 +1,86 @@
 import { useEffect } from 'react';
 import gsap from 'gsap';
-import { SplitText, ensureGsapKit } from '../../lib/motion/gsap-kit';
+import { ScrollTrigger, SplitText, ensureGsapKit } from '../../lib/motion/gsap-kit';
 import { journeyControls } from '../../lib/motion/journey-controls';
+import type { JourneyTier } from '../../lib/motion/journey-tier';
 import { onRouteTeardown } from '../../lib/motion/route-lifecycle';
-import { reviewPosition, reviewTarget } from '../../lib/content/review-navigation';
 
 ensureGsapKit();
 
 /** A hydration after this reading position must never leave copy in a start state. */
 const alreadyRead = (element: Element, ratio: number) => element.getBoundingClientRect().top < window.innerHeight * ratio;
 
+/** How far a card travels in from the side its row arrives from. */
+const CARD_TRAVEL = 64;
+/** The caption drifts a fraction of that, along the same axis (T1). */
+const CAPTION_DRIFT = 12;
+/** The card entrance's own duration, so the caption's lag is stated once. */
+const CARD_ARRIVAL = 0.7;
+/** Storyboard §7: `caption-drift` runs 0.12 s behind the thing it belongs to. */
+const CAPTION_LAG = 0.12;
+
+const cardOf = (element: Element) => element.closest<HTMLElement>('[data-review-card]');
+
 /**
- * The customer-word stage: eyebrow char float, masked heading fold, the rating
- * sliding up through its clip, five stars, and the cards arriving laterally.
- * Called inside a gsap.matchMedia context, so returning a cleanup is enough.
+ * Group the cells into visual rows by their top edge, and publish on each card the
+ * direction its row arrives from: L, R, L … down the grid, alternating per row exactly as
+ * storyboard §3 casts Act 2. Two layouts have no lateral axis to arrive along and are
+ * tagged `below` instead: a one-column grid (§2's phone plan, "cards arrive from below")
+ * and the `balanced` tier, which gets the same from-below arrival at every width.
+ *
+ * The applied values live on the card as data attributes rather than in a closure, so the
+ * built page can be probed for what it will actually do, and so a re-group after a resize
+ * is picked up by the function-based tween values at the moment a row finally arrives.
+ *
+ * Cells are measured, never cards: every cell below the first row carries
+ * `content-visibility: auto`, and a card inside a skipped cell has no box to measure.
  */
-function buildReviewStage(stage: HTMLElement, finePointer: boolean) {
+function assignRowDirections(cells: HTMLElement[], lateral: boolean) {
+  const rows = new Map<number, HTMLElement[]>();
+  for (const cell of cells) {
+    const top = Math.round(cell.offsetTop);
+    const row = rows.get(top);
+    if (row) row.push(cell);
+    else rows.set(top, [cell]);
+  }
+  const tops = [...rows.keys()].sort((a, b) => a - b);
+  const columns = tops.reduce((widest, top) => Math.max(widest, rows.get(top)?.length ?? 0), 1);
+  tops.forEach((top, index) => {
+    const fromBelow = !lateral || columns === 1;
+    const fromRight = index % 2 === 1;
+    for (const cell of rows.get(top) ?? []) {
+      const card = cell.querySelector<HTMLElement>('[data-review-card]');
+      if (!card) continue;
+      card.dataset.reviewRow = String(index);
+      card.dataset.arriveFrom = fromBelow ? 'below' : fromRight ? 'right' : 'left';
+      card.dataset.arriveX = fromBelow ? '0' : String(fromRight ? CARD_TRAVEL : -CARD_TRAVEL);
+    }
+  });
+}
+
+/**
+ * The customer-word stage: eyebrow char float, masked heading fold, the rating sliding up
+ * through its clip, five stars, and the rows of cards arriving laterally and then holding
+ * still. Called inside a gsap.matchMedia context, so returning a cleanup is enough; the
+ * context is also passed in because the row entrances are built inside a ScrollTrigger
+ * callback, long after this function has returned, and have to be recorded to be reverted.
+ *
+ * @motion char-float
+ * @motion char-fold
+ * @motion rating-clip
+ * @motion lateral-card-arrival
+ * @motion caption-drift
+ * @motion card-ring
+ * @motion underline-travel
+ */
+function buildReviewStage(stage: HTMLElement, finePointer: boolean, tier: JourneyTier, context: gsap.Context) {
   const cleanups: Array<() => void> = [];
 
-  // Young Multi char float, scrubbed. No already-read guard is needed: a scrub
-  // that starts above the viewport resolves to progress 1, which is the settled state.
+  /**
+   * Young Multi char float, scrubbed. No already-read guard is needed: a scrub that starts
+   * above the viewport resolves to progress 1, which is the settled state.
+   * @motion char-float
+   */
   const eyebrow = stage.querySelector<HTMLElement>('[data-review-eyebrow]');
   if (eyebrow) {
     // aria:'auto' would write aria-label onto a <p>, where a generic role prohibits it
@@ -41,7 +102,10 @@ function buildReviewStage(stage: HTMLElement, finePointer: boolean) {
     });
   }
 
-  // gsap.com clip-wrapper fold. SplitText keeps one accessible string via aria:'auto'.
+  /**
+   * gsap.com clip-wrapper fold. SplitText keeps one accessible string via aria:'auto'.
+   * @motion char-fold
+   */
   const heading = stage.querySelector<HTMLElement>('#social-title');
   if (heading && !alreadyRead(heading, .8)) {
     SplitText.create(heading, {
@@ -62,7 +126,10 @@ function buildReviewStage(stage: HTMLElement, finePointer: boolean) {
     }
   }
 
-  // The real 5.0 slides up through its own clip; never a counted-up number.
+  /**
+   * The real 5.0 slides up through its own clip; never a counted-up number.
+   * @motion rating-clip
+   */
   const ratingClip = stage.querySelector<HTMLElement>('[data-rating-clip]');
   const ratingNumber = ratingClip?.querySelector<HTMLElement>('.rating-number');
   if (ratingClip && ratingNumber && !alreadyRead(ratingClip, .88)) {
@@ -76,24 +143,75 @@ function buildReviewStage(stage: HTMLElement, finePointer: boolean) {
     }
   }
 
-  // Lateral arrival by parity, then the cards are perfectly still while read.
-  // Replaces the single xPercent:7 reveal that used to run on [data-review-window].
-  const reviewWindow = stage.querySelector<HTMLElement>('[data-review-window]');
-  const cards = [...stage.querySelectorAll<HTMLElement>('.review-card')];
-  if (reviewWindow && cards.length && !alreadyRead(reviewWindow, .94)) {
-    gsap.from(cards, {
-      x: (index: number) => (index % 2 ? 64 : -64), y: 32, opacity: 0,
-      duration: .7, stagger: .08, ease: 'power3.out',
-      scrollTrigger: { trigger: reviewWindow, start: 'top 94%', once: true },
-    });
+  /**
+   * One row of cards is one batch: they share a top edge, so they enter together and are
+   * tweened together, from that row's own side of the page. `toggleActions` by way of
+   * `once`, never a scrub — after a row lands, nothing in this section moves again while
+   * it is being read (the `data-hold-window` list in `SocialProof.astro`, storyboard §7).
+   * The caption follows its own card by `CAPTION_LAG`, drifting along the same axis.
+   *
+   * Cards the visitor has already scrolled past are filtered out rather than animated, so
+   * a deep link or a late hydration lands on settled copy (T7).
+   *
+   * @motion lateral-card-arrival
+   * @motion caption-drift
+   */
+  const cells = [...stage.querySelectorAll<HTMLElement>('.review-cell')];
+  if (cells.length) {
+    // `balanced` keeps the arrival but drops the lateral axis: from below, opacity, nothing
+    // travelling sideways across a device that is already working to composite the journey.
+    const lateral = tier !== 'balanced';
+    assignRowDirections(cells, lateral);
+    const regroup = () => assignRowDirections(cells, lateral);
+    ScrollTrigger.addEventListener('refresh', regroup);
+    cleanups.push(() => ScrollTrigger.removeEventListener('refresh', regroup));
+
+    const arriving = cells.filter(cell => !alreadyRead(cell, .92));
+    if (arriving.length) {
+      ScrollTrigger.batch(arriving, {
+        start: 'top 92%',
+        once: true,
+        batchMax: 3,
+        interval: .12,
+        onEnter: batch => context.add(() => {
+          const cards = batch
+            .map(cell => cell.querySelector<HTMLElement>('[data-review-card]'))
+            .filter((card): card is HTMLElement => card !== null);
+          if (!cards.length) return;
+          const arrival = gsap.timeline();
+          arrival.from(cards, {
+            x: (_index: number, target: HTMLElement) => Number(target.dataset.arriveX ?? 0),
+            y: (_index: number, target: HTMLElement) => (target.dataset.arriveFrom === 'below' ? 40 : 32),
+            opacity: 0, duration: CARD_ARRIVAL, stagger: .08, ease: 'power3.out',
+          }, 0);
+          const captions = cards
+            .map(card => card.querySelector<HTMLElement>('[data-review-caption]'))
+            .filter((caption): caption is HTMLElement => caption !== null);
+          if (captions.length) {
+            arrival.from(captions, {
+              x: (_index: number, target: HTMLElement) => {
+                const from = cardOf(target)?.dataset.arriveFrom;
+                return from === 'left' ? -CAPTION_DRIFT : from === 'right' ? CAPTION_DRIFT : 0;
+              },
+              y: (_index: number, target: HTMLElement) => (cardOf(target)?.dataset.arriveFrom === 'below' ? CAPTION_DRIFT : 0),
+              opacity: 0, duration: .5, stagger: .08, ease: 'power2.out',
+            }, CAPTION_LAG);
+          }
+        }),
+      });
+    }
   }
 
-  // Hover is a fine-pointer affordance only, and it moves no hit target.
+  // Hover is a fine-pointer affordance only, and it moves no hit target (H1). Keyboard
+  // focus inside a card plays the same two tweens on the same curves (H4).
   if (finePointer) {
+    const cards = [...stage.querySelectorAll<HTMLElement>('[data-review-card]')];
     cards.forEach(card => {
+      /** @motion card-ring */
       const ring = gsap.to(card, {
         boxShadow: '0 0 0 1px rgba(22,79,131,.55)', duration: .18, ease: 'power2.out', easeReverse: true, paused: true,
       });
+      /** @motion underline-travel */
       const rule = card.querySelector<HTMLElement>('[data-review-link] .link-rule');
       const travel = rule
         ? gsap.to(rule, { scaleX: 1, duration: .18, ease: 'power2.out', easeReverse: true, paused: true })
@@ -103,13 +221,19 @@ function buildReviewStage(stage: HTMLElement, finePointer: boolean) {
       const ringOut = () => ring.reverse();
       const ruleIn = () => travel?.play();
       const ruleOut = () => travel?.reverse();
+      const focusIn = () => { ring.play(); travel?.play(); };
+      const focusOut = () => { ring.reverse(); travel?.reverse(); };
       card.addEventListener('pointerenter', ringIn);
       card.addEventListener('pointerleave', ringOut);
+      card.addEventListener('focusin', focusIn);
+      card.addEventListener('focusout', focusOut);
       link?.addEventListener('pointerenter', ruleIn);
       link?.addEventListener('pointerleave', ruleOut);
       cleanups.push(() => {
         card.removeEventListener('pointerenter', ringIn);
         card.removeEventListener('pointerleave', ringOut);
+        card.removeEventListener('focusin', focusIn);
+        card.removeEventListener('focusout', focusOut);
         link?.removeEventListener('pointerenter', ruleIn);
         link?.removeEventListener('pointerleave', ruleOut);
       });
@@ -119,47 +243,31 @@ function buildReviewStage(stage: HTMLElement, finePointer: boolean) {
   return () => cleanups.forEach(cleanup => cleanup());
 }
 
-/** Owns editorial transforms only. The journey director owns all film layers. */
+const readTier = (): JourneyTier => {
+  const value = document.documentElement.dataset.journeyTier;
+  return value === 'still' || value === 'balanced' || value === 'full' ? value : 'full';
+};
+
+/**
+ * Owns editorial transforms only. The journey director owns all film layers.
+ * @motion editorial-reveal
+ * @motion story-photo-arrival
+ * @motion material-lens
+ */
 export default function EditorialMotion() {
   useEffect(() => {
     const root = document.querySelector<HTMLElement>('.journey');
     if (!root) return;
-    const reduced = matchMedia('(prefers-reduced-motion: reduce)');
     let media: gsap.MatchMedia | undefined;
-    const gallery = root.querySelector<HTMLElement>('.review-gallery');
-    const buttons = [...root.querySelectorAll<HTMLButtonElement>('[data-review-direction]')];
-    let scrollFrame = 0;
-    const readGallery = () => {
-      scrollFrame = 0;
-      if (!gallery) return;
-      const cards = gallery.querySelectorAll<HTMLElement>('.review-card');
-      const stride = (cards[0]?.getBoundingClientRect().width ?? 0) + Number.parseFloat(getComputedStyle(gallery).gap || '0');
-      const maximum = gallery.scrollWidth - gallery.clientWidth;
-      const state = reviewPosition(gallery.scrollLeft, stride, cards.length, maximum);
-      const position = root.querySelector('.review-position');
-      const label = `${String(state.index).padStart(2, '0')} / ${String(cards.length).padStart(2, '0')}`;
-      if (position && position.textContent !== label) position.textContent = label;
-      root.querySelector<HTMLElement>('.review-progress span')?.style.setProperty('transform', `scaleX(${state.progress})`);
-      buttons.forEach(button => { button.disabled = Number(button.dataset.reviewDirection) < 0 ? state.atStart : state.atEnd; });
-    };
-    const scheduleGallery = () => { if (!scrollFrame) scrollFrame = requestAnimationFrame(readGallery); };
-    const moveGallery = (event: Event) => {
-      if (!gallery) return;
-      const button = event.currentTarget as HTMLButtonElement;
-      const stride = (gallery.querySelector<HTMLElement>('.review-card')?.getBoundingClientRect().width ?? 0) + Number.parseFloat(getComputedStyle(gallery).gap || '0');
-      gallery.scrollTo({ left: reviewTarget(gallery.scrollLeft, Number(button.dataset.reviewDirection), stride, gallery.scrollWidth - gallery.clientWidth), behavior: reduced.matches || journeyControls.getSnapshot().motionPreference === 'still' ? 'instant' : 'smooth' });
-    };
-    gallery?.addEventListener('scroll', scheduleGallery, { passive: true });
-    buttons.forEach(button => button.addEventListener('click', moveGallery));
-    const resize = new ResizeObserver(scheduleGallery);
-    if (gallery) resize.observe(gallery);
-    readGallery();
+    // `JourneyMotion` is the only writer of `data-journey-tier` and it is a separate
+    // island, so the attribute can land before or after this effect runs. Read it, and
+    // rebuild when it actually changes value — never on every re-write of the same tier.
+    let tier = readTier();
 
     // The still tier and the motion preference are not media queries, so they stay
     // an explicit gate; prefers-reduced-motion is expressed as a matchMedia condition
     // so the OS setting can flip live and revert every tween on its own.
-    const stillRequested = () => journeyControls.getSnapshot().motionPreference === 'still'
-      || document.documentElement.dataset.journeyTier === 'still';
+    const stillRequested = () => journeyControls.getSnapshot().motionPreference === 'still' || tier === 'still';
 
     const applyMotion = () => {
       media?.revert();
@@ -191,19 +299,23 @@ export default function EditorialMotion() {
         const lens = root.querySelector<HTMLElement>('[data-material-lens]');
         if (lens) gsap.fromTo(lens, { y: 38, x: 12 }, { y: -22, x: -12, ease: 'none', scrollTrigger: { trigger: '#foundation', start: 'top bottom', end: 'bottom top', scrub: .6 } });
         const stage = root.querySelector<HTMLElement>('[data-review-stage]');
-        return stage ? buildReviewStage(stage, finePointer) : undefined;
+        return stage ? buildReviewStage(stage, finePointer, tier, context) : undefined;
       });
     };
     const unsubscribe = journeyControls.subscribe(applyMotion);
+    const watchTier = new MutationObserver(() => {
+      const next = readTier();
+      if (next === tier) return;
+      tier = next;
+      applyMotion();
+    });
+    watchTier.observe(document.documentElement, { attributes: true, attributeFilter: ['data-journey-tier'] });
     applyMotion();
     // `media.revert()` is the only thing that undoes this island's gsap.matchMedia
     // context, and a route swap has to see it happen *before* the body is replaced —
     // Astro's own unmount lands a beat later, on `astro:after-swap`.
     return onRouteTeardown(() => {
-      media?.revert(); unsubscribe(); resize.disconnect();
-      gallery?.removeEventListener('scroll', scheduleGallery);
-      buttons.forEach(button => button.removeEventListener('click', moveGallery));
-      if (scrollFrame) cancelAnimationFrame(scrollFrame);
+      media?.revert(); unsubscribe(); watchTier.disconnect();
     });
   }, []);
   return null;
