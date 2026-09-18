@@ -5,9 +5,13 @@ import SiteFooter from '../components/SiteFooter.astro';
 import InteriorHero from '../components/InteriorHero.astro';
 import SectionShell from '../components/SectionShell.astro';
 
-// Astro (and @astrojs/node's standalone server — see node_modules/@astrojs/node/dist/serve-app.js)
-// serves this file's prerendered output for any unmatched route with an HTTP 404 status
-// automatically; no custom Response or `prerender = false` is needed here.
+// Rendered on demand, deliberately. @astrojs/node's standalone server serves a *prerendered*
+// 404.html straight off disk for any unmatched path — before Astro's pipeline, so before
+// `src/middleware.ts`. That silently turned the Step 30 permanent redirects (`/areas/<town>`
+// → `/service-area`) into 404s once this page existed. Keeping the 404 route on demand sends
+// every unmatched request through the middleware first (301 where a redirect is declared),
+// and Astro still answers with an HTTP 404 status for this route.
+export const prerender = false;
 ---
 
 <BaseLayout

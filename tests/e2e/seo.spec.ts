@@ -66,7 +66,9 @@ test('serves a valid web app manifest with reachable icons', async ({ page, requ
 });
 
 test('canonical tag matches the requested URL on sampled routes', async ({ page }) => {
-  for (const path of ['/', '/services', '/resources/workshop-floor-coating/', '/contact', '/areas/leduc/']) {
+  // `/areas/<town>` pages were retired by Step 30 (they 301 to `/service-area`), so the
+  // sample follows them to the page that now carries the canonical.
+  for (const path of ['/', '/services', '/resources/workshop-floor-coating/', '/contact', '/service-area']) {
     await page.goto(path);
     const canonical = await page.locator('link[rel="canonical"]').getAttribute('href');
     const expectedPath = path === '/' ? '/' : path;
