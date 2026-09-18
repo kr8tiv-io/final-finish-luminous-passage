@@ -86,7 +86,10 @@
   /* Same rule as `floorLineOpacity` in SurfaceFloor.tsx: a whisper over a film, and a
      crisp full line in the silences, where the line is the whole scene. */
   opacity: calc(.06 * var(--surface-presence, 1));
-  transition: opacity 300ms ease;
+  /* Matches `HORIZON_CLEAR_FADE` (0.25 s) so the CSS line and the WebGL line ease out of
+     a text row on the same clock — they are never on screen together, but a visitor who
+     loses the context mid-fade must not see the timing change under them. */
+  transition: opacity 250ms ease;
 }
 
 .surface-band[data-surface-horizon='on']::after {
@@ -94,6 +97,20 @@
 }
 
 .surface-band[data-surface-horizon='on']::before { opacity: 1; }
+
+/*
+ * THE OCCLUSION GATE, CSS SIDE.
+ *
+ * `[data-horizon-line]` is written by the surface store from the one hit test in
+ * `SurfaceCanvas.tsx` — the same decision that drives the WebGL line's `uHorizonOpacity`.
+ * There is no second test and no second rule here: this selector is the whole CSS half.
+ *
+ * It has to come after `[data-surface-horizon='on']::before`, which carries the same
+ * specificity (0,2,1) and takes the line to a crisp 1 in the silences. Source order is
+ * what makes "not across words" outrank "crisp in the silences", which is the right way
+ * round: a silence with a paragraph in the row is not a silence.
+ */
+.surface-band[data-horizon-line='hidden']::before { opacity: 0; }
 
 /* Material states 0–7 — the `material-morph` fallback: a colour swap on a .3 s fade. */
 .surface-band[data-surface-state='0']::after { background-image: linear-gradient(180deg, rgba(22, 79, 131, .20), rgba(231, 227, 218, .34) 46%, rgba(207, 215, 222, .16)); }

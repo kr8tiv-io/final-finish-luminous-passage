@@ -5,6 +5,12 @@ import {
   chapterSurfaceTarget,
   createSurfaceStore,
   effectiveSurfaceState,
+  HORIZON_CANDIDATE_SELECTOR,
+  HORIZON_CLEAR_FADE,
+  horizonHitBlocks,
+  horizonProbePoints,
+  horizonRowClear,
+  horizonRowCrossing,
   rectIntersectsViewport,
   scissorBox,
   SURFACE_PRESENCE,
@@ -14,9 +20,13 @@ import {
   surfaceChapterPresenceEdge,
   surfaceGlossLift,
   surfaceTargetsEqual,
+  type HorizonHit,
   type SurfaceCapabilities,
   type SurfaceDriver,
 } from './surface-store';
+
+const hit = (tag: string, overrides: Partial<HorizonHit> = {}): HorizonHit =>
+  ({ tag, text: false, avoid: false, ...overrides });
 
 const CAPABLE: SurfaceCapabilities = Object.freeze({
   tier: null,
@@ -64,6 +74,7 @@ function fakeDriver() {
     setStates: vi.fn(),
     setHorizon: vi.fn(),
     setPresence: vi.fn(),
+    setHorizonClear: vi.fn(),
     setCamera: vi.fn(),
     sweep: vi.fn(),
     settle: vi.fn(),
@@ -522,5 +533,144 @@ describe('store material state', () => {
     const store = createSurfaceStore();
     store.applyTarget({ a: 3, b: 5, mix: 0.25, horizon: true });
     expect(store.getServerSnapshot()).toMatchObject({ a: 0, b: 0, mix: 0, horizon: false, renderer: 'none' });
+  });
+
+  it('carries the occlusion answer to the driver, and only when it changes', () => {
+    const store = createSurfaceStore();
+    const driver = fakeDriver();
+    store.bindDriver(driver);
+    // Bound state replays: a driver arriving mid-page must not draw a line that is off.
+    expect(driver.setHorizonClear).toHaveBeenCalledWith(true, 0);
+    expect(store.getSnapshot().horizonClear).toBe(true);
+
+    store.setHorizonClear(false, HORIZON_CLEAR_FADE);
+    expect(driver.setHorizonClear).toHaveBeenLastCalledWith(false, HORIZON_CLEAR_FADE);
+    expect(store.getSnapshot().horizonClear).toBe(false);
+
+    store.setHorizonClear(false, HORIZON_CLEAR_FADE);
+    expect(driver.setHorizonClear).toHaveBeenCalledTimes(2);
+
+    store.setHorizonClear(true, 0);
+    expect(driver.setHorizonClear).toHaveBeenLastCalledWith(true, 0);
+  });
+
+  it('leaves the plane alone when the line is gated', () => {
+    const store = createSurfaceStore();
+    store.applyTarget({ a: 2, b: 2, mix: 0, horizon: true, presence: SURFACE_PRESENCE.reflection });
+    const driver = fakeDriver();
+    store.bindDriver(driver);
+    const before = store.getSnapshot();
+    store.setHorizonClear(false, HORIZON_CLEAR_FADE);
+    const after = store.getSnapshot();
+    expect(after.presence).toBe(before.presence);
+    expect(after.horizon).toBe(before.horizon);
+    expect(after.a).toBe(before.a);
+    expect(after.b).toBe(before.b);
+    // Nothing but the gate's own lever moved.
+    expect(driver.setPresence).toHaveBeenCalledTimes(1);
+    expect(driver.setHorizon).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('horizon line occlusion rule', () => {
+  it('blocks on an element that carries its own words', () => {
+    expect(horizonHitBlocks(hit('P', { text: true }))).toBe(true);
+    expect(horizonHitBlocks(hit('H2', { text: true }))).toBe(true);
+    expect(horizonHitBlocks(hit('LI', { text: true }))).toBe(true);
+    expect(horizonHitBlocks(hit('BLOCKQUOTE', { text: true }))).toBe(true);
+    expect(horizonHitBlocks(hit('FIGCAPTION', { text: true }))).toBe(true);
+    expect(horizonHitBlocks(hit('BUTTON', { text: true }))).toBe(true);
+    expect(horizonHitBlocks(hit('LABEL', { text: true }))).toBe(true);
+    expect(horizonHitBlocks(hit('SPAN', { text: true }))).toBe(true);
+  });
+
+  it('lets the line under a text-tagged element that holds no words of its own', () => {
+    // The storyboard wants the line under the review cards — an <a> wrapping a photo
+    // must not veto it across the whole card. The descendant that does hold the words
+    // is in the same hit stack wherever the sample actually lands on it.
+    expect(horizonHitBlocks(hit('A'))).toBe(false);
+    expect(horizonHitBlocks(hit('SPAN'))).toBe(false);
+    expect(horizonHitBlocks(hit('P'))).toBe(false);
+  });
+
+  it('never blocks on a layout container, however deep the stack', () => {
+    expect(horizonHitBlocks(hit('DIV', { text: true }))).toBe(false);
+    expect(horizonHitBlocks(hit('SECTION', { text: true }))).toBe(false);
+    expect(horizonHitBlocks(hit('BODY', { text: true }))).toBe(false);
+    expect(horizonHitBlocks(hit('HTML'))).toBe(false);
+    expect(horizonHitBlocks(hit('CANVAS'))).toBe(false);
+    expect(horizonHitBlocks(hit('IMG'))).toBe(false);
+    expect(horizonHitBlocks(hit('VIDEO'))).toBe(false);
+  });
+
+  it('blocks on a form control whether or not it reports text', () => {
+    // Their words live in a value or a placeholder, not in a child text node.
+    expect(horizonHitBlocks(hit('INPUT'))).toBe(true);
+    expect(horizonHitBlocks(hit('TEXTAREA'))).toBe(true);
+    expect(horizonHitBlocks(hit('SELECT'))).toBe(true);
+  });
+
+  it('honours the data-horizon-avoid opt-out on any tag', () => {
+    expect(horizonHitBlocks(hit('DIV', { avoid: true }))).toBe(true);
+    expect(horizonHitBlocks(hit('svg', { avoid: true }))).toBe(true);
+  });
+
+  it('clears a row only when not one candidate blocks', () => {
+    const clean = [hit('DIV'), hit('BODY'), hit('IMG'), hit('A')];
+    expect(horizonRowClear(clean)).toBe(true);
+    expect(horizonRowClear([])).toBe(true);
+    // One blocker among many is enough: the line is one rule across the whole width.
+    expect(horizonRowClear([...clean, hit('SPAN', { text: true })])).toBe(false);
+  });
+
+  it('offers every text-bearing tag, and the opt-out, to the first pass', () => {
+    const parts = HORIZON_CANDIDATE_SELECTOR.split(',');
+    for (const tag of ['p', 'h1', 'h6', 'li', 'blockquote', 'figcaption', 'a', 'span', 'button', 'label']) {
+      expect(parts, `${tag} is queried`).toContain(tag);
+    }
+    for (const tag of ['input', 'textarea', 'select']) expect(parts).toContain(tag);
+    expect(parts).toContain('[data-horizon-avoid]');
+    // Containers are not queried at all — that is what keeps the first pass cheap.
+    expect(parts).not.toContain('div');
+    expect(parts).not.toContain('section');
+  });
+
+  it('crosses the row only for a box that is on the row and on screen', () => {
+    const box = (left: number, right: number, top: number, bottom: number) => ({ left, right, top, bottom });
+    expect(horizonRowCrossing(box(100, 400, 550, 570), 558, 1440)).toBe(true);
+    // Touching either edge of the row still counts: the line is drawn in that pixel.
+    expect(horizonRowCrossing(box(100, 400, 558, 600), 558, 1440)).toBe(true);
+    expect(horizonRowCrossing(box(100, 400, 500, 558), 558, 1440)).toBe(true);
+    // Above and below.
+    expect(horizonRowCrossing(box(100, 400, 200, 557), 558, 1440)).toBe(false);
+    expect(horizonRowCrossing(box(100, 400, 559, 900), 558, 1440)).toBe(false);
+    // The two false positives this rule was first measured to have: a 1 px-wide
+    // paragraph parked off the left edge, and a box collapsed to nothing.
+    expect(horizonRowCrossing(box(-1, 0, 400, 700), 558, 1440)).toBe(false);
+    expect(horizonRowCrossing(box(300, 300, 400, 700), 558, 1440)).toBe(false);
+    expect(horizonRowCrossing(box(300, 900, 558, 558), 558, 1440)).toBe(false);
+    // Parked off the right edge.
+    expect(horizonRowCrossing(box(1440, 1800, 400, 700), 558, 1440)).toBe(false);
+    // Half off screen is still on screen.
+    expect(horizonRowCrossing(box(-200, 40, 400, 700), 558, 1440)).toBe(true);
+  });
+
+  it('aims the hit test inside the candidate, clamped to the viewport', () => {
+    const points = horizonProbePoints({ left: 100, right: 400, top: 0, bottom: 10 }, 1440);
+    expect(points).toEqual([101, 250, 399]);
+    for (const x of points) {
+      expect(x).toBeGreaterThanOrEqual(100);
+      expect(x).toBeLessThanOrEqual(400);
+    }
+    // A candidate hanging off the left edge is probed from the part that shows.
+    const clamped = horizonProbePoints({ left: -500, right: 60, top: 0, bottom: 10 }, 1440);
+    expect(Math.min(...clamped)).toBeGreaterThanOrEqual(0);
+    expect(Math.max(...clamped)).toBeLessThanOrEqual(60);
+    // ...and off the right edge likewise, never at `innerWidth` where nothing is hit.
+    const right = horizonProbePoints({ left: 1400, right: 3000, top: 0, bottom: 10 }, 1440);
+    expect(Math.max(...right)).toBeLessThanOrEqual(1439);
+    // Degenerate boxes still get one usable point rather than an empty probe.
+    expect(horizonProbePoints({ left: 300, right: 301, top: 0, bottom: 1 }, 1440)).toEqual([300]);
+    expect(horizonProbePoints({ left: 300, right: 300, top: 0, bottom: 1 }, 1440)).toEqual([300]);
   });
 });

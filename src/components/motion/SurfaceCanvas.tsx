@@ -4,6 +4,12 @@ import { journeyDirector } from '../../lib/motion/journey-director';
 import type { SurfaceStateId } from '../../lib/motion/surface-materials';
 import {
   detectSurfaceCapabilities,
+  HORIZON_AVOID_ATTRIBUTE,
+  HORIZON_CANDIDATE_SELECTOR,
+  HORIZON_CLEAR_FADE,
+  horizonHitBlocks,
+  horizonProbePoints,
+  horizonRowCrossing,
   surfaceAdmitted,
   surfaceStore,
   type SurfaceCameraMode,
@@ -50,6 +56,12 @@ declare global {
       readonly resetFrames: () => void;
       readonly views: () => readonly string[];
       /**
+       * How many times the horizon line's occlusion hit test has run. The gate asserts
+       * this does not move while frames are being drawn — a per-frame `elementsFromPoint`
+       * is the one implementation of this feature that would not be worth having.
+       */
+      readonly horizonChecks: number;
+      /**
        * Ask for one more frame. The gates need this because a view can now be
        * suppressed from outside (hiding `.film-veil` drops its rectangle to zero,
        * so the registry skips it) and a demand-rendered canvas would otherwise
@@ -63,6 +75,40 @@ declare global {
 /** Pages without a `.journey` get the material at rest: the horizon line, nothing else. */
 const RESTING_TARGET: SurfaceTarget = Object.freeze({ a: 2, b: 2, mix: 0, horizon: true });
 
+/**
+ * THE HORIZON LINE'S OCCLUSION GATE — why it is asked here and not in `SurfaceFloor`.
+ *
+ * The 1 px cobalt line exists twice: as a uniform on the WebGL plane, and as
+ * `.surface-band::before` for every visitor the plane refuses. Those two are never on
+ * screen together (`html[data-surface='webgl'] .surface-band { opacity: 0 }`), and the CSS
+ * one is on screen exactly when `SurfaceFloor` is *not mounted* — a `balanced` tier, a
+ * coarse pointer, a lost context. A test that lived in `SurfaceFloor` would therefore be
+ * absent from every case the CSS line covers, and the line would go on striking through
+ * text there.
+ *
+ * So the question is asked once, here, in the island that is mounted on every route and
+ * every tier, and the single answer reaches both consumers through the store: the plane
+ * as `driver.setHorizonClear` (SurfaceFloor is still the only writer of its uniforms) and
+ * the CSS line as `[data-horizon-line]` on the band (the store is still the only writer of
+ * the band's dataset). One decision, one owner per write. This island already reads layout
+ * for the band element, which is what DEV-CONTRACT allows it and forbids the store.
+ *
+ * The rule itself is pure and lives in `surface-store.ts`; only the hit testing is here.
+ */
+
+/** Leading-edge throttle while the page is moving — never once per frame. */
+const HORIZON_TEST_INTERVAL = 80;
+/**
+ * ...and once more when it stops, so the resting answer is the accurate one.
+ *
+ * One follow-up, not a chain, and not a heartbeat. A chain of three was tried against the
+ * suspicion that copy keeps settling after the wheel does; measured over 159 scroll steps
+ * at 390 by reading the row twice per step, ~450 ms and ~1200 ms after the scroll, the set
+ * of words across the row differed at zero of them. Nothing arrives in that window on this
+ * page, so nothing is spent looking for it.
+ */
+const HORIZON_SETTLE_DELAY = 140;
+
 export default function SurfaceCanvas({ probe = false }: { readonly probe?: boolean }) {
   const controls = useSyncExternalStore(
     journeyControls.subscribe,
@@ -75,6 +121,7 @@ export default function SurfaceCanvas({ probe = false }: { readonly probe?: bool
   const [restoreKey, setRestoreKey] = useState(0);
   const [canvasElement, setCanvasElement] = useState<HTMLCanvasElement | null>(null);
   const instanceId = useRef<string>('');
+  const horizonChecks = useRef(0);
   if (instanceId.current === '') {
     surfaceInstances += 1;
     instanceId.current = `surface-${surfaceInstances}`;
@@ -160,6 +207,117 @@ export default function SurfaceCanvas({ probe = false }: { readonly probe?: bool
     };
   }, [canvasElement]);
 
+  /* ---- the occlusion gate: one hit test, one answer, both lines ---- */
+  useEffect(() => {
+    if (!band) return undefined;
+    const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+    let leading = 0;
+    let settle = 0;
+    let lastRun = 0;
+    /** Everything in the snapshot except the answer this effect itself publishes. */
+    let seen = '';
+
+    /** Cheap half of the rule: tags and own text nodes, no layout read. */
+    const carriesWords = (element: Element) => {
+      let own = '';
+      for (const node of element.childNodes) {
+        if (node.nodeType === Node.TEXT_NODE) own += node.nodeValue ?? '';
+      }
+      return horizonHitBlocks({
+        tag: element.tagName,
+        text: own.trim().length > 0,
+        avoid: element.hasAttribute(HORIZON_AVOID_ATTRIBUTE),
+      });
+    };
+
+    /**
+     * Is this candidate really on screen at the row?
+     *
+     * `pointer-events` and `visibility` both inherit, so one `getComputedStyle` answers
+     * for the whole ancestor chain. An element the hit test cannot see — the whole subtree
+     * is `pointer-events: none`, as the canvas host and the band themselves are — falls
+     * back to what geometry already established, which errs toward hiding the line. That
+     * is the safe direction: a line that is missing from a clear row is a smaller failure
+     * than a line drawn through a sentence.
+     */
+    const onScreenAt = (element: Element, box: DOMRect, y: number) => {
+      const style = getComputedStyle(element);
+      if (style.visibility !== 'visible') return false;
+      if (style.pointerEvents === 'none') return true;
+      return horizonProbePoints(box, window.innerWidth).some((x) => {
+        for (const node of document.elementsFromPoint(x, y)) {
+          if (node === element || element.contains(node)) return true;
+        }
+        return false;
+      });
+    };
+
+    const test = () => {
+      horizonChecks.current += 1;
+      const rect = band.getBoundingClientRect();
+      const y = Math.round(rect.top);
+      // Off screen entirely (a short `svh` viewport, a zero-height band mid-swap): there
+      // is nothing to cross, and `elementsFromPoint` outside the viewport returns [].
+      if (rect.width <= 0 || y < 0 || y >= window.innerHeight) {
+        surfaceStore.setHorizonClear(true, 0);
+        return;
+      }
+      let clear = true;
+      for (const element of document.querySelectorAll(HORIZON_CANDIDATE_SELECTOR)) {
+        if (!carriesWords(element)) continue;
+        const box = element.getBoundingClientRect();
+        if (!horizonRowCrossing(box, y, window.innerWidth)) continue;
+        if (!onScreenAt(element, box, y)) continue;
+        clear = false;
+        break;
+      }
+      surfaceStore.setHorizonClear(clear, reducedMotion.matches ? 0 : HORIZON_CLEAR_FADE);
+    };
+
+    const run = () => {
+      lastRun = performance.now();
+      test();
+    };
+
+    const schedule = () => {
+      if (leading === 0) {
+        const wait = Math.max(0, HORIZON_TEST_INTERVAL - (performance.now() - lastRun));
+        leading = window.setTimeout(() => {
+          leading = 0;
+          run();
+        }, wait);
+      }
+      window.clearTimeout(settle);
+      settle = window.setTimeout(run, HORIZON_SETTLE_DELAY);
+    };
+
+    // A store publish of the answer itself must not schedule another test, or the two
+    // would chase each other forever; everything else in the snapshot may.
+    const onStore = () => {
+      const state = surfaceStore.getSnapshot();
+      const key = `${state.a}|${state.b}|${state.mix}|${state.horizon}|${state.presence}`
+        + `|${state.camera}|${state.renderer}|${state.menuOpen}`;
+      if (key === seen) return;
+      seen = key;
+      schedule();
+    };
+
+    const unsubscribe = surfaceStore.subscribe(onStore);
+    window.addEventListener('scroll', schedule, { passive: true });
+    window.addEventListener('resize', schedule);
+    document.addEventListener('astro:page-load', schedule);
+    run();
+
+    return () => {
+      unsubscribe();
+      window.clearTimeout(leading);
+      window.clearTimeout(settle);
+      window.removeEventListener('scroll', schedule);
+      window.removeEventListener('resize', schedule);
+      document.removeEventListener('astro:page-load', schedule);
+    };
+  }, [band]);
+
   useEffect(() => {
     if (!probe || typeof window === 'undefined') return undefined;
     window.__ffeSurface = {
@@ -173,6 +331,7 @@ export default function SurfaceCanvas({ probe = false }: { readonly probe?: bool
       setHorizon: (horizon) => surfaceStore.setHorizon(horizon),
       resetFrames: () => surfaceStore.resetFrames(),
       views: () => surfaceStore.listViews().map((view) => view.id),
+      get horizonChecks() { return horizonChecks.current; },
       invalidate: () => surfaceStore.invalidate(),
     };
     return () => {
