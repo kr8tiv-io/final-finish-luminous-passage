@@ -108,6 +108,32 @@
       "width": 1280,
       "r_frame_rate": "24/1",
       "duration": 10.041667
+    },
+    {
+      "film": "mancave",
+      "height": 480,
+      "crf": 27,
+      "src": "/videos/follow-floor/480/epoxy-mancave.mp4",
+      "bytes": 1023132,
+      "sha256": "7ea9b1d3df8b344e2fe2226730465f02972677415d7a10cbbd7f3d02ba28952a",
+      "sourceSha256": "0df8e8436c405e1eac67e245d83739b706857849b81fb7381226e704caaffe8c",
+      "codec_name": "h264",
+      "width": 854,
+      "r_frame_rate": "24/1",
+      "duration": 6.041667
+    },
+    {
+      "film": "mancave",
+      "height": 720,
+      "crf": 26,
+      "src": "/videos/follow-floor/720/epoxy-mancave.mp4",
+      "bytes": 2162496,
+      "sha256": "cdd5398b15398a79ca1ed0a12bd66c38657c6c4914e8e0f5d5ab52ea42fd674a",
+      "sourceSha256": "0df8e8436c405e1eac67e245d83739b706857849b81fb7381226e704caaffe8c",
+      "codec_name": "h264",
+      "width": 1280,
+      "r_frame_rate": "24/1",
+      "duration": 6.041667
     }
   ]
 }
