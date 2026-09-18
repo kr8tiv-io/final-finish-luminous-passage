@@ -22,6 +22,7 @@
 }
 
 .transformation-gallery__head,
+.transformation-gallery__photo-grid,
 .transformation-gallery__review-note,
 .transformation-gallery__feature-nav,
 .transformation-gallery__featured-window,
@@ -70,6 +71,59 @@
   color: #72572b;
   font: 650 .875rem/1.5 var(--sans);
   letter-spacing: -.01em;
+}
+
+/* Production fallback: six single archive photographs, 3 x 2 on desktop. */
+.transformation-gallery__photo-grid {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: clamp(1.25rem, 3vw, 2.5rem) clamp(1rem, 2.4vw, 2rem);
+  padding: 0;
+  margin-block: 0 clamp(2rem, 5vw, 3.5rem);
+  list-style: none;
+}
+
+.transformation-gallery__photo figure {
+  margin: 0;
+}
+
+.transformation-gallery__photo-frame {
+  position: relative;
+  overflow: hidden;
+  aspect-ratio: 4 / 3;
+  background: #deded8;
+}
+
+.transformation-gallery__photo-frame picture,
+.transformation-gallery__photo-frame img {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.transformation-gallery__photo-frame img {
+  object-fit: cover;
+  user-select: none;
+  -webkit-user-drag: none;
+}
+
+.transformation-gallery__photo figcaption {
+  padding: .85rem 0 0;
+  border-bottom: 1px solid var(--line);
+  padding-bottom: .85rem;
+  color: var(--muted);
+  font: 550 .9375rem/1.55 var(--sans);
+  letter-spacing: -.02em;
+}
+
+@media (max-width: 959px) {
+  .transformation-gallery__photo-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+@media (max-width: 600px) {
+  .transformation-gallery__photo-grid { grid-template-columns: 1fr; }
 }
 
 .transformation-gallery__passage {
@@ -417,10 +471,12 @@
   text-underline-offset: .2em;
 }
 
+/* Block, not inline-block, so the shared `margin-inline: auto` above actually
+   lines it up with the head and the photo grid. */
 .transformation-gallery__archive-link {
   position: relative;
   z-index: 1;
-  display: inline-block;
+  display: block;
   min-height: 44px;
   color: var(--ink);
   font-weight: 700;

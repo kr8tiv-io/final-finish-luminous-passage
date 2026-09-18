@@ -572,7 +572,7 @@
       "id": "step-09",
       "type": "step",
       "title": "Gallery owner + production fallback: restore deleted desktop assertions, rejected admission state, never-empty fallback",
-      "status": "doing",
+      "status": "done",
       "phase": "phase-1",
       "tier": "O",
       "owner": "motion-b",
@@ -588,7 +588,7 @@
       "id": "gate-09",
       "type": "gate",
       "title": "Both assertions green 3 serial runs; production build never renders the empty-state message.",
-      "status": "todo"
+      "status": "done"
     },
     {
       "id": "step-10",

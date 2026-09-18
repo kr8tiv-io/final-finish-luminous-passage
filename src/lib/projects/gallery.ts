@@ -1,11 +1,55 @@
-export type PublicationApproval = 'approved' | 'pending';
+/**
+ * Publication approval is a three-state decision, not a boolean.
+ *
+ * - `approved`  — Denis has signed the pairing off; publishable everywhere.
+ * - `pending`   — awaiting his answer; visible on staging behind a badge only.
+ * - `rejected`  — he said no. Never rendered, in any environment, ever.
+ */
+export type PublicationApproval = 'approved' | 'pending' | 'rejected';
 
 type PublishablePair = {
   publicationApproval: PublicationApproval;
 };
 
-export function selectPublishablePairs<T extends PublishablePair>(pairs: readonly T[], allowPending: boolean): readonly T[] {
-  return allowPending ? pairs : pairs.filter((pair) => pair.publicationApproval === 'approved');
+export type PublicationContext = {
+  /** Staging/dev review builds pass `true`; production passes `false`. */
+  allowPending: boolean;
+};
+
+export function selectPublishablePairs<T extends PublishablePair>(
+  pairs: readonly T[],
+  { allowPending }: PublicationContext,
+): readonly T[] {
+  return pairs.filter((pair) => pair.publicationApproval === 'approved'
+    || (allowPending && pair.publicationApproval === 'pending'));
+}
+
+/**
+ * What the proof section renders. `comparisons` is the real before/after
+ * gallery; `selected-photos` is the production fallback — a captioned grid of
+ * single archive photographs. There is deliberately no empty state: an
+ * unapproved archive is a reason to show fewer claims, not a blank section.
+ */
+export type GalleryRenderMode = 'comparisons' | 'selected-photos';
+
+export type GalleryRenderDecision<T> = {
+  mode: GalleryRenderMode;
+  pairs: readonly T[];
+  /** The staging-only "not approved for publication" badge. */
+  reviewBadge: boolean;
+};
+
+export function resolveGalleryRender<T extends PublishablePair>(
+  pairs: readonly T[],
+  context: PublicationContext,
+): GalleryRenderDecision<T> {
+  const published = selectPublishablePairs(pairs, context);
+  if (published.length === 0) return { mode: 'selected-photos', pairs: [], reviewBadge: false };
+  return {
+    mode: 'comparisons',
+    pairs: published,
+    reviewBadge: context.allowPending && published.some((pair) => pair.publicationApproval === 'pending'),
+  };
 }
 
 export type ArcCardState = {
