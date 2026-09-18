@@ -57,6 +57,7 @@ import {
   type SurfaceStateId,
 } from './surface-materials';
 import { JOURNEY_CHAPTER_IDS, type JourneyChapterId, type JourneySnapshot } from './journey-director';
+import type { MotionPreference } from './journey-controls';
 
 export type SurfaceRenderer = 'webgl' | 'fallback' | 'none';
 export type SurfaceCameraMode = 'standing' | 'kneeling';
@@ -136,7 +137,7 @@ export interface SurfaceCapabilities {
   readonly reducedMotion: boolean;
   readonly saveData: boolean;
   readonly coarsePointer: boolean;
-  readonly motionPreference: 'auto' | 'still';
+  readonly motionPreference: MotionPreference;
 }
 
 const clamp01 = (value: number) => Math.min(1, Math.max(0, value));
@@ -484,7 +485,7 @@ export const surfaceStore: SurfaceStore = createSurfaceStore();
  * `EXT_color_buffer_float`, then release it immediately with `WEBGL_lose_context` so
  * the check never holds a second context open.
  */
-export function detectSurfaceCapabilities(motionPreference: 'auto' | 'still'): SurfaceCapabilities {
+export function detectSurfaceCapabilities(motionPreference: MotionPreference): SurfaceCapabilities {
   if (typeof window === 'undefined' || typeof document === 'undefined') {
     return {
       tier: null,

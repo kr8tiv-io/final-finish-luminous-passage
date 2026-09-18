@@ -45,6 +45,9 @@ function snapshot(overrides: Partial<JourneySnapshot> = {}): JourneySnapshot {
     transitionFromWhite: false,
     readingChapter: null,
     whiteTarget: null,
+    boundaryKey: null,
+    mediaOwner: 'from',
+    handoff: 0,
     ...overrides,
   };
 }
