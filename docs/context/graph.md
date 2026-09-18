@@ -35,7 +35,7 @@ flowchart TD
     step-20["step-20: Stair chapter: pearl-grade walkway film (A) vs 2"]:::stDoing
     step-21["step-21: Preparation cutaway: layered illustrative diagra"]:::stDoing
     step-22["step-22: Reclaim your garage or basement: garage, basemen"]:::stDoing
-    step-23["step-23: See the difference: pin the inner passage, jh3y "]:::stDoing
+    step-23["step-23: See the difference: pin the inner passage, jh3y "]:::stDone
     step-23b["step-23b: Archive lattice (Act 6): cylinder cards unwrap i"]:::stTodo
     step-24["step-24: Epoxy layer-mask headline (Creative Ocean): resi"]:::stDoing
     step-25["step-25: Finish alcove and visualizer: entrance from fini"]:::stDone
@@ -443,7 +443,7 @@ flowchart TD
 - **Phase:** phase-3
 - **Tier:** O+
 - **Owner(s):** motion-b
-- **Status:** doing
+- **Status:** done
 - **Files:** TransformationGallery.tsx, css, transformation-gallery.ts
 - **Inputs (informs):** S7
 - **Constraints (locks):** D1
