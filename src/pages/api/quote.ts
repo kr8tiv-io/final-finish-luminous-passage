@@ -5,16 +5,26 @@ import { z } from 'zod';
 import { buildQuoteEmail, createQuoteReference } from '../../lib/quote/email';
 import { quoteRequestSchema } from '../../lib/quote/schema';
 import { normalizeQuotePhotos } from '../../lib/quote/photos';
-import { ConcurrencyGate, isSameOriginBrowserRequest, readBodyWithLimit, RequestGuardError } from '../../lib/security/request-guards';
+import { ConcurrencyGate, isImplausiblyFastSubmission, isSameOriginBrowserRequest, readBodyWithLimit, RequestGuardError } from '../../lib/security/request-guards';
 
 export const prerender = false;
 
+function envPositiveNumber(name: string, fallback: number): number {
+  const raw = import.meta.env[name];
+  if (raw === undefined || raw === '') return fallback;
+  const value = Number(raw);
+  return Number.isFinite(value) && value > 0 ? value : fallback;
+}
+
 const requestsByIp = new Map<string, number[]>();
-const WINDOW_MS = 15 * 60 * 1000;
-const MAX_REQUESTS = 3;
+// Overridable per-deployment without a code change; same defaults as before Step 10.
+const WINDOW_MS = envPositiveNumber('QUOTE_RATE_WINDOW_MS', 15 * 60 * 1000);
+const MAX_REQUESTS = envPositiveNumber('QUOTE_RATE_LIMIT', 3);
 const deliveryGate = new ConcurrencyGate(2);
 // Local safety only. Production requires a shared store and a verified proxy;
 // this window resets on restart and must not be described as a cluster lock.
+// (See docs/context/DEV-CONTRACT.md, "Quote rate limiting" — a shared limiter
+// behind the host is a prerequisite for production, tracked there, not here.)
 
 function exceedsRateLimit(ip: string): boolean {
   const now = Date.now();
@@ -86,6 +96,17 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
   } catch {
     return Response.json({ code: 'INVALID_JSON' }, { status: 400 });
   }
+
+  // Tolerant time trap: Step 27 adds a client-side `startedAt` (epoch ms, captured when the
+  // quote form first renders) field to the browser form. Until that lands — and for any client
+  // that omits the field afterward — its absence must never block a legitimate submission; only
+  // a present value that arrives faster than a human could plausibly complete the form is
+  // treated as automated. See isImplausiblyFastSubmission for the exact tolerance rule.
+  const startedAt = body && typeof body === 'object' ? (body as Record<string, unknown>).startedAt : undefined;
+  if (isImplausiblyFastSubmission(startedAt, Date.now())) {
+    return Response.json({ code: 'SUBMITTED_TOO_FAST' }, { status: 400 });
+  }
+
   const parsed = quoteRequestSchema.safeParse(body);
   if (!parsed.success) return Response.json({ code: 'INVALID_QUOTE', issues: z.flattenError(parsed.error).fieldErrors }, { status: 400 });
 

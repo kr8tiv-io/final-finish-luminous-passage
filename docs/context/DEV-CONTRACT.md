@@ -134,3 +134,68 @@ output/
 
 `output/**` should stay out of the Vite/Astro dev watcher (per the plan's
 risk list) — it is scratch/evidence, not source.
+
+## Security headers (Step 10)
+
+The header set (CSP, `X-Frame-Options`, `Referrer-Policy`, `Permissions-Policy`,
+`X-Content-Type-Options`, and `Strict-Transport-Security` over https only) lives
+in one place, `src/lib/security/headers.ts`, and reaches responses two
+different ways depending on how the route is rendered:
+
+- **On-demand (SSR) responses** — every route under `src/pages/api/**`, each of
+  which sets `export const prerender = false` — get the headers live, per
+  request, from `src/middleware.ts` (`astro:middleware`'s `onRequest`, applied
+  to `next()`'s response). Astro 7 auto-loads `src/middleware.ts` from
+  `${srcDir}middleware`; confirmed by reading
+  `node_modules/astro/dist/core/middleware/vite-plugin.js` before adding the
+  file, so `astro.config.mjs` needed no change for this.
+- **Prerendered/static HTML** — every `*.astro` page in this project — never
+  passes through that pipeline at request time. Confirmed by reading
+  `node_modules/@astrojs/node/dist/standalone.js`: the standalone server's
+  request handler runs a static-file handler first
+  (`staticHandler(req, res, () => appHandler(req, res))`), and `send()`s a
+  matching file straight off disk from `dist/client` before an incoming
+  request ever reaches the Astro app (and therefore never reaches
+  `astro:middleware`). `scripts/build-prerender-headers.mjs` runs after every
+  `npm run build` (wired as the `postbuild` npm script, so `build:staging` /
+  `build:production` pick it up automatically) and writes the same header map
+  to `dist/prerender-headers.json` for the host/reverse-proxy layer to apply.
+
+**Open item, not resolved by Step 10:** nothing in this repo currently reads
+`dist/prerender-headers.json` and applies it. The two real options, for
+whichever lands first:
+1. The eventual VPS Docker + Caddy path (Part B9) — add a Caddy
+   `header` block from that file's contents.
+2. `@astrojs/node`'s own `staticHeaders: true` adapter option, which — when
+   Astro's `security.csp` config is also enabled — writes
+   `dist/_headers.json` (see `node_modules/@astrojs/node/dist/shared.js`,
+   `STATIC_HEADERS_FILE`) in its own `{ pathname, headers: [{key,value}] }[]`
+   shape, and its standalone/preview server reads that file back and applies
+   it to matching static routes with no reverse proxy at all. This only ever
+   carries the `Content-Security-Policy` header, not the other four, and
+   turning it on means an `astro.config.mjs` change (`security.csp` +
+   `node({ ..., staticHeaders: true })`) — out of scope for Step 10's file
+   ownership, so this is a recommendation for whichever later step owns
+   `astro.config.mjs`, not something wired up here.
+
+Until one of those lands, the built homepage and every other static page
+serve without these headers when run standalone
+(`node dist/server/entry.mjs`) — verify by re-reading this section before
+treating a "0 CSP violation" browser check on the homepage as evidence the
+policy is live in production; it currently only proves the policy string
+itself does not break the page when enforced (see the Step 10 verification
+probe), not that it is being enforced yet.
+
+## Quote rate limiting (Step 10)
+
+`src/pages/api/quote.ts` reads its rate-limit window and cap from
+`QUOTE_RATE_WINDOW_MS` / `QUOTE_RATE_LIMIT` (falling back to the original
+15-minute / 3-request defaults when unset or invalid), but the limiter itself
+is still the same process-local `Map` it always was — it resets on every
+restart, is per-process (not shared across worker processes or horizontally
+scaled instances), and trusts `clientAddress` as-is. **A shared limiter
+(Redis/Upstash, or an equivalent store reachable from every instance) behind
+a host that terminates and validates the real client IP is a prerequisite
+before production traffic**, not an optional hardening pass. Turnstile (or
+an equivalent challenge) remains optional on top of that, not a replacement
+for it.
