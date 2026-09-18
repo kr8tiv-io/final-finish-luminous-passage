@@ -44,10 +44,10 @@ flowchart TD
     step-28["step-28: Micro-interactions and grade: hover vocabulary s"]:::stTodo
   end
   subgraph phase-4["phase-4"]
-    step-29["step-29: Copy pass in Denis voice; complete CLAIMS-LEDGER"]:::stTodo
-    step-30["step-30: Services as decision pages plus a dedicated Edmo"]:::stTodo
-    step-31["step-31: Guides: fix documented contradictions, truthful "]:::stTodo
-    step-32["step-32: Structured data and AI search: Service/LocalBusi"]:::stTodo
+    step-29["step-29: Copy pass in Denis voice; complete CLAIMS-LEDGER"]:::stDoing
+    step-30["step-30: Services as decision pages plus a dedicated Edmo"]:::stDoing
+    step-31["step-31: Guides: fix documented contradictions, truthful "]:::stDoing
+    step-32["step-32: Structured data and AI search: Service/LocalBusi"]:::stDone
     step-33["step-33: Resilience pack: webglcontextrestored recovery, "]:::stTodo
   end
   subgraph phase-5["phase-5"]
@@ -534,7 +534,7 @@ flowchart TD
 - **Phase:** phase-4
 - **Tier:** O writing, S ledger
 - **Owner(s):** ui
-- **Status:** todo
+- **Status:** doing
 - **Files:** pages, docs/context/CLAIMS-LEDGER.md
 - **Inputs (informs):** S7
 - **Constraints (locks):** L1, L2, L3, L4
@@ -547,7 +547,7 @@ flowchart TD
 - **Phase:** phase-4
 - **Tier:** S
 - **Owner(s):** ui
-- **Status:** todo
+- **Status:** doing
 - **Files:** src/pages/services/*, src/pages/areas/*, src/middleware.ts
 - **Inputs (informs):** none recorded
 - **Constraints (locks):** none recorded
@@ -560,7 +560,7 @@ flowchart TD
 - **Phase:** phase-4
 - **Tier:** S
 - **Owner(s):** ui
-- **Status:** todo
+- **Status:** doing
 - **Files:** src/content/resources/*, validate-content.mjs, print css
 - **Inputs (informs):** none recorded
 - **Constraints (locks):** none recorded
@@ -573,7 +573,7 @@ flowchart TD
 - **Phase:** phase-4
 - **Tier:** S
 - **Owner(s):** ui
-- **Status:** todo
+- **Status:** done
 - **Files:** BaseLayout.astro, ResourceLayout.astro, scripts/build-llms.mjs, public/
 - **Inputs (informs):** none recorded
 - **Constraints (locks):** none recorded
