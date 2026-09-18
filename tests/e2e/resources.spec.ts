@@ -13,7 +13,9 @@ test.describe('published resource library', () => {
     await page.goto('/resources/basement-concrete-floor-coating/');
 
     await expect(page.getByRole('link', { name: 'Final Finish Epoxy home' })).toBeVisible();
-    await expect(page.getByRole('heading', { level: 1, name: /basement concrete floor coating/i })).toBeVisible();
+    // Frontmatter title is schema-constrained to 29-33 characters (src/content.config.ts), so
+    // the rendered H1 is "Basement Floor Coating Basics", not a literal restatement of the slug.
+    await expect(page.getByRole('heading', { level: 1, name: /basement floor coating basics/i })).toBeVisible();
     await expect(page.getByRole('note')).toHaveCount(0);
     await expect(page.locator('link[rel="canonical"]')).toHaveAttribute('href', /\/resources\/basement-concrete-floor-coating\/$/);
     const schemas = page.locator('script[type="application/ld+json"]');
