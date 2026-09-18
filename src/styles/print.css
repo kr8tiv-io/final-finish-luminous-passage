@@ -1,0 +1,118 @@
+/*
+ * Print stylesheet for the resource guides (Step 31).
+ *
+ * Scope: `ResourceLayout.astro` imports this globally, but every rule below is written
+ * to only ever fire inside `@media print`, so it has no effect on screen rendering
+ * anywhere else in the site.
+ *
+ * Goals: a guide printed from the browser should read like the source document Denis
+ * hands a customer — plain black text on white, no navigation chrome, no calls to
+ * action that only make sense on a live page, and link destinations spelled out since
+ * paper cannot carry a hyperlink.
+ */
+
+@media print {
+  /* Persistent chrome and decorative layers — none of it is the guide. */
+  .skip-link,
+  .site-header,
+  .site-footer,
+  .surface-band,
+  .surface-canvas-host {
+    display: none !important;
+  }
+
+  /* Calls to action only make sense on a live page: the sticky "ask Denis" link and
+     the service-page turn at the end of the article body. The related-guides and
+     sources panels stay — on paper they are the closest thing to a reference list. */
+  .article-rail > a,
+  .service-turn {
+    display: none !important;
+  }
+
+  * {
+    color: #000 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    text-shadow: none !important;
+  }
+
+  html,
+  body {
+    background: #fff !important;
+  }
+
+  .article-hero {
+    padding: 0 0 1.5rem;
+    background: none !important;
+  }
+
+  .article-grid {
+    display: block;
+    width: auto;
+    padding: 0;
+  }
+
+  .article-rail {
+    position: static;
+  }
+
+  .article-body {
+    max-width: none;
+  }
+
+  /* One guide, one document: start each H2 section on its own page rather than
+     letting a heading land alone at the foot of a page. This is a plain, globally
+     imported stylesheet (not an Astro `<style>` block), so no `:global()` wrapper
+     is needed for `.article-body h2` to reach the MDX-rendered headings. */
+  .article-body h2 {
+    break-before: page;
+    page-break-before: always;
+  }
+
+  .article-hero h1,
+  .article-hero .deck {
+    break-before: avoid;
+    page-break-before: avoid;
+  }
+
+  /* Paper cannot carry a hyperlink, so spell out where each link in the guide body
+     and the sources panel actually goes. Internal, same-origin anchors are relative
+     (`/resources/...`), so they print as a path; external sources already carry a
+     full URL. Anchors inside the (now-hidden) nav/footer/CTA regions never reach
+     this selector because those ancestors are `display: none`. */
+  .article-body a[href]::after,
+  .source-panel a[href]::after,
+  .related a[href]::after {
+    content: ' (' attr(href) ')';
+    font-size: 0.85em;
+    font-weight: 400;
+    word-break: break-all;
+  }
+
+  .related {
+    background: none !important;
+    padding: 1.5rem 0 0;
+  }
+
+  .related div {
+    display: block;
+    background: none;
+  }
+
+  .related div a {
+    display: block;
+    min-height: 0;
+    padding: 0.35rem 0;
+    background: none !important;
+    font-family: inherit;
+    font-size: 1rem;
+  }
+
+  .source-panel {
+    border-top-color: #000;
+  }
+
+  nav[aria-label='Breadcrumb'] {
+    color: #000;
+  }
+}
