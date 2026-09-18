@@ -594,7 +594,7 @@
       "id": "step-10",
       "type": "step",
       "title": "Security and delivery basics: Nodemailer advisory fix, same-origin quote API, CSP headers, expiry CI check",
-      "status": "doing",
+      "status": "done",
       "phase": "phase-1",
       "tier": "S",
       "owner": "ui",
@@ -609,7 +609,7 @@
       "id": "gate-10",
       "type": "gate",
       "title": "npm audit --omit=dev clean; header tests; expiry test.",
-      "status": "todo"
+      "status": "done"
     },
     {
       "id": "step-11",
