@@ -2,8 +2,20 @@
 import BaseLayout from '../layouts/BaseLayout.astro';
 import SiteHeader from '../components/SiteHeader.astro';
 import SiteFooter from '../components/SiteFooter.astro';
-import BeforeAfterProject from '../components/projects/BeforeAfterProject';
+import { StandaloneComparison, type ComparisonProject } from '../components/projects/Comparison';
+import type { ImageVariant } from '../data/transformation-gallery';
 import projectPhotos from '../data/project-photo-pairs.json';
+
+/**
+ * Same publication rule as the homepage proof act: a pairing claim is only
+ * shown where it can be reviewed. None of these six curated pairs is approved
+ * yet, so staging gets the live comparison behind the review note and
+ * production gets six honest two-up figures — a single photograph carries no
+ * pairing claim, so it needs no approval. There is deliberately no empty state.
+ */
+const allowPending = import.meta.env.DEV || import.meta.env.SITE_ENV === 'staging';
+
+type Asset = (typeof projectPhotos.assets)[number];
 
 const assets = new Map(projectPhotos.assets.map((asset) => [asset.id, asset]));
 const projectLabels = [
@@ -14,11 +26,39 @@ const projectLabels = [
   'Diamond-grind bay',
   'Shop floor, same camera',
 ];
-const comparisons = projectPhotos.curatedPairCandidates.map((pair, index) => ({
-  label: projectLabels[index] ?? `Edmonton floor ${index + 1}`,
-  before: assets.get(pair.beforeAssetIds[0])!,
-  after: assets.get(pair.afterAssetIds[0])!,
-}));
+const captions = [
+  'The overhead door, side entry, and wall line are visible in both photographs.',
+  'The wall junction and door opening hold the same angle across both frames.',
+  'The slab edge and perimeter of the room read the same in both photographs.',
+  'The same bay, photographed before preparation and after coating.',
+  'The ground profile is visible in the first frame and coated in the second.',
+  'The camera position is unchanged between the two photographs.',
+];
+
+/** `project-photo-pairs.json` carries no alt text; it is written per view here. */
+const toVariant = (asset: Asset, alt: string): ImageVariant => ({
+  avif: asset.variants.avif,
+  webp: asset.variants.webp,
+  jpeg: asset.variants.jpeg,
+  thumbnail: asset.variants.thumbnail,
+  width: asset.width,
+  height: asset.height,
+  alt,
+  sourceUrl: asset.sourceUrl,
+  crop: { objectPosition: '50% 52%' },
+});
+
+const comparisons: ComparisonProject[] = projectPhotos.curatedPairCandidates.map((pair, index) => {
+  const label = projectLabels[index] ?? `Edmonton floor ${index + 1}`;
+  return {
+    id: pair.id,
+    tabLabel: `${String(index + 1).padStart(2, '0')} / archive`,
+    title: label,
+    homeownerCaption: captions[index] ?? 'Both photographs are from the Final Finish project archive.',
+    before: toVariant(assets.get(pair.beforeAssetIds[0])!, `${label}: concrete floor before coating`),
+    after: toVariant(assets.get(pair.afterAssetIds[0])!, `${label}: finished coated floor`),
+  };
+});
 ---
 
 <BaseLayout title="Epoxy Flooring Projects Edmonton | Final Finish" description="Explore real before-and-after concrete coating projects from Final Finish Epoxy in the Edmonton area." canonicalPath="/projects" imagePath="/images/projects/generated/jpeg/img_3313.jpg">
@@ -43,9 +83,26 @@ const comparisons = projectPhotos.curatedPairCandidates.map((pair, index) => ({
         <h2 id="archive-title">Move the threshold.<br />See the work.</h2>
         <p>Each pairing was selected from the Final Finish project archive for a closely related point of view. The photographs are the work as shot.</p>
       </div>
-      <div class="comparison-grid">
-        {comparisons.map((comparison) => (
-          <BeforeAfterProject before={comparison.before} after={comparison.after} label={comparison.label} client:visible />
+      {allowPending && <p class="review-note">Project pairing review · not approved for publication</p>}
+      <div class="comparison-grid" data-pairing-mode={allowPending ? 'review' : 'static'}>
+        {comparisons.map((comparison) => allowPending ? (
+          <StandaloneComparison client:visible project={comparison} loading="lazy" />
+        ) : (
+          <figure class="project-evidence">
+            <div class="project-evidence-views">
+              {[comparison.before, comparison.after].map((photo, view) => (
+                <figure>
+                  <picture>
+                    <source type="image/avif" srcset={photo.avif} />
+                    <source type="image/webp" srcset={photo.webp} />
+                    <img src={photo.jpeg} alt={photo.alt} width={photo.width} height={photo.height} loading="lazy" decoding="async" />
+                  </picture>
+                  <figcaption>{view === 0 ? 'Concrete preparation' : 'Finished surface'}</figcaption>
+                </figure>
+              ))}
+            </div>
+            <figcaption>{comparison.title}<small>Project pairing awaiting confirmation</small></figcaption>
+          </figure>
         ))}
       </div>
       <aside class="review-key" aria-label="Project photo status">
@@ -78,12 +135,23 @@ const comparisons = projectPhotos.curatedPairCandidates.map((pair, index) => ({
   .hero-deck span { color: #60747e; font-size: .62rem; font-weight: 750; letter-spacing: .14em; text-transform: uppercase; }
   .scroll-cue { position: absolute; z-index: 2; right: var(--gutter); bottom: 2rem; display: none; color: #183b50; }
   .archive { padding: clamp(6rem, 12vw, 12rem) var(--gutter); background: #fbfaf6; }
-  .archive-intro, .comparison-grid, .review-key { width: min(100%, var(--max)); margin-inline: auto; }
+  .archive-intro, .comparison-grid, .review-key, .review-note { width: min(100%, var(--max)); margin-inline: auto; }
+  .review-note { margin: 0 0 clamp(2rem, 4vw, 3rem); color: #72572b; font: 650 .875rem/1.5 var(--sans); letter-spacing: -.01em; }
   .archive-intro { display: grid; grid-template-columns: 1fr 2.2fr 1fr; gap: 3vw; align-items: start; margin-bottom: clamp(5rem, 10vw, 10rem); }
   .archive-intro h2 { margin: 0; font-family: var(--serif); font-size: clamp(3.8rem, 7.5vw, 8rem); font-weight: 400; letter-spacing: -.055em; line-height: .83; }
   .archive-intro > p:last-child { margin: .25rem 0 0; color: var(--muted); font-size: .86rem; line-height: 1.7; }
-  .comparison-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: clamp(5rem, 8vw, 9rem) clamp(2rem, 5vw, 6rem); }
-  .comparison-grid :global(.project-comparison:nth-child(even)) { margin-top: 8rem; }
+  /* One column: the shared comparison is a 4:3 stage with a caption row, and a
+     two-up grid of them halves the drag distance the divider needs. */
+  .comparison-grid { display: grid; gap: clamp(5rem, 8vw, 9rem); }
+  .comparison-grid > :global(.transformation-comparison),
+  .comparison-grid > .project-evidence { width: min(100%, 66rem); margin-inline: auto; }
+  .project-evidence { margin: 0; }
+  .project-evidence-views { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: clamp(1rem, 2.4vw, 2rem); }
+  .project-evidence-views figure { margin: 0; }
+  .project-evidence-views picture, .project-evidence-views img { display: block; width: 100%; height: auto; }
+  .project-evidence-views figcaption { padding-top: .6rem; color: var(--muted); font-size: .7rem; font-weight: 750; letter-spacing: .1em; text-transform: uppercase; }
+  .project-evidence > figcaption { display: grid; gap: .35rem; padding-top: 1.15rem; border-bottom: 1px solid var(--line); padding-bottom: 1.15rem; font-size: 1rem; font-weight: 550; }
+  .project-evidence > figcaption small { color: var(--muted); font-size: .72rem; font-weight: 550; }
   .review-key { display: grid; grid-template-columns: 1fr 2fr; gap: 2rem; margin-top: 8rem; padding: 2rem 0; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); color: var(--muted); font-size: .75rem; }
   .review-key span { display: flex; align-items: center; gap: .55rem; color: #475b65; font-weight: 750; letter-spacing: .1em; text-transform: uppercase; }
   .review-key i { width: .5rem; height: .5rem; border-radius: 50%; background: #d5a94a; }
@@ -94,5 +162,5 @@ const comparisons = projectPhotos.curatedPairCandidates.map((pair, index) => ({
   .project-cta h2 { margin-top: 1rem; font-family: var(--serif); font-size: clamp(4.2rem, 9vw, 9rem); font-weight: 400; letter-spacing: -.055em; line-height: .82; }
   .project-cta > div { display: flex; gap: 2rem; align-items: center; margin-top: 3rem; }
   .project-cta .text-link { color: white; font-size: .7rem; font-weight: 750; letter-spacing: .1em; text-transform: uppercase; }
-  @media (max-width: 800px) { .hero-deck, .archive-intro, .review-key { grid-template-columns: 1fr; } .hero-deck span { display: none; } .comparison-grid { grid-template-columns: 1fr; } .comparison-grid :global(.project-comparison:nth-child(even)) { margin-top: 0; } .hero-architecture { inset-inline: -25vw; } .project-cta > div { align-items: flex-start; flex-direction: column; } }
+  @media (max-width: 800px) { .hero-deck, .archive-intro, .review-key { grid-template-columns: 1fr; } .hero-deck span { display: none; } .project-evidence-views { grid-template-columns: 1fr; } .hero-architecture { inset-inline: -25vw; } .project-cta > div { align-items: flex-start; flex-direction: column; } }
 </style>

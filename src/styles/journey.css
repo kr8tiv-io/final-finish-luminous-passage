@@ -150,6 +150,15 @@ html[data-journey-tier='still'] .journey .floor-film video { display: none; }
 .proof-chapter.white-stage { display: block; min-height: auto; padding: 0; }
 .proof-chapter.white-stage::after { top: auto; z-index: -1; mask-image: none; }
 .gallery-project-link { padding: 0 var(--gutter) 3rem; }
+/* Blend guard, Step 11. `.white-stage::before` is a full `--blend-space` tall
+   and starts that far ABOVE its own stage, so the *next* white stage's paper
+   blend paints over the tail of `#proof`: both stages are `z-index: 4`, and the
+   later sibling's whole group wins, so a `z-index` inside `#proof` cannot lift
+   anything back out. That is what rendered the closing "Explore the project
+   archive" link at ~12% contrast. The blend stays; the closing rows get their
+   own space above it instead. The act label is the last row here, so its bottom
+   padding is what clears both it and the link above it — keep it last. */
+.proof-chapter > .chapter-index { position: static; padding: 0 var(--gutter) calc(2.5rem + var(--blend-space)); }
 .proof-copy { order: -1; }
 .proof-chapter .project-comparison { position: relative; z-index: 3; width: min(100%,var(--max)); margin-inline: auto; }
 .proof-chapter .project-evidence-views picture { mask-image: linear-gradient(180deg,transparent,#000 8%,#000 88%,transparent),linear-gradient(90deg,transparent,#000 7%,#000 91%,transparent); mask-composite: intersect; }

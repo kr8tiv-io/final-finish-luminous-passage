@@ -2,9 +2,9 @@
 interface Props { id: string; number: string; label: string; href?: string; link?: string; }
 const { id, number, label, href, link } = Astro.props;
 ---
-<aside id={`${id}-details`} class="chapter-reading white-stage" data-journey-white-stage aria-label={label}>
+<aside id={`${id}-details`} class="chapter-reading white-stage" data-journey-white-stage data-reading-for={id} aria-label={label}>
   <div class="chapter-reading-inner editorial-width">
-    <div class="reading-label"><span aria-hidden="true">{number}</span><strong>{label}</strong></div>
+    <div class="reading-label"><span data-reading-act aria-hidden="true">{number}</span><strong>{label}</strong></div>
     <div class="reading-body"><slot />{href && <a class="chapter-link" href={href}>{link}<span aria-hidden="true">↗</span></a>}</div>
   </div>
 </aside>
