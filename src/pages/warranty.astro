@@ -6,23 +6,31 @@ import InteriorHero from '../components/InteriorHero.astro';
 import SectionShell from '../components/SectionShell.astro';
 ---
 
-<BaseLayout title="Epoxy Floor Warranty | Final Finish Edmonton" description="What a Final Finish epoxy quote covers, and what it does not. Terms are written into the quote—not invented on the website." canonicalPath="/warranty">
+<!--
+  This page is a deliberate anti-claim, and it is the one place on the site where
+  the word is allowed (see `scripts/validate-copy-claims.mjs`). A8 lists warranty
+  terms as not claimable, so the page says that plainly rather than going quiet.
+  Never add a year count, a lifetime promise, or a coverage percentage here
+  without a written term from Denis.
+-->
+<BaseLayout title="Epoxy Floor Warranty | Final Finish Edmonton" description="What a Final Finish epoxy quote covers, and what it does not. The terms are written into your quote, not invented on a website." canonicalPath="/warranty">
   <SiteHeader />
   <main id="main-content">
-    <InteriorHero eyebrow="Written with the quote" title="Warranty is a document, not a slogan." lead="This site will not invent a year count or a lifetime promise. Coverage for prep, coating, and wear is confirmed in the quote Denis sends you." />
+    <InteriorHero eyebrow="Written with the quote" title="Warranty is a document, not a slogan." lead="This site will not invent a year count or a lifetime promise. What is covered for preparation, coating, and wear is written into the quote Denis sends you." />
     <SectionShell>
       <p class="section-kicker">What you can expect</p>
       <h2 class="section-title">The quote names the terms.</h2>
-      <p class="section-lead">Manufacturer product sheets and installer workmanship are different things. Final Finish will say which is which in writing before work starts. If a number is not in that quote, it is not a claim on this page.</p>
+      <p class="section-lead">A manufacturer's product sheet and an installer's workmanship are two different things. Final Finish will say which is which, in writing, before work starts.</p>
+      <p>If a number is not in your quote, it is not a promise, and you should not accept it as one from us or from anybody else.</p>
       <ul class="warranty-list">
         <li>Workmanship coverage is stated on the quote for that job.</li>
         <li>Product limits follow the system that was actually installed.</li>
-        <li>Abuse, unapproved chemicals, moisture that was not disclosed, and later trades cutting the floor sit outside a coating warranty.</li>
+        <li>Abuse, unapproved chemicals, moisture that was never disclosed, and later trades cutting the floor all sit outside a coating warranty.</li>
         <li>Ask for the terms before you book. Call (780) 991-1651 if they are not already in the email.</li>
       </ul>
       <div class="button-row">
         <a class="button button-primary" href="/contact#quote">Request a quote</a>
-        <a class="button button-secondary" href="/resources/floor-coating-warranty-questions">Warranty questions to ask</a>
+        <a class="button button-secondary" href="/resources/floor-coating-warranty-questions">Questions to ask</a>
       </div>
     </SectionShell>
   </main>

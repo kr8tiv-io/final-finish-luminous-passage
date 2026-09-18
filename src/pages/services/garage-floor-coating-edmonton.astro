@@ -1,0 +1,125 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import SiteHeader from '../../components/SiteHeader.astro';
+import SiteFooter from '../../components/SiteFooter.astro';
+import InteriorHero from '../../components/InteriorHero.astro';
+import SectionShell from '../../components/SectionShell.astro';
+
+/**
+ * Step 30 added this page. Existing slugs were checked first: `/services`,
+ * `/services/residential-epoxy-flooring`, `/services/commercial-epoxy-flooring`,
+ * and `/services/concrete-solutions`. None of them is a garage page — the garage
+ * was one bullet inside the residential page — so this deepens the topic rather
+ * than duplicating one. The residential page now covers barns, workshops, and
+ * interior rooms and links here for garages; the two do not overlap.
+ *
+ * `garage` is an A8 residential service and an A8 space, so the page itself is a
+ * sourced claim. Prices, cure times, drive-on windows, and warranty terms are
+ * absent on purpose: nothing sourced states them.
+ */
+const jsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'Service',
+  name: 'Garage floor coating',
+  serviceType: 'Epoxy garage floor coating',
+  provider: { '@type': 'HomeAndConstructionBusiness', name: 'Final Finish Epoxy', telephone: '+1-780-991-1651', email: 'finalfinishepoxy@gmail.com' },
+  areaServed: { '@type': 'City', name: 'Edmonton' },
+  description: 'Epoxy and flake floor coating for Edmonton garages, over a ground and crack-filled slab.',
+};
+---
+<BaseLayout
+  title="Garage Floor Coating Edmonton | Final Finish Epoxy"
+  description="Epoxy garage floor coating in Edmonton. What the coating is, when it is the right choice, what grinding and crack filling involve, and what is not promised."
+  canonicalPath="/services/garage-floor-coating-edmonton"
+>
+  <script slot="head" is:inline type="application/ld+json" set:html={JSON.stringify(jsonLd)} />
+  <SiteHeader />
+  <main id="main-content">
+    <InteriorHero
+      eyebrow="Garage floors · Edmonton"
+      title="A garage floor you can wash off in March."
+      lead="A coated garage floor is a system built on your slab: grinding, crack filling, a flake or metallic field, and a top coat over all of it."
+    />
+
+    <SectionShell>
+      <p class="section-kicker">What it is</p>
+      <h2 class="section-title">Not paint. A floor built in layers.</h2>
+      <p class="section-lead">Garage floor paint sits on top of the concrete. A coating is bonded into a slab that has been opened by grinding first. That is the whole difference, and it is why preparation takes longer than the colour choice.</p>
+      <p>The build is straightforward. We grind the slab, fill the cracks we can see, lay the coat, broadcast flake into it, scrape it back once it has set, and finish with a top coat. Where a room needs more grip, an anti-slip top coat goes on last. You can see the same sequence on the <a href="/process">process page</a>, and the layers in the <a href="/finishes">finish library</a>.</p>
+    </SectionShell>
+
+    <SectionShell tone="stone">
+      <p class="section-kicker">When it is the right choice</p>
+      <h2 class="section-title">And when something else is.</h2>
+      <div class="decision-grid">
+        <div>
+          <h3>A coating makes sense when</h3>
+          <ul>
+            <li>The slab is sound, and you want it brighter and easier to wash.</li>
+            <li>Salt, meltwater, and tracked grit are the problem you actually have.</li>
+            <li>You want the garage to work as a shop, a gym, or a room, not only parking.</li>
+            <li>You are tired of a dusty slab that never looks clean.</li>
+          </ul>
+        </div>
+        <div>
+          <h3>Talk to us about something else when</h3>
+          <ul>
+            <li>The concrete is moving, heaving, or badly spalled. That is a <a href="/services/concrete-solutions">concrete repair</a> conversation first.</li>
+            <li>Water is coming up through the slab. A coating does not fix a water source.</li>
+            <li>The floor is brand new. Fresh concrete has to cure before anything goes on it.</li>
+            <li>You want the look for a warehouse or a showroom. The planning is different, so start on the <a href="/services/commercial-epoxy-flooring">commercial page</a>.</li>
+          </ul>
+        </div>
+      </div>
+      <p>Paint, a roll-on kit, and a full coating are three different products at three different levels of work. None of them is right for every garage, and we would rather say so before you book.</p>
+    </SectionShell>
+
+    <SectionShell>
+      <p class="section-kicker">What preparation involves</p>
+      <h2 class="section-title">The grind is the job.</h2>
+      <p class="section-lead">Diamond grinding opens the surface of the concrete so the coating has something to hold. It is noisy, dusty work, and it is the part that decides how the floor lasts.</p>
+      <p>Cosmetic crack filling follows the grind. Visible cracks get filled so they do not read through the finish. A crack that turns out to be structural changes the scope, and so does an old coating hiding under the dust. Denis tells you that when he sees it, not after the invoice.</p>
+      <p>Before the estimate, it helps to know what is on the floor now: bare concrete, an old coating, or paint. Oil stains, de-icing residue, and any history of water are all worth mentioning. The <a href="/resources/garage-floor-preparation-edmonton">garage preparation guide</a> lists what to record, and the <a href="/services/concrete-solutions">concrete page</a> covers repairs in depth.</p>
+    </SectionShell>
+
+    <SectionShell tone="stone">
+      <p class="section-kicker">What to expect</p>
+      <h2 class="section-title">Usually two days, on your driveway.</h2>
+      <p class="section-lead">Installation normally runs two days, and it varies with the concrete. A slab that needs more repair takes longer, and Denis will say so before he starts.</p>
+      <p>Clear the floor before we arrive. Everything that lives in the garage has to come out, including shelving, tires, and the fridge in the corner. The bay is unusable while the work is on, and we will agree the dates with you rather than dropping them on you.</p>
+      <p>Photographs of finished Edmonton garages are in the <a href="/projects">project archive</a>, shot before preparation and after coating from the same position.</p>
+    </SectionShell>
+
+    <SectionShell>
+      <p class="section-kicker">What we do not promise here</p>
+      <h2 class="section-title">The specifics live in your quote.</h2>
+      <p class="section-lead">This page will not give you a price, a return-to-use time, or a coverage term. Those are decisions about your slab, and putting a number here would be guessing.</p>
+      <ul class="plain-list">
+        <li>Price. Every slab is different, and the estimate is free.</li>
+        <li>When you can walk on it or park on it. That is written into the quote.</li>
+        <li>What is covered if something goes wrong. Ask for those terms in writing, and see the <a href="/warranty">warranty page</a> for how we handle it.</li>
+        <li>That a coating removes maintenance. It makes the floor easier to clean, not self-cleaning.</li>
+      </ul>
+      <p>If a contractor gives you all four of those over the phone without seeing the concrete, ask how.</p>
+    </SectionShell>
+
+    <SectionShell tone="stone">
+      <p class="section-kicker">Next step</p>
+      <h2 class="section-title">Send a photo of the floor.</h2>
+      <p class="section-lead">A free estimate can start from photos or from a visit. A wide shot of the garage and a close one of any cracks is enough to begin.</p>
+      <div class="button-row">
+        <a class="button button-primary" href="/contact#quote">Send photos for an estimate</a>
+        <a class="button button-secondary" href="tel:+17809911651">Call Denis (780) 991-1651</a>
+        <a class="button button-secondary" href="/floor-visualizer">Try a finish on your photo</a>
+      </div>
+    </SectionShell>
+  </main>
+  <SiteFooter />
+</BaseLayout>
+<style>
+  .decision-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: clamp(2rem, 4vw, 4rem); margin-top: 2.5rem; }
+  .decision-grid h3 { margin: 0 0 1rem; font: 550 clamp(1.4rem, 2.2vw, 1.85rem)/1.2 var(--sans); letter-spacing: -.02em; }
+  .decision-grid ul, .plain-list { display: grid; gap: 0.7rem; margin: 0; padding-left: 1.2rem; color: #3f4e57; line-height: 1.6; }
+  .plain-list { max-width: 46rem; margin: 2rem 0; }
+  @media (max-width: 820px) { .decision-grid { grid-template-columns: 1fr; } }
+</style>

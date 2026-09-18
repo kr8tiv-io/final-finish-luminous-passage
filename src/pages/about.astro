@@ -5,10 +5,23 @@ import SiteFooter from '../components/SiteFooter.astro';
 import InteriorHero from '../components/InteriorHero.astro';
 import SectionShell from '../components/SectionShell.astro';
 
-const personSchema = {
+/**
+ * The surname is gone, deliberately.
+ *
+ * `CONTEXT-SHEET.md` A8 lists "the surname 'Tadic'" among the things this site
+ * may not claim: the G2 tree used it, but it appears nowhere on the live site and
+ * Denis has not confirmed it in writing. A8 does allow "Founded by Denis", so
+ * that is what the page, the title, and this schema now say. The ledger carries
+ * the surname as pending Denis; if he confirms it, add it back here and in the
+ * `name` field below, and nowhere else.
+ *
+ * No years in business, no credentials, and no insurance claim appear on this
+ * page. A8 lists all three as not claimable.
+ */
+const jsonLd = {
   '@context': 'https://schema.org',
   '@type': 'Person',
-  name: 'Denis Tadic',
+  name: 'Denis',
   jobTitle: 'Owner',
   worksFor: { '@type': 'HomeAndConstructionBusiness', name: 'Final Finish Epoxy' },
   telephone: '+1-780-991-1651',
@@ -16,30 +29,49 @@ const personSchema = {
   address: { '@type': 'PostalAddress', addressLocality: 'Edmonton', addressRegion: 'AB', addressCountry: 'CA' },
 };
 ---
-<BaseLayout title="About Final Finish Epoxy | Edmonton" description="Meet Denis Tadic and Final Finish Epoxy Coatings in Edmonton." canonicalPath="/about">
-  <script slot="head" is:inline type="application/ld+json" set:html={JSON.stringify(personSchema)} />
+<BaseLayout title="About Final Finish Epoxy | Edmonton" description="Final Finish Epoxy Coatings was founded by Denis and does quality floor makeovers in Edmonton, Alberta. Here is how the work runs." canonicalPath="/about">
+  <script slot="head" is:inline type="application/ld+json" set:html={JSON.stringify(jsonLd)} />
   <SiteHeader />
   <main id="main-content">
-    <InteriorHero eyebrow="Denis Tadic · Final Finish" title="A local finish, with a real name behind it." lead="Final Finish Epoxy Coatings was founded by Denis Tadic to transform concrete spaces across Edmonton through preparation, clear communication and a carefully finished result." />
+    <InteriorHero
+      eyebrow="Denis · Final Finish"
+      title="A local finish, with a real name behind it."
+      lead="Final Finish Epoxy Coatings was founded by Denis. We do quality floor makeovers in Edmonton, Alberta, and the person quoting your floor is the person on it."
+    />
+
     <SectionShell>
-      <p class="section-kicker">Owner on the job</p>
-      <h2 class="section-title">Prep, punctuality, and Denis in the bay.</h2>
-      <p class="section-lead">Google reviews keep repeating the same facts: Denis works the floor himself, the crew shows up when they said they would, and the grind happens before the pretty coat. That is the company.</p>
+      <p class="section-kicker">How we work</p>
+      <h2 class="section-title">Denis looks at the concrete first.</h2>
+      <p class="section-lead">Every job starts the same way. A free estimate comes from photos of the floor or from a visit, and the conversation is about the slab before it is about colour.</p>
+      <p>There is no showroom and no street address on this site, because the work happens at yours. Final Finish is a service-area business based in Edmonton. <a href="/service-area">Where we work</a> says the rest.</p>
+    </SectionShell>
+
+    <SectionShell tone="stone">
+      <p class="section-kicker">The order of work</p>
+      <h2 class="section-title">Grind, fill, coat, finish.</h2>
       <ol class="about-steps">
-        <li>Inspect the slab.</li>
-        <li>Diamond grind and repair.</li>
-        <li>Build the coating system.</li>
-        <li>Cove and topcoat.</li>
-        <li>Hand the room back on the quoted timing.</li>
+        <li>A free estimate, from your photos or an in-person visit.</li>
+        <li>Grinding, to open the surface of the concrete.</li>
+        <li>Cosmetic crack filling.</li>
+        <li>The flake broadcast, then the scrape.</li>
+        <li>The top coat, plus an anti-slip top coat where a room needs one.</li>
       </ol>
+      <p>Installation usually runs two days, and it varies with the concrete. <a href="/process">The process page</a> goes through each step properly.</p>
+    </SectionShell>
+
+    <SectionShell>
+      <p class="section-kicker">What you get in writing</p>
+      <h2 class="section-title">The quote says it, or it is not a promise.</h2>
+      <p class="section-lead">Prices, timing, and coverage terms are not published on this site. They are decisions about your floor, and they belong in the document Denis sends you.</p>
+      <p>That is a deliberate choice. A number on a website that has not seen your slab is a guess, and you would end up renegotiating it anyway. See the <a href="/warranty">warranty page</a> for how that works.</p>
       <div class="button-row">
         <a class="button button-primary" href="/contact#quote">Tell Denis about the project</a>
-        <a class="button button-secondary" href="/process">How a floor goes</a>
+        <a class="button button-secondary" href="/projects">See finished floors</a>
       </div>
     </SectionShell>
   </main>
   <SiteFooter />
 </BaseLayout>
 <style>
-  .about-steps { display: grid; gap: 0.6rem; padding-left: 1.2rem; color: var(--muted); font-family: var(--serif); font-size: 1.6rem; }
+  .about-steps { display: grid; gap: 0.7rem; max-width: 44rem; margin: 2rem 0; padding-left: 1.3rem; color: #3f4e57; line-height: 1.6; }
 </style>

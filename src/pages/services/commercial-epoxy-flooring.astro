@@ -4,30 +4,81 @@ import SiteHeader from '../../components/SiteHeader.astro';
 import SiteFooter from '../../components/SiteFooter.astro';
 import InteriorHero from '../../components/InteriorHero.astro';
 import SectionShell from '../../components/SectionShell.astro';
+
+/**
+ * A8 commercial services are surface preparation, crack filling, and anti-slip.
+ * A8 commercial spaces are warehouses, showrooms, and industrial facilities. This
+ * page stays inside both lists. Downtime, reopening, and return-to-service timing
+ * are described as things the quote states, never as numbers this page supplies.
+ */
+const jsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'Service',
+  name: 'Commercial epoxy flooring',
+  serviceType: 'Commercial floor coating, surface preparation, and anti-slip finishes',
+  provider: { '@type': 'HomeAndConstructionBusiness', name: 'Final Finish Epoxy', telephone: '+1-780-991-1651', email: 'finalfinishepoxy@gmail.com' },
+  areaServed: { '@type': 'City', name: 'Edmonton' },
+  description: 'Surface preparation, crack filling, and anti-slip floor coatings for Edmonton warehouses, showrooms, and industrial facilities.',
+};
 ---
-<BaseLayout title="Commercial Epoxy Flooring Edmonton | Final Finish" description="Plan commercial epoxy flooring in Edmonton around traffic, concrete condition, cleaning and staged downtime before choosing a finish." canonicalPath="/services/commercial-epoxy-flooring">
+<BaseLayout title="Commercial Epoxy Flooring Edmonton | Final Finish" description="Surface preparation, crack filling, and anti-slip floor coatings for Edmonton warehouses, showrooms, and industrial facilities. Planned around your working day." canonicalPath="/services/commercial-epoxy-flooring">
+  <script slot="head" is:inline type="application/ld+json" set:html={JSON.stringify(jsonLd)} />
   <SiteHeader />
   <main id="main-content">
-    <InteriorHero eyebrow="Warehouses · Showrooms · Industrial" title="Commercial floors that present the space clearly." lead="Commercial flooring planning begins with how people, products, water and cleaning move through the space—not a generic coating claim." />
+    <InteriorHero
+      eyebrow="Warehouses · Showrooms · Industrial"
+      title="Built around your working day."
+      lead="Surface preparation, crack filling, and anti-slip finishes for spaces that have to keep running. The plan starts with how the floor is used, not with a colour."
+    />
+
     <SectionShell>
-      <p class="section-kicker">Map the operation</p>
-      <h2 class="section-title">Plan around traffic before selecting texture</h2>
-      <p class="section-lead">Walk the space with the people who use and clean it. Mark entrances, aisles, turning routes, loading areas, drains, fixed equipment, thresholds and zones that must remain available. Then describe footwear, carts or wheeled loads, spills, water, grit, cleaners and any direct light that affects the finish choice.</p>
-      <p>Texture and cleanability need to be discussed together. A finish is not universally slip-proof, and a coarse surface that cannot be cleaned with the planned method can create another operational problem. The <a href="/resources/slip-resistance-floor-coatings">slip-resistance planning guide</a> and <a href="/resources/warehouse-floor-coating-planning">warehouse planning guide</a> provide questions that keep use conditions visible.</p>
+      <p class="section-kicker">What it is</p>
+      <h2 class="section-title">Three pieces of work, priced against how the space runs.</h2>
+      <p class="section-lead">Commercial work here means surface preparation, crack filling, and anti-slip finishes. Sometimes all three, sometimes one of them.</p>
+      <p>A showroom wants a floor that presents the product. A warehouse wants one that survives wheels and cleaning. The same crew does both, and the difference shows up in the texture and the sequence, not in the sales pitch.</p>
     </SectionShell>
+
     <SectionShell tone="stone">
-      <p class="section-kicker">Before work starts</p>
-      <h2 class="section-title">Make downtime a written operating plan</h2>
-      <p>Application is only one part of the interruption. A workable plan identifies access, clearing and protection of inventory or equipment, preparation, repairs, each layer, inspection, permitted reopening activities and who approves changes if conditions differ from the assumptions. It should distinguish pedestrian access from rolling loads, cleaning, equipment placement and normal operations according to the documented system restrictions.</p>
-      <p>Use the <a href="/resources/commercial-flooring-downtime-planning">commercial downtime plan</a> to separate these stages. For a showroom or retail setting, the <a href="/resources/retail-flooring-coating-planning">retail planning guide</a> adds questions about display changes, customer routes and cleaning equipment. Site-specific safety, occupancy and accessibility controls remain the responsibility of the relevant workplace and building parties.</p>
+      <p class="section-kicker">When it is the right choice</p>
+      <h2 class="section-title">Traffic, cleaning, and the hours you can give up.</h2>
+      <p class="section-lead">Three things decide whether a coating is worth it here. Walk the space with the people who use it and the people who clean it.</p>
+      <ul class="plain-list">
+        <li><strong>Traffic.</strong> Foot routes, carts, pallet jacks, and forklifts all load a floor differently.</li>
+        <li><strong>Cleaning.</strong> A coarse anti-slip surface that your machine cannot clean trades one problem for another.</li>
+        <li><strong>Access.</strong> Which zones can close, and for how long. That usually sets the whole schedule.</li>
+      </ul>
+      <p>If the answer is that nothing can close, say so early. It is a real constraint and it changes the plan. The <a href="/resources/slip-resistance-floor-coatings">slip-resistance guide</a> and the <a href="/resources/warehouse-floor-coating-planning">warehouse planning guide</a> cover the questions worth raising.</p>
     </SectionShell>
+
     <SectionShell>
-      <p class="section-kicker">Scope and substrate</p>
-      <h2 class="section-title">The slab, not the brochure, determines the preparation conversation</h2>
-      <p>Record cracks, joints, spalls, old coatings, adhesive, oil, moisture indicators and areas hidden beneath fixtures. A condition found after clearing or mechanical preparation may change repairs, sequencing or cost; the proposal should state how it will be documented and authorized. Where moisture is relevant, request the test method, locations, results and the proposed system’s current limits rather than accepting a general moisture-barrier claim.</p>
-      <p>Bring the <a href="/resources/concrete-moisture-testing-floor-coatings">moisture-testing guide</a> and <a href="/resources/concrete-cracks-spalling-floor-coating">concrete-condition guide</a> into the review. The <a href="/resources/questions-to-ask-floor-coating-contractor">contractor question list</a> helps keep materials, preparation, return-to-service and maintenance records comparable across quotes.</p>
-      <a class="button button-primary" href="/contact#quote">Discuss a commercial floor</a>
+      <p class="section-kicker">What preparation involves</p>
+      <h2 class="section-title">Clearing, then grinding, then the cracks.</h2>
+      <p class="section-lead">Nothing can be assessed under a pallet rack. Clearing and protecting stock and equipment is part of the job, and it is often the longest part.</p>
+      <p>Grinding opens the slab. Cosmetic crack filling follows. Joints, old coatings, adhesive, oil, and anything hidden under fixed equipment get recorded as they appear. A condition found after clearing can change the scope, so agree in advance how a change is documented and who signs it off.</p>
+      <p>Where moisture is a question, ask for the method, the locations, and the results rather than a general barrier claim. The <a href="/resources/concrete-moisture-testing-floor-coatings">moisture-testing guide</a> and <a href="/services/concrete-solutions">concrete solutions</a> both go further into this.</p>
+    </SectionShell>
+
+    <SectionShell tone="stone">
+      <p class="section-kicker">What to expect</p>
+      <h2 class="section-title">Downtime is a written plan, not a hope.</h2>
+      <p class="section-lead">Application is only part of the interruption. Clearing, preparation, repairs, each coat, and reopening are separate stages, and each one has a date.</p>
+      <p>Pedestrian access, rolling loads, cleaning, and putting equipment back do not all resume at once. Your quote should name them separately. Use the <a href="/resources/commercial-flooring-downtime-planning">downtime planning guide</a> to structure the conversation, and the <a href="/resources/retail-flooring-coating-planning">retail guide</a> if customers walk the space.</p>
+    </SectionShell>
+
+    <SectionShell>
+      <p class="section-kicker">What we do not promise here</p>
+      <h2 class="section-title">No numbers without seeing the floor.</h2>
+      <p class="section-lead">This page carries no price, no return-to-service window, and no coverage term. Those come out of a site visit and go into your quote.</p>
+      <p>Site safety, occupancy limits, and accessibility stay with the workplace and building parties responsible for them. We coat the floor, and we will tell you what we saw while we were down there.</p>
+      <div class="button-row">
+        <a class="button button-primary" href="/contact#quote">Plan a commercial floor</a>
+        <a class="button button-secondary" href="tel:+17809911651">Call Denis (780) 991-1651</a>
+      </div>
     </SectionShell>
   </main>
   <SiteFooter />
 </BaseLayout>
+<style>
+  .plain-list { display: grid; gap: 0.75rem; max-width: 48rem; margin: 2rem 0; padding-left: 1.2rem; color: #3f4e57; line-height: 1.6; }
+  .plain-list strong { color: var(--ink); font-weight: 650; }
+</style>

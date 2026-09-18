@@ -12,6 +12,12 @@ const { tone = 'paper' } = Astro.props;
   :global(.section-kicker) { color: var(--cobalt); font-size: .875rem; font-weight: 650; letter-spacing: .075em; text-transform: uppercase; }
   :global(.section-title) { max-width: 16ch; margin: 0; font: 550 var(--type-chapter)/1.08 var(--sans); letter-spacing: -.025em; text-wrap: balance; }
   :global(.section-lead) { max-width: 62ch; color: #3f4e57; font-size: var(--type-lead); line-height: 1.5; }
+  /* Step 29: body paragraphs inside a shell had no measure, so at 1440 they ran
+     the full 1200px container — roughly 150 characters a line, right beside a
+     62ch lead. `--measure-body` (64ch) is the token the rest of the reading
+     system already uses. Only pages that use this shell are affected; the
+     homepage does not. */
+  :global(.section-inner > p:not(.section-lead):not(.section-kicker)) { max-width: var(--measure-body); line-height: 1.65; }
   :global(.card-grid) { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: clamp(2rem,4vw,4rem); margin-top: 3rem; }
   :global(.editorial-card) { padding: 1.5rem 0; border-top: 1px solid var(--line); background: transparent; }
   :global(.editorial-card h2), :global(.editorial-card h3) { margin: 0 0 1rem; font: 550 clamp(1.5rem,2.4vw,2rem)/1.2 var(--sans); letter-spacing: -.02em; }

@@ -1,7 +1,8 @@
 <footer class="site-footer">
   <div>
     <p class="eyebrow">Final Finish Epoxy Coatings</p>
-    <p class="footer-statement">A cleaner, brighter finish for Edmonton concrete spaces.</p>
+    <p class="footer-statement">Founded by Denis. Quality floor makeovers in Edmonton, Alberta.</p>
+    <p class="footer-spaces">Garages, workshops, barns, warehouses, showrooms, industrial facilities, kitchens, and bathrooms.</p>
   </div>
   <div class="footer-contact">
     <a href="tel:+17809911651">(780) 991-1651</a>
@@ -9,14 +10,26 @@
     <a href="https://www.facebook.com/profile.php?id=61573826827114" rel="me noopener">Facebook</a>
     <a href="https://www.instagram.com/final_finish_epoxy/" rel="me noopener">Instagram</a>
   </div>
-  <nav class="footer-areas" aria-label="Service areas">
-    <a href="/areas/edmonton/">Edmonton</a>
-    <a href="/areas/sherwood-park/">Sherwood Park</a>
-    <a href="/areas/st-albert/">St. Albert</a>
-    <a href="/areas/leduc/">Leduc</a>
-    <a href="/areas/fort-saskatchewan/">Fort Saskatchewan</a>
-    <a href="/areas/spruce-grove/">Spruce Grove</a>
-    <a href="/areas/beaumont/">Beaumont</a>
+  <!--
+    Step 30: the seven town links that sat here were a coverage claim the business
+    cannot support (CONTEXT-SHEET A8, "towns beyond Edmonton" is not claimable).
+    One honest link replaces them; `/service-area` says where we are based and
+    asks the reader to check whether we travel to them.
+  -->
+  <nav class="footer-areas" aria-label="More from Final Finish">
+    <a href="/services">Services</a>
+    <a href="/services/garage-floor-coating-edmonton">Garage floors</a>
+    <a href="/projects">Projects</a>
+    <a href="/finishes">Finishes</a>
+    <a href="/resources">Resources</a>
+    <a href="/service-area">Service area</a>
+    <a href="/warranty">Warranty</a>
   </nav>
-  <p class="footer-meta">© {new Date().getFullYear()} Final Finish Epoxy. Edmonton and the greater capital region, Alberta.</p>
+  <p class="footer-meta">© {new Date().getFullYear()} Final Finish Epoxy. Edmonton, Alberta.</p>
 </footer>
+
+<style>
+  /* Scoped rather than added to global.css: the shared stylesheet is in flight
+     with other steps, and this line exists only in this component. */
+  .footer-spaces { max-width: 34ch; margin: 1.1rem 0 0; color: var(--muted); font-size: 0.8rem; line-height: 1.6; }
+</style>
