@@ -691,8 +691,8 @@
     {
       "id": "step-15",
       "type": "step",
-      "title": "GSAP consolidation + layout canvas: one plugin registration, useGSAP, matchMedia, layout-level SurfaceCanvas with <View>s",
-      "status": "todo",
+      "title": "GSAP consolidation + layout canvas: one plugin registration, useGSAP, matchMedia, layout-level SurfaceCanvas with <View>s — pulled forward 2026-09-18: SurfaceCanvas + SurfaceFloor (material states 0–7) are the storyboard's backbone",
+      "status": "doing",
       "phase": "phase-2",
       "tier": "O",
       "owner": "motion-a",
@@ -1201,6 +1201,42 @@
       "type": "gate",
       "title": "Matt sign-off on staging before any cutover step runs.",
       "status": "todo"
+    },
+    {
+      "id": "step-23b",
+      "type": "step",
+      "title": "Archive lattice (Act 6): cylinder cards unwrap into a 96-photo lattice, camera flyover, tile-resolve into one approved job",
+      "status": "todo",
+      "phase": "phase-3",
+      "tier": "O+",
+      "owner": "motion-b",
+      "files": [
+        "src/components/home/ArchiveLattice.tsx",
+        "scripts/build-archive-atlas.mjs",
+        "public/images/projects/atlas/*"
+      ],
+      "vocab": [
+        "unwrap-to-lattice",
+        "lattice-flyover",
+        "tile-resolve"
+      ],
+      "refs": [
+        "EXPERIENCE-STORYBOARD.md#act-6",
+        "jh3y",
+        "Lusion"
+      ]
+    },
+    {
+      "id": "gate-23b",
+      "type": "gate",
+      "title": "Lattice: atlas ≤ 4096 (2048 phone), 96 tiles present (unapproved at 60% opacity, no captions), flyover p95 frame ≤ 20 ms at 1440, resolve lands on an approved after-photo, still tier = CSS grid stagger; captures at 390/768/1440",
+      "status": "todo"
+    },
+    {
+      "id": "S7",
+      "type": "source",
+      "title": "EXPERIENCE-STORYBOARD.md + COPY-DECK.md (2026-09-18 director's treatment; governs Phase 3)",
+      "status": "done"
     }
   ],
   "edges": [
@@ -2303,6 +2339,101 @@
       "from": "auditor",
       "to": "step-37",
       "type": "verifies"
+    },
+    {
+      "from": "step-23b",
+      "to": "gate-23b",
+      "type": "verifies"
+    },
+    {
+      "from": "step-23b",
+      "to": "step-23",
+      "type": "depends_on"
+    },
+    {
+      "from": "step-23b",
+      "to": "step-15",
+      "type": "depends_on"
+    },
+    {
+      "from": "step-23b",
+      "to": "motion-b",
+      "type": "owned_by"
+    },
+    {
+      "from": "S7",
+      "to": "step-15",
+      "type": "informs"
+    },
+    {
+      "from": "S7",
+      "to": "step-17",
+      "type": "informs"
+    },
+    {
+      "from": "S7",
+      "to": "step-18",
+      "type": "informs"
+    },
+    {
+      "from": "S7",
+      "to": "step-19",
+      "type": "informs"
+    },
+    {
+      "from": "S7",
+      "to": "step-20",
+      "type": "informs"
+    },
+    {
+      "from": "S7",
+      "to": "step-21",
+      "type": "informs"
+    },
+    {
+      "from": "S7",
+      "to": "step-22",
+      "type": "informs"
+    },
+    {
+      "from": "S7",
+      "to": "step-23",
+      "type": "informs"
+    },
+    {
+      "from": "S7",
+      "to": "step-23b",
+      "type": "informs"
+    },
+    {
+      "from": "S7",
+      "to": "step-24",
+      "type": "informs"
+    },
+    {
+      "from": "S7",
+      "to": "step-25",
+      "type": "informs"
+    },
+    {
+      "from": "S7",
+      "to": "step-26",
+      "type": "informs"
+    },
+    {
+      "from": "S7",
+      "to": "step-27",
+      "type": "informs"
+    },
+    {
+      "from": "S7",
+      "to": "step-28",
+      "type": "informs"
+    },
+    {
+      "from": "S7",
+      "to": "step-29",
+      "type": "informs"
     }
   ]
 }

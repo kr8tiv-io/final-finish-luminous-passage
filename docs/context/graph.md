@@ -25,7 +25,7 @@ flowchart TD
   subgraph phase-2["phase-2"]
     step-13["step-13: Manrope refinement: tokens, scale, leading, trac"]:::stTodo
     step-14["step-14: MOTION-VOCABULARY.md: complete every id with dur"]:::stTodo
-    step-15["step-15: GSAP consolidation + layout canvas: one plugin r"]:::stTodo
+    step-15["step-15: GSAP consolidation + layout canvas: one plugin r"]:::stDoing
     step-16["step-16: Surfaces: paper/ink/cobalt/bronze tokens, per-ch"]:::stTodo
   end
   subgraph phase-3["phase-3"]
@@ -36,6 +36,7 @@ flowchart TD
     step-21["step-21: Preparation cutaway: layered illustrative diagra"]:::stDoing
     step-22["step-22: Reclaim your garage or basement: garage, basemen"]:::stTodo
     step-23["step-23: See the difference: pin the inner passage, jh3y "]:::stTodo
+    step-23b["step-23b: Archive lattice (Act 6): cylinder cards unwrap i"]:::stTodo
     step-24["step-24: Epoxy layer-mask headline (Creative Ocean): resi"]:::stDoing
     step-25["step-25: Finish alcove and visualizer: entrance from fini"]:::stTodo
     step-26["step-26: Commercial chapter: poster becomes a DepthPlate "]:::stTodo
@@ -140,6 +141,8 @@ flowchart TD
   step-16 --> step-29
   step-28 --> step-34
   step-33 --> step-37
+  step-23 --> step-23b
+  step-15 --> step-23b
   classDef stTodo fill:#eee,stroke:#888
   classDef stDoing fill:#ffe,stroke:#996
   classDef stDone fill:#e6ffe6,stroke:#484
@@ -331,14 +334,14 @@ flowchart TD
 - **Vocabulary ids cited:** none yet
 - **Gate:** context-graph.mjs validates every id has duration, ease, reduced-motion equivalent, reference; later motion steps cite ids.
 
-### step-15 — GSAP consolidation + layout canvas: one plugin registration, useGSAP, matchMedia, layout-level SurfaceCanvas with <View>s
+### step-15 — GSAP consolidation + layout canvas: one plugin registration, useGSAP, matchMedia, layout-level SurfaceCanvas with <View>s — pulled forward 2026-09-18: SurfaceCanvas + SurfaceFloor (material states 0–7) are the storyboard's backbone
 
 - **Phase:** phase-2
 - **Tier:** O
 - **Owner(s):** motion-a
-- **Status:** todo
+- **Status:** doing
 - **Files:** gsap-kit.ts, EditorialMotion.tsx, SurfaceCanvas.tsx, FilmVeil.tsx, BaseLayout.astro
-- **Inputs (informs):** none recorded
+- **Inputs (informs):** S7
 - **Constraints (locks):** none recorded
 - **Depends on:** step-14
 - **Vocabulary ids cited:** none yet
@@ -364,7 +367,7 @@ flowchart TD
 - **Owner(s):** motion-a
 - **Status:** todo
 - **Files:** index.astro, FilmVeil.tsx mode 3, journey-transitions.ts
-- **Inputs (informs):** none recorded
+- **Inputs (informs):** S7
 - **Constraints (locks):** L1, L2, L3, L4
 - **Depends on:** step-08, step-16
 - **Vocabulary ids cited:** none yet
@@ -377,7 +380,7 @@ flowchart TD
 - **Owner(s):** motion-b
 - **Status:** doing
 - **Files:** src/components/nav/*, SiteHeader.astro, header-ribbon.ts, SurfaceCanvas.tsx
-- **Inputs (informs):** none recorded
+- **Inputs (informs):** S7
 - **Constraints (locks):** L1, L2, L3, L4
 - **Depends on:** step-17, step-15, step-16
 - **Vocabulary ids cited:** none yet
@@ -390,7 +393,7 @@ flowchart TD
 - **Owner(s):** motion-c, ui
 - **Status:** doing
 - **Files:** SocialProof.astro, EditorialMotion.tsx, customer-proof.json
-- **Inputs (informs):** none recorded
+- **Inputs (informs):** S7
 - **Constraints (locks):** none recorded
 - **Depends on:** step-18, step-20, step-22, step-24
 - **Vocabulary ids cited:** none yet
@@ -403,7 +406,7 @@ flowchart TD
 - **Owner(s):** motion-b, mechanical
 - **Status:** todo
 - **Files:** scripts/grade-stair-walk.mjs, StairAscent.tsx, DepthPlate.tsx, journey-film-timing.ts, assets/stair/
-- **Inputs (informs):** none recorded
+- **Inputs (informs):** S7
 - **Constraints (locks):** M2
 - **Depends on:** step-19, step-08
 - **Vocabulary ids cited:** none yet
@@ -416,7 +419,7 @@ flowchart TD
 - **Owner(s):** ui
 - **Status:** doing
 - **Files:** src/components/home/PreparationLayers.astro
-- **Inputs (informs):** none recorded
+- **Inputs (informs):** S7
 - **Constraints (locks):** none recorded
 - **Depends on:** step-20
 - **Vocabulary ids cited:** none yet
@@ -429,7 +432,7 @@ flowchart TD
 - **Owner(s):** motion-a
 - **Status:** todo
 - **Files:** index.astro, journey-transitions.ts, FilmVeil.tsx (after 17), public/videos/follow-floor/*/epoxy-mancave.mp4, copy
-- **Inputs (informs):** none recorded
+- **Inputs (informs):** S7
 - **Constraints (locks):** L1, L2, L3, L4
 - **Depends on:** step-21, step-17
 - **Vocabulary ids cited:** none yet
@@ -442,11 +445,24 @@ flowchart TD
 - **Owner(s):** motion-b
 - **Status:** todo
 - **Files:** TransformationGallery.tsx, css, transformation-gallery.ts
-- **Inputs (informs):** none recorded
+- **Inputs (informs):** S7
 - **Constraints (locks):** D1
 - **Depends on:** step-22, step-09, step-11, step-14, step-15, step-16
 - **Vocabulary ids cited:** none yet
 - **Gate:** Step 9 assertions green; exactly one ScrollTrigger inside #proof; layout-shift sum < .02; drag never rotates cylinder.
+
+### step-23b — Archive lattice (Act 6): cylinder cards unwrap into a 96-photo lattice, camera flyover, tile-resolve into one approved job
+
+- **Phase:** phase-3
+- **Tier:** O+
+- **Owner(s):** motion-b
+- **Status:** todo
+- **Files:** src/components/home/ArchiveLattice.tsx, scripts/build-archive-atlas.mjs, public/images/projects/atlas/*
+- **Inputs (informs):** S7
+- **Constraints (locks):** none recorded
+- **Depends on:** step-23, step-15
+- **Vocabulary ids cited:** unwrap-to-lattice, lattice-flyover, tile-resolve
+- **Gate:** MISSING — see validation errors
 
 ### step-24 — Epoxy layer-mask headline (Creative Ocean): resin alpha plate as layer + mask
 
@@ -455,7 +471,7 @@ flowchart TD
 - **Owner(s):** motion-c
 - **Status:** doing
 - **Files:** headline-motion.ts, src/components/motion/ResinMask.astro, JourneyMotion.tsx (after 8)
-- **Inputs (informs):** none recorded
+- **Inputs (informs):** S7
 - **Constraints (locks):** none recorded
 - **Depends on:** step-23, step-08
 - **Vocabulary ids cited:** none yet
@@ -468,7 +484,7 @@ flowchart TD
 - **Owner(s):** ui
 - **Status:** todo
 - **Files:** src/components/visualizer/*
-- **Inputs (informs):** none recorded
+- **Inputs (informs):** S7
 - **Constraints (locks):** none recorded
 - **Depends on:** step-24, step-20, step-22, step-24
 - **Vocabulary ids cited:** none yet
@@ -481,7 +497,7 @@ flowchart TD
 - **Owner(s):** ui, motion-b
 - **Status:** todo
 - **Files:** index.astro, DepthPlate.tsx
-- **Inputs (informs):** none recorded
+- **Inputs (informs):** S7
 - **Constraints (locks):** none recorded
 - **Depends on:** step-25, step-20, step-22, step-24
 - **Vocabulary ids cited:** none yet
@@ -494,7 +510,7 @@ flowchart TD
 - **Owner(s):** ui
 - **Status:** todo
 - **Files:** index.astro, QuoteForm.tsx, src/pages/privacy.astro
-- **Inputs (informs):** none recorded
+- **Inputs (informs):** S7
 - **Constraints (locks):** none recorded
 - **Depends on:** step-26, step-20, step-22, step-24
 - **Vocabulary ids cited:** none yet
@@ -507,7 +523,7 @@ flowchart TD
 - **Owner(s):** motion-a
 - **Status:** todo
 - **Files:** intent-motion.ts, header-ribbon.ts (after 18), FilmVeil.tsx (after 22), src/components/Preloader.astro
-- **Inputs (informs):** none recorded
+- **Inputs (informs):** S7
 - **Constraints (locks):** L1, L2, L3, L4
 - **Depends on:** step-27, step-19, step-21, step-25, step-26, step-27
 - **Vocabulary ids cited:** none yet
@@ -520,7 +536,7 @@ flowchart TD
 - **Owner(s):** ui
 - **Status:** todo
 - **Files:** pages, docs/context/CLAIMS-LEDGER.md
-- **Inputs (informs):** none recorded
+- **Inputs (informs):** S7
 - **Constraints (locks):** L1, L2, L3, L4
 - **Depends on:** step-28, step-16
 - **Vocabulary ids cited:** none yet
