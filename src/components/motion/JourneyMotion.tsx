@@ -19,13 +19,13 @@ import {
   type HeadlineStyle,
 } from '../../lib/motion/headline-motion';
 import {
-  openingPourOpacity,
   journeyMediaResidents,
   shouldInvalidateForMediaReadiness,
   shouldRequestVideo,
   videoSeekTarget,
   videoVisualReady,
 } from '../../lib/motion/journey-media';
+import { currentJourneyTier, type JourneyTier } from '../../lib/motion/journey-tier';
 
 gsap.registerPlugin(SplitText);
 
@@ -60,7 +60,6 @@ export default function JourneyMotion() {
       const id = chapter.dataset.journeyChapter as JourneyChapterId | undefined;
       if (id) chapters.set(id, chapter);
     });
-    const railItems = [...document.querySelectorAll<HTMLElement>('.journey-rail [data-journey-target]')];
     const videos = new Map<JourneyChapterId, HTMLVideoElement>();
     chapters.forEach((chapter, id) => {
       const video = chapter.querySelector<HTMLVideoElement>('.pour-film, .floor-film-video');
@@ -72,8 +71,8 @@ export default function JourneyMotion() {
     const readyVideos = new WeakMap<HTMLVideoElement, boolean>();
     const requestedVideos = new WeakSet<HTMLVideoElement>();
     const pendingSeeks = new WeakSet<HTMLVideoElement>();
-    let presentationEnabled = !reducedQuery.matches
-      && journeyControls.getSnapshot().motionPreference === 'auto';
+    let tier: JourneyTier = currentJourneyTier(journeyControls.getSnapshot().motionPreference);
+    let presentationEnabled = tier !== 'still';
 
     const trackTween = (tween: gsap.core.Tween) => {
       activeTweens.add(tween);
@@ -242,25 +241,34 @@ export default function JourneyMotion() {
       const residentChapters = journeyMediaResidents(snapshot);
       const documentActive = snapshot.visible && snapshot.documentVisible;
       const compositorReady = journey.hasAttribute('data-journey-enhanced');
+      // `balanced` never downloads the compositor, so the plates take the stage
+      // on the director's word alone; `full` waits for the veil to be live.
+      const stageOwned = presentationEnabled && (tier === 'balanced' || compositorReady);
       const transitionInterior = snapshot.transitionProgress > 0 && snapshot.transitionProgress < 1;
       const hideForWhiteExit = snapshot.transitionFromWhite && snapshot.transitionProgress < 1;
       journey.dataset.room = snapshot.activeChapter;
       journey.dataset.journeyRevision = String(snapshot.revision);
       journey.toggleAttribute('data-journey-on-white', snapshot.whiteStageActive);
-      journey.style.setProperty('--journey-progress', snapshot.journeyProgress.toFixed(4));
-      journey.style.setProperty('--chapter-progress', snapshot.chapterProgress.toFixed(4));
-      journey.style.setProperty('--dissolve', snapshot.transitionProgress.toFixed(4));
-      journey.style.setProperty('--dissolve-from', String(snapshot.fromIndex));
-      journey.style.setProperty('--dissolve-to', String(snapshot.toIndex));
+      journey.dataset.mediaOwner = snapshot.mediaOwner;
+      journey.style.setProperty('--handoff', snapshot.handoff.toFixed(4));
+      if (stageOwned) journey.dataset.mediaStage = tier;
+      else delete journey.dataset.mediaStage;
+
+      const onStage = new Set<JourneyChapterId>();
       chapters.forEach((chapter, id) => {
+        const role = transitionInterior
+          ? id === snapshot.toChapter
+            ? 'to'
+            : id === snapshot.fromChapter && !snapshot.transitionFromWhite ? 'from' : null
+          : null;
+        const staged = stageOwned && !snapshot.whiteStageActive && (transitionInterior
+          ? role !== null
+          : !hideForWhiteExit && id === snapshot.activeChapter);
         chapter.toggleAttribute('data-journey-active', id === snapshot.activeChapter);
-        chapter.toggleAttribute(
-          'data-media-active',
-          compositorReady && !snapshot.whiteStageActive && !hideForWhiteExit && id === snapshot.activeChapter,
-        );
-      });
-      railItems.forEach((item) => {
-        item.setAttribute('aria-current', item.dataset.journeyTarget === snapshot.activeChapter ? 'true' : 'false');
+        chapter.toggleAttribute('data-media-active', staged);
+        if (staged && role) chapter.dataset.mediaRole = role;
+        else delete chapter.dataset.mediaRole;
+        if (staged) onStage.add(id);
       });
       if (snapshot.readingChapter) revealChapter(snapshot.readingChapter);
       residentChapters.forEach((id) => promoteVideo(id, residentChapters, documentActive));
@@ -270,25 +278,42 @@ export default function JourneyMotion() {
         video.preload = 'none';
       });
 
-      const hero = chapters.get('portico');
-      hero?.style.setProperty('--pour-opacity', String(openingPourOpacity()));
-
-      if (presentationEnabled && !saveDataEnabled() && documentActive && !transitionInterior) {
-        const film = videos.get(snapshot.activeChapter);
-        if (film && film.readyState >= 2 && Number.isFinite(film.duration) && film.duration > 0) {
-          const time = journeyFilmTime(snapshot.activeChapter, snapshot.chapterProgress, film.duration);
-          requestVideoTime(film, time);
+      if (presentationEnabled && !saveDataEnabled() && documentActive) {
+        if (!transitionInterior) {
+          const film = videos.get(snapshot.activeChapter);
+          if (film && film.readyState >= 2 && Number.isFinite(film.duration) && film.duration > 0) {
+            const time = journeyFilmTime(snapshot.activeChapter, snapshot.chapterProgress, film.duration);
+            requestVideoTime(film, time);
+          }
+        }
+        // The incoming room is *held* on frame 0 — which is its poster — for the
+        // whole interior, so the p = 1 end of a boundary has no frame to jump to.
+        // Holding, not seeding once: a chapter stays resident when the visitor
+        // scrolls back into the boundary it just left, and a one-shot seed would
+        // leave that plate showing wherever the scrub had reached. `requestVideoTime`
+        // no-ops inside its tolerance, so repeating it every frame costs nothing.
+        if (transitionInterior) {
+          const incoming = videos.get(snapshot.toChapter);
+          if (incoming && incoming.readyState >= 2) requestVideoTime(incoming, 0);
         }
       }
+      // Each staged plate shows its own film through the interior, including the
+      // incoming one held on frame 0 above. Hiding the films mid-boundary and
+      // falling back to posters was measured worse, not better: the p = 0.5 seam
+      // on foundation:garage reads 11.34% of the media area changed with the
+      // films hidden against 0.82% with them on stage, because the outgoing
+      // plate then swaps its scrubbed frame for a poster part-way through.
       videos.forEach((video, id) => updateVideoReadiness(
         video,
-        documentActive && id === snapshot.activeChapter && !transitionInterior && !snapshot.whiteStageActive,
+        documentActive && !snapshot.whiteStageActive && onStage.has(id),
       ));
     };
 
     const applyMotionPreference = () => {
       const wasEnabled = presentationEnabled;
-      presentationEnabled = !reducedQuery.matches && journeyControls.getSnapshot().motionPreference === 'auto';
+      tier = currentJourneyTier(journeyControls.getSnapshot().motionPreference);
+      presentationEnabled = tier !== 'still';
+      root.dataset.journeyTier = tier;
       root.dataset.journeyMotion = presentationEnabled ? 'enhanced' : 'still';
       if (!presentationEnabled) {
         activeTweens.forEach((tween) => tween.kill());
@@ -342,11 +367,15 @@ export default function JourneyMotion() {
       chapters.forEach((chapter) => {
         chapter.removeAttribute('data-journey-active');
         chapter.removeAttribute('data-media-active');
+        delete chapter.dataset.mediaRole;
       });
-      chapters.get('portico')?.style.removeProperty('--pour-opacity');
       journey.removeAttribute('data-journey-on-white');
+      journey.style.removeProperty('--handoff');
+      delete journey.dataset.mediaStage;
+      delete journey.dataset.mediaOwner;
       delete journey.dataset.journeyRevision;
       delete root.dataset.journeyMotion;
+      delete root.dataset.journeyTier;
     };
   }, []);
 

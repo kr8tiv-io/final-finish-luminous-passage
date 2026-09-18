@@ -5,11 +5,9 @@ import {
   endpointBlend,
   journeyEnhancementReady,
   journeyMediaResidents,
-  openingPourOpacity,
   plateMediaChoice,
   shouldInvalidateForMediaReadiness,
   shouldRequestVideo,
-  shouldUseFilmVeil,
   thresholdHdrSupported,
   transitionPlateChoice,
   videoVisualReady,
@@ -85,11 +83,16 @@ describe('cinematic plate sampling', () => {
     expect(transitionPlateChoice({ image: null, video }, false)).toBe('fallback');
   });
 
-  it('allows native-phone motion when coarse pointer is the only constraint', () => {
-    expect(shouldUseFilmVeil({ webgl2: true, reducedMotion: false, saveData: false, deviceMemory: 8, motionPreference: 'auto' })).toBe(true);
-    expect(shouldUseFilmVeil({ webgl2: true, reducedMotion: true, saveData: false, deviceMemory: 8, motionPreference: 'auto' })).toBe(false);
-    expect(shouldUseFilmVeil({ webgl2: true, reducedMotion: false, saveData: true, deviceMemory: 8, motionPreference: 'auto' })).toBe(false);
-    expect(shouldUseFilmVeil({ webgl2: true, reducedMotion: false, saveData: false, deviceMemory: 8, motionPreference: 'still' })).toBe(false);
+  it('crossfades the incoming plate around the midpoint instead of switching at it', () => {
+    // The DOM handoff the director publishes: symmetric, monotonic, and exactly
+    // half up at p = 0.5, so `handoff < 0.5` keeps the old active-room contract.
+    expect(dissolveWeight(0.5, 0.5, 0.12)).toBe(0.5);
+    expect(dissolveWeight(0.49, 0.5, 0.12)).toBeLessThan(0.5);
+    expect(dissolveWeight(0.51, 0.5, 0.12)).toBeGreaterThan(0.5);
+    expect(dissolveWeight(0.49, 0.5, 0.12)).toBeGreaterThan(0.35);
+    expect(dissolveWeight(0.51, 0.5, 0.12)).toBeLessThan(0.65);
+    expect(dissolveWeight(0.37, 0.5, 0.12)).toBe(0);
+    expect(dissolveWeight(0.63, 0.5, 0.12)).toBe(1);
   });
 
   it('admits video requests only for the current and next plates while the document is active', () => {
@@ -181,9 +184,6 @@ describe('cinematic plate sampling', () => {
     expect(journeyEnhancementReady({ ...ready, plateReady: false })).toBe(false);
     expect(journeyEnhancementReady({ ...ready, motionEnabled: false })).toBe(false);
     expect(journeyEnhancementReady({ ...ready, motionPreference: 'still' })).toBe(false);
-  });
-
-  it('opens directly on the pouring plate without an image-to-film fade', () => {
-    expect(openingPourOpacity()).toBe(1);
+    expect(journeyEnhancementReady({ ...ready, motionPreference: 'balanced' })).toBe(false);
   });
 });

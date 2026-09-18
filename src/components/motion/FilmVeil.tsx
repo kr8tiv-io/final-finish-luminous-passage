@@ -111,7 +111,6 @@ void main() {
     outputColor = vec4(composite, 1.0);
   }
   gl_FragColor = outputColor;
-  #include <colorspace_fragment>
 }
 `;
 
@@ -166,15 +165,37 @@ function textureDimensions(binding: PlateBinding | null, texture: THREE.Texture)
 function MixMesh({ active, onFirstPlateReady }: { active: boolean; onFirstPlateReady: () => void }) {
   const invalidate = useThree((state) => state.invalidate);
   const gl = useThree((state) => state.gl);
+  const scene = useThree((state) => state.scene);
+  const camera = useThree((state) => state.camera);
   const size = useThree((state) => state.size);
   const snapshot = useSyncExternalStore(
     journeyDirector.subscribe,
     journeyDirector.getSnapshot,
     journeyDirector.getServerSnapshot,
   );
+  /**
+   * Every plate the veil samples is tagged `NoColorSpace`, and the shader writes
+   * its result out untouched (no `colorspace_fragment`).
+   *
+   * The reason is the handoff this step exists to make seamless. Tagging a
+   * texture `SRGBColorSpace` asks the renderer to decode it on sample and the
+   * shader chunk to re-encode on write — but that round trip only actually
+   * happened for the poster textures here, not the video ones, so the veil
+   * rendered the same room brighter or darker depending on which plate it had
+   * picked. Measured against the DOM plate at the identical scroll position:
+   * foundation:garage centre rgb(93,53,21) came out rgb(163,126,82) (+43% mean
+   * luminance), vault:finish-hall -17%. Every time the compositor handed the
+   * frame back to the DOM crossfade the picture stepped by that much, which is
+   * the flicker visible at each end of a boundary.
+   *
+   * Sampling and writing raw sRGB bytes makes the veil byte-identical to the
+   * CSS plates it blends between. It trades linear-light mixing for a picture
+   * that matches its own fallback, which is the right trade for a compositor
+   * whose only job is to be indistinguishable from the layer underneath it.
+   */
   const fallback = useMemo(() => {
     const texture = new THREE.DataTexture(new Uint8Array([250, 249, 246, 255]), 1, 1, THREE.RGBAFormat);
-    texture.colorSpace = THREE.SRGBColorSpace;
+    texture.colorSpace = THREE.NoColorSpace;
     texture.needsUpdate = true;
     return texture;
   }, []);
@@ -259,7 +280,7 @@ function MixMesh({ active, onFirstPlateReady }: { active: boolean; onFirstPlateR
             loaded.dispose();
             return;
           }
-          loaded.colorSpace = THREE.SRGBColorSpace;
+          loaded.colorSpace = THREE.NoColorSpace;
           loaded.minFilter = THREE.LinearFilter;
           loaded.magFilter = THREE.LinearFilter;
           loaded.generateMipmaps = false;
@@ -270,7 +291,7 @@ function MixMesh({ active, onFirstPlateReady }: { active: boolean; onFirstPlateR
       }
       if (binding.video && !binding.videoTexture) {
         binding.videoTexture = new THREE.VideoTexture(binding.video);
-        binding.videoTexture.colorSpace = THREE.SRGBColorSpace;
+        binding.videoTexture.colorSpace = THREE.NoColorSpace;
         binding.videoTexture.minFilter = THREE.LinearFilter;
         binding.videoTexture.magFilter = THREE.LinearFilter;
         binding.videoTexture.generateMipmaps = false;
@@ -400,19 +421,26 @@ function MixMesh({ active, onFirstPlateReady }: { active: boolean; onFirstPlateR
       ? material.userData.renderKey
       : null;
     const frameCanShow = veilIsVisible && materialBoundary === requestedRenderKey;
-    material.uniforms.uVisible.value = frameCanShow ? 1 : 0;
-    if (veilCanvasShouldHide(renderedBoundary.current, requestedRenderKey, veilIsVisible)) {
-      gl.domElement.style.opacity = '0';
+    if (renderedBoundary.current !== null
+      && veilCanvasShouldHide(renderedBoundary.current, requestedRenderKey, veilIsVisible)) {
+      // A confirmed framebuffer for a boundary we no longer want. `onAfterRender`
+      // is the only writer of canvas opacity, so it is retired by actually
+      // clearing it through the renderer instead of by a second effect reaching
+      // for `gl.domElement.style` — the clear pass hands opacity back to its owner.
+      material.uniforms.uVisible.value = 0;
+      gl.render(scene, camera);
     }
+    material.uniforms.uVisible.value = frameCanShow ? 1 : 0;
     if (veilFrameRequired(previousVeilVisible.current, veilIsVisible)) invalidate();
     previousVeilVisible.current = veilIsVisible;
-    if (!veilIsVisible) renderedBoundary.current = null;
   }, [
+    camera,
     gl,
     invalidate,
     material,
     mediaRevision,
     requestedRenderKey,
+    scene,
     size.height,
     size.width,
     transitionFrame.key,
@@ -421,6 +449,7 @@ function MixMesh({ active, onFirstPlateReady }: { active: boolean; onFirstPlateR
   ]);
 
   useEffect(() => () => {
+    journeyDirector.reportVeil(null, false);
     gl.domElement.style.removeProperty('opacity');
     delete gl.domElement.dataset.renderedBoundary;
     delete gl.domElement.dataset.renderedProgress;
@@ -439,10 +468,14 @@ function MixMesh({ active, onFirstPlateReady }: { active: boolean; onFirstPlateR
           && typeof material.userData.renderKey === 'string'
           ? material.userData.renderKey
           : null;
+        const paintedBoundary = typeof material.userData.boundaryKey === 'string'
+          ? material.userData.boundaryKey
+          : null;
         const paintedProgress = Number(material.userData.transitionProgress);
         if (!paintedRenderKey) {
           paintConfirmation.current = { renderKey: null, passes: 0 };
           renderedBoundary.current = null;
+          journeyDirector.reportVeil(null, false);
           gl.domElement.dataset.renderedBoundary = 'clear';
           gl.domElement.dataset.renderedProgress = '0.0000';
           gl.domElement.dataset.renderedRevision = String(material.userData.snapshotRevision ?? 0);
@@ -453,6 +486,7 @@ function MixMesh({ active, onFirstPlateReady }: { active: boolean; onFirstPlateR
         const confirmation = advanceVeilPaintConfirmation(paintConfirmation.current, paintedRenderKey);
         paintConfirmation.current = confirmation.state;
         if (!confirmation.confirmed) {
+          journeyDirector.reportVeil(paintedBoundary, false);
           gl.domElement.dataset.renderedBoundary = 'pending';
           gl.domElement.style.opacity = '0';
           invalidate();
@@ -460,6 +494,7 @@ function MixMesh({ active, onFirstPlateReady }: { active: boolean; onFirstPlateR
         }
 
         renderedBoundary.current = paintedRenderKey;
+        journeyDirector.reportVeil(paintedBoundary, true);
         gl.domElement.dataset.renderedBoundary = String(material.userData.boundaryKey);
         gl.domElement.dataset.renderedProgress = Number.isFinite(paintedProgress)
           ? paintedProgress.toFixed(4)

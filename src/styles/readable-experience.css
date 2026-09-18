@@ -42,7 +42,6 @@ body .journey .hero-ribbon { margin-top: 2.5rem; width: min(43rem,calc(100vw - 2
 body .journey .hero-ribbon a { padding-inline: .4rem; }
 body .journey .hero-proof { bottom: 4.5rem; }
 body .journey .chapter-index { bottom: 1.5rem; text-transform: none; }
-body .journey .journey-rail { display: none; }
 /* A settled lower reading region, not a glow attached to individual letters. */
 body .journey .journey-chapter:not(.hero-chapter):not(.white-stage) { min-height: 110svh; align-content: end; padding: 50svh var(--gutter) 5rem; }
 body .journey .journey-chapter:not(.hero-chapter):not(.white-stage)::after { display: block; z-index: 2; inset: 0; background: linear-gradient(180deg,transparent 5%,rgba(250,249,246,.12) 24%,rgba(250,249,246,.85) 51%,var(--paper) 72%); mask-image: none; }
@@ -131,14 +130,14 @@ body .journey .story-heading { margin-bottom: 3rem; }
 }
 /* Inactive fixed images look onscreen to native lazy loading, even at opacity 0.
    Keep them in their chapter until the director gives that chapter the stage. */
-body .journey[data-journey-enhanced] .hero-frame,
-body .journey[data-journey-enhanced] .chapter-frame,
-body .journey[data-journey-enhanced] .pour-stage,
-body .journey[data-journey-enhanced] .floor-film { position: absolute; }
-body .journey[data-journey-enhanced] [data-media-active] > .hero-frame,
-body .journey[data-journey-enhanced] [data-media-active] > .chapter-frame,
-body .journey[data-journey-enhanced] [data-media-active] > .pour-stage,
-body .journey[data-journey-enhanced] [data-media-active] > .floor-film { position: fixed; }
+body .journey[data-media-stage] .hero-frame,
+body .journey[data-media-stage] .chapter-frame,
+body .journey[data-media-stage] .pour-stage,
+body .journey[data-media-stage] .floor-film { position: absolute; }
+body .journey[data-media-stage] [data-media-active] > .hero-frame,
+body .journey[data-media-stage] [data-media-active] > .chapter-frame,
+body .journey[data-media-stage] [data-media-active] > .pour-stage,
+body .journey[data-media-stage] [data-media-active] > .floor-film { position: fixed; }
 
 @media (prefers-reduced-motion: reduce) {
   body .journey .journey-chapter:not(.hero-chapter):not(.white-stage) { min-height: auto; padding-top: 16rem; }
