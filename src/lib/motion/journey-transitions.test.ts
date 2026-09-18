@@ -52,17 +52,22 @@ describe('authored journey transitions', () => {
     expect(resolveJourneyTransition('foundation', 'garage')).toEqual({ mode: 4, direction: 1, kind: 'preparation-curl' });
   });
 
-  it('uses the architectural aperture at the garage-to-vault threshold', () => {
-    expect(resolveJourneyTransition('garage', 'vault')).toEqual({ mode: 1, direction: 1, kind: 'aperture' });
+  it('folds and shoots left at both of the Reclaim bay’s interior room changes', () => {
+    const fold = { mode: 5, direction: 1, kind: 'fold-and-shoot-left' };
+    expect(resolveJourneyTransition('garage', 'vault')).toEqual(fold);
+    expect(resolveJourneyTransition('vault', 'mancave')).toEqual(fold);
+    // Falsifiable: mode 5 belongs to the bay's interior, not to every boundary.
+    expect(resolveJourneyTransition('finish-hall', 'commercial').mode).not.toBe(5);
   });
 
   /**
    * Step 11b: `proof` is act 05, so it sits between Reclaim and Your finish.
-   * Both of its boundaries are placeholders wearing an existing veil mode until
+   * Step 22 made `mancave` the act's last room, so the exit hangs off it. Both of
+   * `proof`'s boundaries are placeholders wearing an existing veil mode until
    * Step 23 (`shrink-to-card`) and Step 24 (`resin-layer-mask`) author their own.
    */
-  it('closes the aperture from the basement into the gallery and opens on paper again', () => {
-    expect(resolveJourneyTransition('vault', 'proof')).toEqual({ mode: 1, direction: -1, kind: 'aperture' });
+  it('closes the aperture from the lounge into the gallery and opens on paper again', () => {
+    expect(resolveJourneyTransition('mancave', 'proof')).toEqual({ mode: 1, direction: -1, kind: 'aperture' });
     expect(resolveJourneyTransition('proof', 'finish-hall')).toEqual({ mode: 0, direction: 1, kind: 'white-dissolve' });
   });
 
@@ -78,14 +83,15 @@ describe('authored journey transitions', () => {
    * that on its own because a retired key can share the default style. So read
    * the literal, the same way the e2e spec does.
    */
-  it('authors exactly the seven storyboard adjacencies, in page order', () => {
+  it('authors exactly the eight storyboard adjacencies, in page order', () => {
     const source = readFileSync(new URL('./journey-transitions.ts', import.meta.url), 'utf8');
     const keys = [...source.matchAll(/^ {2}'([a-z-]+:[a-z-]+)': Object\.freeze/gm)].map(([, key]) => key);
     expect(keys).toEqual([
       'portico:foundation',
       'foundation:garage',
       'garage:vault',
-      'vault:proof',
+      'vault:mancave',
+      'mancave:proof',
       'proof:finish-hall',
       'finish-hall:commercial',
       'commercial:consultation',

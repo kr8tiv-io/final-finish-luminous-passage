@@ -1,0 +1,216 @@
+/* Act 4 — Reclaim. Three rooms, one floor, one headline, two folds.
+   Composition only; every value that moves comes from `--bay-progress`, which
+   JourneyMotion writes from the director's `snapshot.bayProgress`. */
+
+.reclaim-bay {
+  position: relative;
+  /* The train's total travel, and the offset of the room currently parked in the
+     viewport. One expression, read by the track and by every room plate, so the
+     DOM layer can never disagree with itself about where a room is. */
+  --bay-span: calc((var(--bay-rooms, 3) - 1) * 100vw);
+  --bay-shift: calc(var(--bay-progress, 0) * var(--bay-span) * -1);
+}
+
+/* ---- the sticky layers: no flow height, no pin, no transform on any ancestor -- */
+
+.reclaim-bay__stage,
+.reclaim-bay__headline {
+  position: sticky;
+  top: 0;
+  height: 100lvh;
+  margin-bottom: -100lvh;
+}
+
+.reclaim-bay__stage {
+  display: none;
+  z-index: 2;
+  overflow: clip;
+  pointer-events: none;
+}
+.journey[data-bay-mode='horizontal'] .reclaim-bay__stage { display: block; }
+
+.reclaim-bay__track {
+  position: absolute;
+  inset: 0 auto 0 0;
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: 100vw;
+  width: calc(var(--bay-rooms, 3) * 100vw);
+  transform: translate3d(var(--bay-shift, 0px), 0, 0);
+  will-change: transform;
+}
+
+.reclaim-bay__panel { position: relative; }
+
+/* The crease. A cobalt resin loop sits on the seam between two rooms and travels
+   with them; `--bay-seam-strength` is sin(pi * transitionProgress), so it is at
+   zero on both endpoints of the fold and brightest where the crease is deepest. */
+.reclaim-bay__seam {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: calc(var(--bay-slot, 1) * 100vw);
+  width: 34vw;
+  margin-left: -17vw;
+  overflow: hidden;
+  mask-image: linear-gradient(90deg, transparent, #000 22%, #000 78%, transparent);
+}
+.reclaim-bay__swirl {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: calc(var(--bay-seam-strength, 0) * 0.72);
+  mix-blend-mode: screen;
+}
+
+/* ---- the persistent act headline: bottom-left for the whole bay -------------- */
+
+.reclaim-bay__headline {
+  z-index: 3;
+  display: grid;
+  align-content: end;
+  /* The rooms get their gutter from `.journey-chapter`; this layer is a sibling
+     of them, so it has to state its own or the headline bleeds off the left edge. */
+  padding: 0 var(--gutter) clamp(5.5rem, 12svh, 8.5rem);
+  pointer-events: none;
+}
+.reclaim-bay__headline a,
+.reclaim-bay__headline button { pointer-events: auto; }
+.reclaim-bay__headline .chapter-content { contain: none; }
+.reclaim-second-line {
+  max-width: 18ch;
+  margin-top: 1.4rem;
+  font-family: var(--sans);
+  font-size: clamp(1.25rem, 2.1vw, 2rem);
+  font-weight: 450;
+  line-height: 1.2;
+  letter-spacing: -.035em;
+  color: #2b3a44;
+}
+
+/* ---- the rooms -------------------------------------------------------------- */
+
+.journey .reclaim-room {
+  min-height: 100lvh;
+  align-content: end;
+}
+.reclaim-bay .journey-breath { min-height: 34svh; }
+
+/* The room caption is chapter copy, so it belongs in the same stacking band the
+   rest of the journey puts copy in (`.journey .chapter-content` is z-index 3).
+   Without it the caption stays in the z-index:auto group and the bay's own sticky
+   overlays — the crease track at 2 and the persistent headline at 3 — paint over
+   it: measured as a caption whose darkest pixel was 238 on paper, i.e. no text on
+   screen at all, while the DOM happily reported opacity 1 and a hit test put it
+   on top. `reclaim.spec` asserts it is in the viewport for that reason. */
+.reclaim-room__copy {
+  position: sticky;
+  z-index: 6;
+  justify-self: end;
+  width: min(100%, 25rem);
+  text-align: right;
+  bottom: clamp(5.5rem, 12svh, 8.5rem);
+}
+.reclaim-room-title {
+  margin: 0;
+  font-family: var(--sans);
+  font-size: clamp(1.4rem, 2.35vw, 2.15rem);
+  font-weight: 450;
+  line-height: 1.22;
+  letter-spacing: -.04em;
+  text-wrap: balance;
+}
+.reclaim-room-sub {
+  margin-top: .85rem;
+  font-size: clamp(.82rem, .96vw, .95rem);
+  line-height: 1.7;
+  color: #3f4e57;
+  text-wrap: pretty;
+}
+.journey .reclaim-room__copy :is(.reclaim-room-title, .reclaim-room-sub) {
+  text-shadow: 0 1px 4px rgba(250, 249, 246, .45);
+}
+
+/* ---- the horizontal train ---------------------------------------------------- */
+
+/* The media plates are already `position: fixed; inset: 0` in stage mode, so the
+   bay only has to say WHERE each one is parked. `--bay-slot` is the room's place
+   in the train and `--bay-shift` is how far the train has travelled. */
+.journey[data-bay-mode='horizontal'][data-media-stage] .reclaim-room > .floor-film {
+  transform: translate3d(calc(var(--bay-slot, 0) * 100vw + var(--bay-shift, 0px)), 0, 0);
+}
+/* In the bay the travel IS the DOM-side transition, so an incoming room arrives
+   by moving rather than by fading. `--handoff` still publishes; it just stops
+   being the thing that carries the picture across this act's two folds. */
+.journey[data-bay-mode='horizontal'][data-media-stage] .reclaim-room[data-media-role='to'] > .floor-film {
+  opacity: 1;
+}
+
+/* ---- caption-drift: captions arrive from the direction of travel -------------- */
+
+/* Only ever hidden on a page that has published an enhanced tier, so a no-JS or
+   `still` visit reads all five captions at their settled position. */
+html[data-journey-motion='enhanced'] .reclaim-room__copy,
+html[data-journey-motion='enhanced'] .reclaim-second-line {
+  opacity: 0;
+  transform: translate3d(2.4rem, 0, 0);
+  transition: opacity .5s cubic-bezier(.22, 1, .36, 1), transform .5s cubic-bezier(.22, 1, .36, 1);
+  transition-delay: .12s;
+}
+html[data-journey-motion='enhanced'] .reclaim-second-line { transform: translate3d(0, 1rem, 0); }
+html[data-journey-motion='enhanced'] .reclaim-room[data-room-phase='live'] .reclaim-room__copy,
+html[data-journey-motion='enhanced'] .reclaim-room[data-room-phase='behind'] .reclaim-room__copy,
+html[data-journey-motion='enhanced'] .journey[data-bay-phase='vault'] .reclaim-second-line,
+html[data-journey-motion='enhanced'] .journey[data-bay-phase='mancave'] .reclaim-second-line {
+  opacity: 1;
+  transform: none;
+}
+
+@media (max-width: 1023px) {
+  /* Stacked: the axis of travel is vertical, so the captions arrive from below. */
+  html[data-journey-motion='enhanced'] .reclaim-room__copy { transform: translate3d(0, 1.4rem, 0); }
+}
+
+@media (max-width: 680px) {
+  /* One column, one reading zone. A sticky act headline and a room caption both
+     want the lower band of a 390 px screen, and holding the headline there put
+     the two on top of each other — measured, not predicted. On phone the
+     headline is therefore an opening statement in flow at the head of the act,
+     and each room keeps its own caption in the band it just entered. */
+  .reclaim-bay__headline {
+    position: static;
+    height: auto;
+    margin-bottom: 0;
+    align-content: start;
+    padding: 7rem var(--gutter) 2.5rem;
+  }
+  .journey .reclaim-room { min-height: 110svh; align-content: end; }
+  .reclaim-room__copy {
+    position: static;
+    justify-self: start;
+    width: min(100%, 32ch);
+    text-align: left;
+  }
+  .reclaim-second-line { font-size: 1.15rem; margin-top: 1rem; }
+  .reclaim-bay .journey-breath { min-height: 30svh; }
+  /* A6's concept label is three words longer than the one this row used to
+     carry, which wrapped it to three lines and pushed its last line under the
+     motion control. Two lines, clear of the corner. */
+  .reclaim-room .chapter-index { bottom: 2.6rem; gap: 1rem; align-items: flex-end; }
+  .reclaim-room .chapter-index span { max-width: 15ch; text-align: right; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html[data-journey-motion='enhanced'] .reclaim-room__copy,
+  html[data-journey-motion='enhanced'] .reclaim-second-line {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+  .reclaim-bay__stage { display: none !important; }
+  .reclaim-bay__stage,
+  .reclaim-bay__headline { position: static; height: auto; margin-bottom: 0; }
+  .journey .reclaim-room { min-height: auto; }
+  .reclaim-room__copy { position: static; }
+}

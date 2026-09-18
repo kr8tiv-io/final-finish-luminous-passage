@@ -12,10 +12,31 @@ describe('Follow the Floor semantic fallback', () => {
     expect(homepage).toContain('fetchpriority="high"');
   });
   it('keeps useful, named destinations without JavaScript', () => {
-    for (const chapter of ['portico', 'foundation', 'garage', 'vault', 'finish-hall', 'commercial', 'proof', 'consultation']) {
+    for (const chapter of ['portico', 'foundation', 'garage', 'vault', 'mancave', 'finish-hall', 'commercial', 'proof', 'consultation']) {
       expect(homepage).toContain(`id="${chapter}"`);
     }
       expect(homepage).toContain('Reclaim your garage or basement.');
+  });
+  /**
+   * `COPY-DECK.md` Act 4. The headline persists across the bay, the second line
+   * arrives in the vault third, and each of the three rooms carries its own
+   * caption and sub. Every string here is the deck's, verbatim.
+   */
+  it('carries the Act 4 headline, second line, and all three room captions', () => {
+    for (const line of [
+      'Reclaim your garage or basement.',
+      'Make room for what you love.',
+      'The workshop. The gym. The car you look after.',
+      'Garage floors for vehicles, storage, equipment, and everyday use.',
+      'The space was always there.',
+      'A hobby room, a place to train, or simply a more useful basement.',
+      'A lounge below the house.',
+      'Storage that became a room.',
+    ]) {
+      expect(homepage, `Act 4 copy deck line: ${line}`).toContain(line);
+    }
+    // A6 requires the concept label on every room, not only on the first.
+    expect(homepage.match(/Architectural concept · not an installed project/g)).toHaveLength(3);
   });
   /**
    * The storyboard's ten acts (§2). `customer-reviews` (02), the archive
@@ -31,6 +52,7 @@ describe('Follow the Floor semantic fallback', () => {
       '03 / Beneath the surface',
       '04 / Reclaim · garage',
       '04 / Reclaim · basement',
+      '04 / Reclaim · lounge',
       '05 / See the difference',
       '07 / Your finish',
       '08 / Commercial',
@@ -42,8 +64,17 @@ describe('Follow the Floor semantic fallback', () => {
   it('gives every reading panel the act number of the chapter it belongs to', () => {
     const readings = [...homepage.matchAll(/<ChapterReading id="([a-z-]+)" number="(\d{2})"/g)]
       .map(([, id, number]) => [id, number]);
+    // Act 4's reading aside is ONE panel, hung off the last room, and it lands
+    // after the bay rather than between its rooms. `COPY-DECK.md` authors a single
+    // Act 4 aside (label + three bodies + one link), and a white stage between two
+    // rooms would switch the media stage off in the middle of the horizontal
+    // train. The two G2 asides it replaces (`garage` "Make room for what you
+    // love", `vault` "A more useful basement") are carried over: bodies 1 and 2
+    // are the garage aside's paragraphs and body 3 is the vault aside's coating
+    // non-claim. The vault aside's opening line moved into the deck's own room-2
+    // sub, which is now the basement room's caption.
     expect(readings).toEqual([
-      ['foundation', '03'], ['garage', '04'], ['vault', '04'],
+      ['foundation', '03'], ['mancave', '04'],
       ['finish-hall', '07'], ['commercial', '08'], ['consultation', '10'],
     ]);
   });

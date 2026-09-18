@@ -1,0 +1,70 @@
+---
+/**
+ * Act 4 — Reclaim. The forced-horizontal bay that carries the three rooms.
+ *
+ * WHAT THIS ELEMENT IS, AND WHAT IT DELIBERATELY IS NOT.
+ *
+ * It is a wrapper in normal flow around the act's three `.journey-chapter`
+ * sections and two `.journey-breath` folds, plus two sticky-in-flow layers that
+ * ride above them: the act's persistent headline and the room track.
+ *
+ * It is NOT a pin, and the rooms are NOT inside the track. Both are the same
+ * decision: `journey-director.ts` measures every chapter and every breath with
+ * `getBoundingClientRect()` in document coordinates, and `boundaries.spec` seeks
+ * a boundary by the same arithmetic. A transform on an ancestor of a chapter — or
+ * a chapter parked inside a sticky host — makes both of those read the viewport
+ * instead of the document, which is exactly the "pin geometry fighting the
+ * director" failure the storyboard's cross-act risk list names. So the sections
+ * stay in flow at their own heights, and the horizontal train is expressed on the
+ * layers that are already out of flow: the fixed media plates (`.floor-film`,
+ * which `[data-media-stage]` has pinned to the viewport since Step 11) and this
+ * track. Both are translated from the SAME published value, `--bay-progress`,
+ * which `JourneyMotion.tsx` writes from `snapshot.bayProgress` and nothing else
+ * derives a second time.
+ *
+ * Both sticky layers carry `margin-bottom: -100lvh`, so neither adds a pixel of
+ * flow height: the act is exactly its three rooms and two folds (≈ 3.6 vh at
+ * desktop), and nothing about the director's geometry changes when the bay turns
+ * on or off. That is also why the mode switch costs no layout shift.
+ *
+ * The track's own contents are the two crease plates: the cobalt
+ * `resin-swirl-cobalt` loop rides the seam between two rooms, so the track is the
+ * layer that has to travel with the train rather than a witness bolted beside it.
+ *
+ * @motion fold-and-shoot-left
+ * @motion resin-swirl-plate
+ */
+interface Props {
+  /** Room order, left to right. Must match the chapter ids of the slotted sections. */
+  rooms: readonly string[];
+}
+const { rooms } = Astro.props;
+const seams = rooms.slice(1).map((to, index) => ({ key: `${rooms[index]}:${to}`, slot: index + 1 }));
+---
+
+<div class="reclaim-bay" data-reclaim-bay style={`--bay-rooms:${rooms.length}`}>
+  <div class="reclaim-bay__stage" data-bay-stage aria-hidden="true">
+    <div class="reclaim-bay__track" data-bay-track>
+      {rooms.map((room, index) => (
+        <div class="reclaim-bay__panel" data-bay-panel={room} style={`--bay-slot:${index}`}></div>
+      ))}
+      {seams.map((seam) => (
+        <div class="reclaim-bay__seam" data-bay-seam={seam.key} style={`--bay-slot:${seam.slot}`}>
+          <video
+            class="reclaim-bay__swirl"
+            data-swirl-poster="/videos/follow-floor/plates/resin-swirl-cobalt.png"
+            muted
+            loop
+            playsinline
+            disablepictureinpicture
+            preload="none"
+          >
+            <source src="/videos/follow-floor/plates/resin-swirl-cobalt.webm" type="video/webm" />
+          </video>
+        </div>
+      ))}
+    </div>
+  </div>
+  <div class="reclaim-bay__headline"><slot name="headline" /></div>
+  <slot />
+</div>
