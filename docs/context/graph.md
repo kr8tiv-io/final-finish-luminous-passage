@@ -20,10 +20,10 @@ flowchart TD
     step-09["step-09: Gallery owner + production fallback: restore del"]:::stDone
     step-10["step-10: Security and delivery basics: Nodemailer advisor"]:::stDone
     step-11["step-11: One numbering, one comparison: single chapter nu"]:::stDone
-    step-12["step-12: Route transitions and island lifecycle: ClientRo"]:::stDoing
+    step-12["step-12: Route transitions and island lifecycle: ClientRo"]:::stDone
   end
   subgraph phase-2["phase-2"]
-    step-13["step-13: Manrope refinement: tokens, scale, leading, trac"]:::stTodo
+    step-13["step-13: Manrope refinement: tokens, scale, leading, trac"]:::stDoing
     step-14["step-14: MOTION-VOCABULARY.md: complete every id with dur"]:::stDone
     step-15["step-15: GSAP consolidation + layout canvas: one plugin r"]:::stDone
     step-16["step-16: Surfaces: paper/ink/cobalt/bronze tokens, per-ch"]:::stTodo
@@ -300,7 +300,7 @@ flowchart TD
 - **Phase:** phase-1
 - **Tier:** O
 - **Owner(s):** motion-c
-- **Status:** doing
+- **Status:** done
 - **Files:** BaseLayout.astro, SiteHeader.astro, motion loaders
 - **Inputs (informs):** none recorded
 - **Constraints (locks):** none recorded
@@ -313,7 +313,7 @@ flowchart TD
 - **Phase:** phase-2
 - **Tier:** S
 - **Owner(s):** ui
-- **Status:** todo
+- **Status:** doing
 - **Files:** readable-experience.css, BaseLayout.astro
 - **Inputs (informs):** none recorded
 - **Constraints (locks):** M1
