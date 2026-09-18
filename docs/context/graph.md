@@ -26,7 +26,7 @@ flowchart TD
     step-13["step-13: Manrope refinement: tokens, scale, leading, trac"]:::stDone
     step-14["step-14: MOTION-VOCABULARY.md: complete every id with dur"]:::stDone
     step-15["step-15: GSAP consolidation + layout canvas: one plugin r"]:::stDone
-    step-16["step-16: Surfaces: paper/ink/cobalt/bronze tokens, per-ch"]:::stTodo
+    step-16["step-16: Surfaces: paper/ink/cobalt/bronze tokens, per-ch"]:::stDoing
   end
   subgraph phase-3["phase-3"]
     step-17["step-17: Opening: keep pearl pour scrub, add 1080 source,"]:::stDone
@@ -34,9 +34,9 @@ flowchart TD
     step-19["step-19: Social proof after the pour: scroll-linked revie"]:::stDone
     step-20["step-20: Stair chapter: pearl-grade walkway film (A) vs 2"]:::stDoing
     step-21["step-21: Preparation cutaway: layered illustrative diagra"]:::stDoing
-    step-22["step-22: Reclaim your garage or basement: garage, basemen"]:::stDoing
+    step-22["step-22: Reclaim your garage or basement: garage, basemen"]:::stDone
     step-23["step-23: See the difference: pin the inner passage, jh3y "]:::stDone
-    step-23b["step-23b: Archive lattice (Act 6): cylinder cards unwrap i"]:::stTodo
+    step-23b["step-23b: Archive lattice (Act 6): cylinder cards unwrap i"]:::stDoing
     step-24["step-24: Epoxy layer-mask headline (Creative Ocean): resi"]:::stDoing
     step-25["step-25: Finish alcove and visualizer: entrance from fini"]:::stDone
     step-26["step-26: Commercial chapter: poster becomes a DepthPlate "]:::stTodo
@@ -352,7 +352,7 @@ flowchart TD
 - **Phase:** phase-2
 - **Tier:** S script, O zones
 - **Owner(s):** ui
-- **Status:** todo
+- **Status:** doing
 - **Files:** journey-manifest.ts, scripts/measure-contrast.mjs, css
 - **Inputs (informs):** none recorded
 - **Constraints (locks):** none recorded
@@ -430,7 +430,7 @@ flowchart TD
 - **Phase:** phase-3
 - **Tier:** S copy, O motion
 - **Owner(s):** motion-a
-- **Status:** doing
+- **Status:** done
 - **Files:** index.astro, journey-transitions.ts, FilmVeil.tsx (after 17), public/videos/follow-floor/*/epoxy-mancave.mp4, copy
 - **Inputs (informs):** S7
 - **Constraints (locks):** L1, L2, L3, L4
@@ -456,7 +456,7 @@ flowchart TD
 - **Phase:** phase-3
 - **Tier:** O+
 - **Owner(s):** motion-b
-- **Status:** todo
+- **Status:** doing
 - **Files:** src/components/home/ArchiveLattice.tsx, scripts/build-archive-atlas.mjs, public/images/projects/atlas/*
 - **Inputs (informs):** S7
 - **Constraints (locks):** none recorded
