@@ -1,13 +1,18 @@
 import { describe, expect, it, vi } from 'vitest';
 import type { JourneySnapshot } from './journey-director';
+import { SURFACE_GLOSS_LIFT } from './surface-materials';
 import {
   chapterSurfaceTarget,
   createSurfaceStore,
   effectiveSurfaceState,
   rectIntersectsViewport,
   scissorBox,
+  SURFACE_PRESENCE,
   surfaceAdmitted,
   surfaceChapterEdge,
+  surfaceChapterPresence,
+  surfaceChapterPresenceEdge,
+  surfaceGlossLift,
   surfaceTargetsEqual,
   type SurfaceCapabilities,
   type SurfaceDriver,
@@ -58,6 +63,7 @@ function fakeDriver() {
     setMix: vi.fn(),
     setStates: vi.fn(),
     setHorizon: vi.fn(),
+    setPresence: vi.fn(),
     setCamera: vi.fn(),
     sweep: vi.fn(),
     settle: vi.fn(),
@@ -136,7 +142,8 @@ describe('rectIntersectsViewport', () => {
 
 describe('chapterSurfaceTarget', () => {
   it('holds portico liquid through the pour and cures it in the last fifth', () => {
-    expect(chapterSurfaceTarget(snapshot({ chapterProgress: 0 }))).toEqual({ a: 0, b: 2, mix: 0, horizon: false });
+    expect(chapterSurfaceTarget(snapshot({ chapterProgress: 0 })))
+      .toEqual({ a: 0, b: 2, mix: 0, horizon: false, presence: 0 });
     expect(chapterSurfaceTarget(snapshot({ chapterProgress: 0.79 })).mix).toBe(0);
     expect(chapterSurfaceTarget(snapshot({ chapterProgress: 0.9 })).mix).toBeCloseTo(0.5, 5);
     expect(chapterSurfaceTarget(snapshot({ chapterProgress: 1 })).mix).toBe(1);
@@ -144,7 +151,7 @@ describe('chapterSurfaceTarget', () => {
 
   it('runs foundation from ground concrete to cured pearl across its own progress', () => {
     const target = chapterSurfaceTarget(snapshot({ activeChapter: 'foundation', chapterProgress: 0.25 }));
-    expect(target).toEqual({ a: 1, b: 2, mix: 0.25, horizon: false });
+    expect(target).toEqual({ a: 1, b: 2, mix: 0.25, horizon: false, presence: SURFACE_PRESENCE.sheen });
   });
 
   it('maps every remaining chapter to the storyboard state', () => {
@@ -163,20 +170,20 @@ describe('chapterSurfaceTarget', () => {
     const target = chapterSurfaceTarget(snapshot({
       activeChapter: 'vault', fromChapter: 'garage', toChapter: 'vault', transitionProgress: 0.4,
     }));
-    expect(target).toEqual({ a: 2, b: 3, mix: 0.4, horizon: false });
+    expect(target).toMatchObject({ a: 2, b: 3, mix: 0.4, horizon: false });
 
     const exit = chapterSurfaceTarget(snapshot({
       activeChapter: 'portico', fromChapter: 'portico', toChapter: 'foundation', transitionProgress: 0.7,
     }));
     // portico ends cured (2) and foundation opens on ground concrete (1).
-    expect(exit).toEqual({ a: 2, b: 1, mix: 0.7, horizon: false });
+    expect(exit).toMatchObject({ a: 2, b: 1, mix: 0.7, horizon: false });
   });
 
   it('ignores a settled boundary at either endpoint', () => {
     expect(chapterSurfaceTarget(snapshot({ transitionProgress: 0 })).mix).toBe(0);
     expect(chapterSurfaceTarget(snapshot({
       activeChapter: 'vault', fromChapter: 'garage', toChapter: 'vault', transitionProgress: 1,
-    }))).toEqual({ a: 3, b: 3, mix: 0, horizon: false });
+    }))).toEqual({ a: 3, b: 3, mix: 0, horizon: false, presence: SURFACE_PRESENCE.sheen });
   });
 
   it('switches to horizon mode on a white stage without freezing the blend', () => {
@@ -192,6 +199,103 @@ describe('chapterSurfaceTarget', () => {
     expect(surfaceChapterEdge('portico', 'end')).toBe(2);
     expect(surfaceChapterEdge('foundation', 'start')).toBe(1);
     expect(surfaceChapterEdge('consultation', 'end')).toBe(7);
+  });
+});
+
+describe('plane presence', () => {
+  it('holds every media chapter at a sheen, never at full strength', () => {
+    const media: ReadonlyArray<JourneySnapshot['activeChapter']> = [
+      'foundation', 'garage', 'vault', 'finish-hall', 'commercial', 'consultation',
+    ];
+    for (const activeChapter of media) {
+      expect(chapterSurfaceTarget(snapshot({ activeChapter, chapterProgress: 0.5 })).presence)
+        .toBe(SURFACE_PRESENCE.sheen);
+    }
+    // Falsifiable: a rule that returned the sheen for everything would say nothing
+    // about films. A chapter with nothing behind the band keeps the whole plane.
+    expect(surfaceChapterPresence('proof', 0.5)).toBe(SURFACE_PRESENCE.full);
+    expect(SURFACE_PRESENCE.sheen).toBeLessThan(SURFACE_PRESENCE.full);
+  });
+
+  it('is born with the pour: no plane over portico until the cure starts', () => {
+    expect(chapterSurfaceTarget(snapshot({ chapterProgress: 0 })).presence).toBe(0);
+    expect(chapterSurfaceTarget(snapshot({ chapterProgress: 0.8 })).presence).toBe(0);
+    expect(chapterSurfaceTarget(snapshot({ chapterProgress: 0.9 })).presence)
+      .toBeCloseTo(SURFACE_PRESENCE.sheen / 2, 5);
+    expect(chapterSurfaceTarget(snapshot({ chapterProgress: 1 })).presence).toBe(SURFACE_PRESENCE.sheen);
+    expect(surfaceChapterPresenceEdge('portico', 'start')).toBe(0);
+    expect(surfaceChapterPresenceEdge('portico', 'end')).toBe(SURFACE_PRESENCE.sheen);
+  });
+
+  it('drops to a faint reflection on a white stage or a reading aside', () => {
+    expect(chapterSurfaceTarget(snapshot({ activeChapter: 'garage', whiteStageActive: true })).presence)
+      .toBe(SURFACE_PRESENCE.reflection);
+    expect(chapterSurfaceTarget(snapshot({
+      activeChapter: 'vault', fromChapter: 'garage', toChapter: 'vault',
+      transitionProgress: 0.5, whiteStageActive: true,
+    })).presence).toBe(SURFACE_PRESENCE.reflection);
+  });
+
+  it('lifts across a boundary and joins the chapters without a step', () => {
+    const at = (transitionProgress: number) => chapterSurfaceTarget(snapshot({
+      activeChapter: 'vault', fromChapter: 'garage', toChapter: 'vault', transitionProgress,
+    })).presence;
+    expect(at(0.5)).toBeCloseTo(SURFACE_PRESENCE.boundary, 5);
+    expect(at(0.5)).toBeGreaterThan(SURFACE_PRESENCE.sheen);
+    // Both ends meet the interior value of the chapter on that side, so scrolling in or
+    // out of a boundary can never pop.
+    expect(at(0.001)).toBeCloseTo(SURFACE_PRESENCE.sheen, 2);
+    expect(at(0.999)).toBeCloseTo(SURFACE_PRESENCE.sheen, 2);
+  });
+
+  it('carries presence through the driver seam and the equality check', () => {
+    const store = createSurfaceStore();
+    const driver = fakeDriver();
+    store.bindDriver(driver);
+
+    store.applyTarget({ a: 2, b: 2, mix: 0, horizon: false, presence: 0.32 });
+    expect(store.getSnapshot().presence).toBe(0.32);
+    // Scroll-linked: no tween, exactly like setMix.
+    expect(driver.setPresence).toHaveBeenLastCalledWith(0.32, 0);
+
+    // A presence-only move is a real change, not a no-op.
+    driver.setPresence.mockClear();
+    store.applyTarget({ a: 2, b: 2, mix: 0, horizon: false, presence: 0.6 });
+    expect(driver.setPresence).toHaveBeenLastCalledWith(0.6, 0);
+    expect(surfaceTargetsEqual(
+      { a: 2, b: 2, mix: 0, horizon: false, presence: 0.6 },
+      { a: 2, b: 2, mix: 0, horizon: false, presence: 0.32 },
+    )).toBe(false);
+
+    // Across a horizon flip it tweens instead, or the product of the two pops.
+    driver.setPresence.mockClear();
+    store.applyTarget({ a: 2, b: 2, mix: 0, horizon: true, presence: 0.06 });
+    expect(driver.setPresence).toHaveBeenLastCalledWith(0.06, 0.6);
+  });
+
+  it('spends the gloss lift only where the plane is subordinate to a film', () => {
+    // Nothing behind the band: an ordinary `over`, unchanged from Step 18a. This is the
+    // case surface.spec's morphTo delta measures on /dev/surface.
+    expect(surfaceGlossLift(SURFACE_PRESENCE.full)).toBe(0);
+    // Over a film: fully on.
+    expect(surfaceGlossLift(SURFACE_PRESENCE.sheen)).toBe(SURFACE_GLOSS_LIFT);
+    expect(surfaceGlossLift(SURFACE_PRESENCE.reflection)).toBe(SURFACE_GLOSS_LIFT);
+    // Mid-boundary the morph is the subject and the plane may assert itself again.
+    const boundary = surfaceGlossLift(SURFACE_PRESENCE.boundary);
+    expect(boundary).toBeGreaterThan(0);
+    expect(boundary).toBeLessThan(SURFACE_GLOSS_LIFT);
+  });
+
+  it('treats an unspecified presence as the whole plane, for callers with no film', () => {
+    const store = createSurfaceStore();
+    const driver = fakeDriver();
+    store.bindDriver(driver);
+    store.applyTarget({ a: 2, b: 2, mix: 0, horizon: true });
+    expect(store.getSnapshot().presence).toBe(SURFACE_PRESENCE.full);
+    expect(surfaceTargetsEqual(
+      { a: 2, b: 2, mix: 0, horizon: true },
+      { a: 2, b: 2, mix: 0, horizon: true, presence: SURFACE_PRESENCE.full },
+    )).toBe(true);
   });
 });
 
@@ -409,6 +513,7 @@ describe('store material state', () => {
     store.bindDriver(driver);
     expect(driver.setStates).toHaveBeenCalledWith(3, 5);
     expect(driver.setMix).toHaveBeenCalledWith(0.25);
+    expect(driver.setPresence).toHaveBeenCalledWith(SURFACE_PRESENCE.full, 0);
     expect(driver.setHorizon).toHaveBeenCalledWith(true, 0);
     expect(driver.setCamera).toHaveBeenCalledWith('standing');
   });

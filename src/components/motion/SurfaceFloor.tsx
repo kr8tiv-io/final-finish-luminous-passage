@@ -3,10 +3,12 @@ import gsap from 'gsap';
 import { useCallback, useEffect, useMemo, useRef, useSyncExternalStore } from 'react';
 import * as THREE from 'three';
 import {
+  SURFACE_EDGE_FEATHER,
   SURFACE_FRAGMENT_CLEARCOAT,
   SURFACE_FRAGMENT_COLOR,
   SURFACE_FRAGMENT_COMMON,
   SURFACE_FEET_FADE,
+  SURFACE_FRAGMENT_GLOSS,
   SURFACE_FRAGMENT_METALNESS,
   SURFACE_FRAGMENT_ROUGHNESS,
   SURFACE_HORIZON_COLOR,
@@ -21,6 +23,8 @@ import {
 } from '../../lib/motion/surface-materials';
 import {
   scissorBox,
+  SURFACE_PRESENCE,
+  surfaceGlossLift,
   surfaceStore,
   type SurfaceCameraMode,
   type SurfaceDriver,
@@ -53,8 +57,21 @@ const HORIZON_LINE_CSS_PX = 1;
  * subject. A stronger line here draws a rule straight through the hero copy and reads
  * as a compositing artefact. The storyboard asks for the full line in the silences
  * (S1, S2, Act 2, Act 9), which is horizon mode, where it goes to 1.
+ *
+ * Measured, because "a whisper" is not a number: cobalt (#164F83, luminance 71) over a
+ * film floor at ~245 costs `opacity x 174` of luminance in one row. At the old 0.1 that
+ * is a 17-unit step — 6.8 % of full white — which is precisely the hard horizontal seam
+ * the band was cutting across every media chapter, and it was the *line*, not the plane.
+ * `floorLineOpacity` scales it with presence as well, so over a film (presence 0.35) the
+ * step measures ~1.7 % and the line reads as the floor's own edge rather than a rule
+ * drawn on the picture. Horizon mode is untouched and still goes to a crisp 1.
  */
-const HORIZON_FLOOR_OPACITY = 0.1;
+const HORIZON_FLOOR_OPACITY = 0.06;
+
+/** The one rule for the line's resting opacity: crisp in the silences, scaled elsewhere. */
+function floorLineOpacity(horizon: boolean, presence: number): number {
+  return horizon ? 1 : HORIZON_FLOOR_OPACITY * Math.min(1, Math.max(0, presence));
+}
 
 function lensFades(height: number, pitchDeg: number, fov: number): { near: number; far: number } {
   const halfFov = (fov / 2) * (Math.PI / 180);
@@ -245,12 +262,15 @@ function SurfaceFloorScene({ viewElement }: { readonly viewElement: HTMLElement 
     uMix: { value: 0 },
     uSweep: { value: 0 },
     uPlaneOpacity: { value: 1 },
+    uPlanePresence: { value: SURFACE_PRESENCE.full },
+    uEdgeFeather: { value: SURFACE_EDGE_FEATHER },
+    uGlossLift: { value: surfaceGlossLift(SURFACE_PRESENCE.full) },
     uTiling: { value: SURFACE_TILING },
     uNearFade: { value: rigFades('standing').near },
     uFarFade: { value: rigFades('standing').far },
     uPhoto: { value: neutralPhotoTexture() },
     uPhotoReady: { value: 0 },
-    uViewport: { value: new THREE.Vector2(0, 1) },
+    uViewport: { value: new THREE.Vector4(0, 0, 1, 1) },
     // Inherited from FINISH_SHADER_CHUNK — the flake palette state 3 samples.
     uA: { value: new THREE.Color(flakePalette[0]) },
     uB: { value: new THREE.Color(flakePalette[1]) },
@@ -263,7 +283,7 @@ function SurfaceFloorScene({ viewElement }: { readonly viewElement: HTMLElement 
 
   const horizonUniforms = useMemo(() => ({
     uHorizonColor: { value: new THREE.Color(SURFACE_HORIZON_COLOR) },
-    uHorizonOpacity: { value: HORIZON_FLOOR_OPACITY },
+    uHorizonOpacity: { value: floorLineOpacity(false, SURFACE_PRESENCE.full) },
     uHorizonWidth: { value: 0.004 },
   }), []);
 
@@ -278,6 +298,15 @@ function SurfaceFloorScene({ viewElement }: { readonly viewElement: HTMLElement 
       transparent: true,
       depthWrite: false,
       side: THREE.FrontSide,
+      // Premultiplied `over`, written by SURFACE_FRAGMENT_GLOSS. `One / OneMinusSrcAlpha`
+      // on both colour and alpha reproduces NormalBlending exactly while `uGlossLift` is
+      // 0; above it the shader keeps the colour weight and spends less alpha covering,
+      // which is the whole "gloss, not paint" mechanism. It has to be a custom func
+      // because NormalBlending would re-apply src alpha to an already premultiplied rgb.
+      blending: THREE.CustomBlending,
+      blendEquation: THREE.AddEquation,
+      blendSrc: THREE.OneFactor,
+      blendDst: THREE.OneMinusSrcAlphaFactor,
     });
     next.onBeforeCompile = (shader) => {
       Object.assign(shader.uniforms, uniforms);
@@ -289,7 +318,10 @@ function SurfaceFloorScene({ viewElement }: { readonly viewElement: HTMLElement 
         .replace('#include <color_fragment>', `#include <color_fragment>\n${SURFACE_FRAGMENT_COLOR}`)
         .replace('#include <roughnessmap_fragment>', `#include <roughnessmap_fragment>\n${SURFACE_FRAGMENT_ROUGHNESS}`)
         .replace('#include <metalnessmap_fragment>', `#include <metalnessmap_fragment>\n${SURFACE_FRAGMENT_METALNESS}`)
-        .replace('#include <lights_physical_fragment>', `#include <lights_physical_fragment>\n${SURFACE_FRAGMENT_CLEARCOAT}`);
+        .replace('#include <lights_physical_fragment>', `#include <lights_physical_fragment>\n${SURFACE_FRAGMENT_CLEARCOAT}`)
+        // Replaced, not appended: the stock chunk is the `PREMULTIPLIED_ALPHA` branch and
+        // this material always premultiplies, so there must be exactly one of them.
+        .replace('#include <premultiplied_alpha_fragment>', SURFACE_FRAGMENT_GLOSS);
     };
     // Distinct from the visualizer's 'ffe-finish-preview' key so the two patched
     // MeshPhysicalMaterials never share a compiled program.
@@ -375,9 +407,37 @@ function SurfaceFloorScene({ viewElement }: { readonly viewElement: HTMLElement 
         uniforms.uMix.value = value;
         quickMix = buildQuickMix();
       },
+      setPresence: (value, duration) => {
+        const presence = Math.min(1, Math.max(0, value));
+        // Two values ride with presence, because both mean "there is a film behind this":
+        // the composite's gloss lift, and the floor-mode horizon line. The line goes back
+        // to a crisp 1 in the silences, which is `setHorizon`'s call, not this one's.
+        const lift = surfaceGlossLift(presence);
+        const lineTarget = floorLineOpacity(surfaceStore.getSnapshot().horizon, presence);
+        if (duration <= 0) {
+          // Scroll-linked, exactly like setMix: no tween may survive a director publish.
+          gsap.killTweensOf(uniforms.uPlanePresence);
+          gsap.killTweensOf(uniforms.uGlossLift);
+          gsap.killTweensOf(horizonUniforms.uHorizonOpacity);
+          uniforms.uPlanePresence.value = presence;
+          uniforms.uGlossLift.value = lift;
+          horizonUniforms.uHorizonOpacity.value = lineTarget;
+          invalidate();
+          return;
+        }
+        gsap.to(uniforms.uPlanePresence, {
+          value: presence, duration, ease: SURFACE_MORPH_EASE, overwrite: true, onUpdate: invalidate,
+        });
+        gsap.to(uniforms.uGlossLift, {
+          value: lift, duration, ease: SURFACE_MORPH_EASE, overwrite: true, onUpdate: invalidate,
+        });
+        gsap.to(horizonUniforms.uHorizonOpacity, {
+          value: lineTarget, duration, ease: SURFACE_MORPH_EASE, overwrite: true, onUpdate: invalidate,
+        });
+      },
       setHorizon: (horizon, duration) => {
         const planeTarget = horizon ? 0 : 1;
-        const lineTarget = horizon ? 1 : HORIZON_FLOOR_OPACITY;
+        const lineTarget = floorLineOpacity(horizon, surfaceStore.getSnapshot().presence);
         if (duration <= 0) {
           uniforms.uPlaneOpacity.value = planeTarget;
           horizonUniforms.uHorizonOpacity.value = lineTarget;
@@ -404,7 +464,7 @@ function SurfaceFloorScene({ viewElement }: { readonly viewElement: HTMLElement 
         });
       },
       settle: (duration) => {
-        const horizon = surfaceStore.getSnapshot().horizon;
+        const { horizon, presence } = surfaceStore.getSnapshot();
         gsap.to(uniforms.uSweep, {
           // Park the highlight off the plane rather than freezing it mid-floor.
           value: Math.round(uniforms.uSweep.value),
@@ -416,8 +476,14 @@ function SurfaceFloorScene({ viewElement }: { readonly viewElement: HTMLElement 
         gsap.to(uniforms.uPlaneOpacity, {
           value: horizon ? 0 : 1, duration, ease: 'power2.out', overwrite: true, onUpdate: invalidate,
         });
+        gsap.to(uniforms.uPlanePresence, {
+          value: presence, duration, ease: 'power2.out', overwrite: true, onUpdate: invalidate,
+        });
+        gsap.to(uniforms.uGlossLift, {
+          value: surfaceGlossLift(presence), duration, ease: 'power2.out', overwrite: true, onUpdate: invalidate,
+        });
         gsap.to(horizonUniforms.uHorizonOpacity, {
-          value: horizon ? 1 : HORIZON_FLOOR_OPACITY,
+          value: floorLineOpacity(horizon, presence),
           duration,
           ease: 'power2.out',
           overwrite: true,
@@ -433,6 +499,8 @@ function SurfaceFloorScene({ viewElement }: { readonly viewElement: HTMLElement 
       gsap.killTweensOf(uniforms.uMix);
       gsap.killTweensOf(uniforms.uSweep);
       gsap.killTweensOf(uniforms.uPlaneOpacity);
+      gsap.killTweensOf(uniforms.uPlanePresence);
+      gsap.killTweensOf(uniforms.uGlossLift);
       gsap.killTweensOf(horizonUniforms.uHorizonOpacity);
     };
   }, [applyCamera, horizonUniforms, invalidate, uniforms]);
@@ -449,7 +517,12 @@ function SurfaceFloorScene({ viewElement }: { readonly viewElement: HTMLElement 
       // gl_FragCoord is framebuffer-relative, so the shader needs the band's own
       // device-pixel rectangle to know how far up the band a fragment sits.
       const dpr = renderer.getPixelRatio();
-      uniforms.uViewport.value.set(box.y * dpr, Math.max(1, box.height * dpr));
+      uniforms.uViewport.value.set(
+        box.x * dpr,
+        box.y * dpr,
+        Math.max(1, box.width * dpr),
+        Math.max(1, box.height * dpr),
+      );
       renderer.render(scene, camera);
     };
     return surfaceStore.registerView('surface-floor', viewElement, { render, priority: 10 });
@@ -485,12 +558,28 @@ function SurfaceFloorScene({ viewElement }: { readonly viewElement: HTMLElement 
       const nearFade = uniforms.uNearFade.value;
       const farFade = uniforms.uFarFade.value;
       const planeOpacity = uniforms.uPlaneOpacity.value;
+      const presence = uniforms.uPlanePresence.value;
+      const edgeFeather = uniforms.uEdgeFeather.value;
+      const glossLift = uniforms.uGlossLift.value;
       const horizonVisible = horizonRef.current?.visible ?? false;
       const dpr = renderer.getPixelRatio();
       uniforms.uNearFade.value = fades.near;
       uniforms.uFarFade.value = fades.far;
       uniforms.uPlaneOpacity.value = planeOpacity * MENU_PLANE_OPACITY;
-      uniforms.uViewport.value.set(box.y * dpr, Math.max(1, box.height * dpr));
+      // Presence, the side feather and the gloss lift are all answers to "what film is
+      // behind this?". Behind the menu there is none — this view clears its own opaque
+      // paper field, its rectangle is the menu's own geometry, and `MENU_PLANE_OPACITY`
+      // above is the contrast clamp nav.spec measures. So all three stand down for this
+      // draw and the menu's floor is byte-for-byte the one Step 18a shipped.
+      uniforms.uPlanePresence.value = SURFACE_PRESENCE.full;
+      uniforms.uEdgeFeather.value = 0;
+      uniforms.uGlossLift.value = 0;
+      uniforms.uViewport.value.set(
+        box.x * dpr,
+        box.y * dpr,
+        Math.max(1, box.width * dpr),
+        Math.max(1, box.height * dpr),
+      );
       // The 1 px horizon rule is the journey's punctuation, not the menu's.
       if (horizonRef.current) horizonRef.current.visible = false;
       renderer.render(scene, menuCamera);
@@ -498,6 +587,9 @@ function SurfaceFloorScene({ viewElement }: { readonly viewElement: HTMLElement 
       uniforms.uNearFade.value = nearFade;
       uniforms.uFarFade.value = farFade;
       uniforms.uPlaneOpacity.value = planeOpacity;
+      uniforms.uPlanePresence.value = presence;
+      uniforms.uEdgeFeather.value = edgeFeather;
+      uniforms.uGlossLift.value = glossLift;
     };
 
     menuElement.dataset.navFloorView = 'live';

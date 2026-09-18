@@ -336,6 +336,9 @@ export const SURFACE_UNIFORM_NAMES = Object.freeze([
   'uMix',
   'uSweep',
   'uPlaneOpacity',
+  'uPlanePresence',
+  'uEdgeFeather',
+  'uGlossLift',
   'uTiling',
   'uNearFade',
   'uFarFade',
@@ -370,12 +373,15 @@ uniform float uMaterialB;
 uniform float uMix;
 uniform float uSweep;
 uniform float uPlaneOpacity;
+uniform float uPlanePresence;
+uniform float uEdgeFeather;
+uniform float uGlossLift;
 uniform float uNearFade;
 uniform float uFarFade;
 uniform sampler2D uPhoto;
 uniform float uPhotoReady;
-/** (viewport origin y, viewport height) in device pixels — the band's own rectangle. */
-uniform vec2 uViewport;
+/** (origin x, origin y, width, height) in device pixels — the view's own rectangle. */
+uniform vec4 uViewport;
 varying vec2 vSurfaceUv;
 varying float vSurfaceDepth;
 ${SURFACE_MATERIAL_CHUNK}
@@ -406,6 +412,38 @@ export const SURFACE_FEET_FADE = 0.6;
  */
 export const SURFACE_HORIZON_FADE = 0.62;
 
+/**
+ * Far-edge feather, in view depth.
+ *
+ * `SURFACE_HORIZON_FADE` fades the plane up the *band*; this one fades it out over the
+ * last third of the plane's own depth range. The two are not redundant: the screen fade
+ * is measured against the view rectangle and the depth fade against the geometry, so a
+ * rectangle whose top edge does not coincide with the plane's far edge — a shorter band,
+ * a different camera pitch, the menu's wider lens — still dissolves instead of being cut
+ * off. Every hard horizontal seam this plane has ever painted was a rectangle edge
+ * arriving before the material had faded.
+ */
+export const SURFACE_FAR_FEATHER = 0.32;
+/**
+ * Side feather, as a fraction of the view rectangle's width. The band is full-bleed, so
+ * this is a no-op there by geometry; it exists so a view whose rectangle does NOT reach
+ * the viewport edge cannot cut a vertical seam either. The menu floor sets it to 0 —
+ * that view clears its own opaque field and its rectangle is the menu's own geometry.
+ */
+export const SURFACE_EDGE_FEATHER = 0.05;
+/**
+ * Gloss lift — how much of the plane's alpha is spent adding light instead of hiding
+ * the picture behind it (see `SURFACE_FRAGMENT_GLOSS`).
+ *
+ * 0 is an ordinary `over`: the plane substitutes its own colour for the film's floor and
+ * a dark finish (state 5 metallic is the worst) drags the footage grey. 1 is purely
+ * additive and the material loses its identity. At 0.3 the composite still carries the
+ * finish's colour and its flake, but what it does to the film underneath is roughly two
+ * thirds of what a plain `over` did — which, with presence, is what "gloss on the floor"
+ * and "a slab pasted over the footage" actually differ by.
+ */
+export const SURFACE_GLOSS_LIFT = 0.3;
+
 export function surfaceDepthAlpha(depth: number, near: number, far: number): number {
   if (far <= near) return 0;
   const t = Math.min(1, Math.max(0, (depth - near) / (far - near)));
@@ -417,16 +455,62 @@ export function surfaceScreenAlpha(screen01: number): number {
   return 1 - smoothstep(SURFACE_HORIZON_FADE, 0.99, Math.min(1, Math.max(0, screen01)));
 }
 
+/** Depth-space companion to `surfaceScreenAlpha`: the far edge of the plane itself. */
+export function surfaceFarAlpha(t: number): number {
+  return 1 - smoothstep(1 - SURFACE_FAR_FEATHER, 1, Math.min(1, Math.max(0, t)));
+}
+
+/** `across01`: 0 at the left edge of the view rectangle, 1 at the right. */
+export function surfaceEdgeAlpha(across01: number, feather: number = SURFACE_EDGE_FEATHER): number {
+  const width = Math.max(0.001, feather);
+  const x = Math.min(1, Math.max(0, across01));
+  return smoothstep(0, width, x) * smoothstep(0, width, 1 - x);
+}
+
+/**
+ * What the composite actually costs the picture behind it, as a fraction: the alpha the
+ * plane spends replacing the film rather than adding to it. `surfaceCoverAlpha(a, 0)` is
+ * `a` — a plain `over`.
+ */
+export function surfaceCoverAlpha(alpha: number, lift: number = SURFACE_GLOSS_LIFT): number {
+  return Math.min(1, Math.max(0, alpha)) * (1 - Math.min(1, Math.max(0, lift)));
+}
+
 export const SURFACE_FRAGMENT_COLOR = /* glsl */ `
 float ffeT = clamp((vSurfaceDepth - uNearFade) / max(0.0001, uFarFade - uNearFade), 0.0, 1.0);
-float ffeScreen = clamp((gl_FragCoord.y - uViewport.x) / max(1.0, uViewport.y), 0.0, 1.0);
+float ffeScreen = clamp((gl_FragCoord.y - uViewport.y) / max(1.0, uViewport.w), 0.0, 1.0);
+float ffeAcross = clamp((gl_FragCoord.x - uViewport.x) / max(1.0, uViewport.z), 0.0, 1.0);
+float ffeEdgeWidth = max(0.001, uEdgeFeather);
 float ffeDepthAlpha = smoothstep(0.02, ${SURFACE_FEET_FADE.toFixed(2)}, ffeT)
-  * (1.0 - smoothstep(${SURFACE_HORIZON_FADE.toFixed(2)}, 0.99, ffeScreen));
+  * (1.0 - smoothstep(${SURFACE_HORIZON_FADE.toFixed(2)}, 0.99, ffeScreen))
+  * (1.0 - smoothstep(${(1 - SURFACE_FAR_FEATHER).toFixed(2)}, 1.0, ffeT))
+  * smoothstep(0.0, ffeEdgeWidth, ffeAcross)
+  * smoothstep(0.0, ffeEdgeWidth, 1.0 - ffeAcross);
 vec3 ffePhoto = mix(vec3(0.34, 0.34, 0.335), texture2D(uPhoto, fract(vSurfaceUv)).rgb, uPhotoReady);
 FfeSurface ffeSurface = ffeSurfaceBlend(uMaterialA, uMaterialB, uMix, vSurfaceUv, uSweep, ffePhoto);
 float ffeSweepGain = ffeSweep(ffeT, uSweep);
 diffuseColor.rgb = ffeSurface.albedo + ffeSurface.albedo * ffeSweepGain * 0.45;
-diffuseColor.a = ffeSurface.opacity * uPlaneOpacity * ffeDepthAlpha;
+diffuseColor.a = ffeSurface.opacity * uPlaneOpacity * uPlanePresence * ffeDepthAlpha;
+`;
+
+/**
+ * Blend, do not cover — the composite that makes the plane gloss rather than paint.
+ *
+ * Replaces `<premultiplied_alpha_fragment>`, so it runs after tone mapping and the
+ * colour-space conversion, on the values the blender actually sees. The colour is
+ * written premultiplied (which is what the canvas's own `premultipliedAlpha` context
+ * and the `One / OneMinusSrcAlpha` blend func the material sets both expect), and then
+ * only `1 - uGlossLift` of the alpha is left to hide what is behind:
+ *
+ *   out = colour·a + behind·(1 − a·(1 − lift))
+ *
+ * At `lift = 0` that is exactly the `over` this material always did. Above it, the
+ * plane keeps contributing its own light while giving the film's floor back — the
+ * storyboard's "reflective ground", not a slab.
+ */
+export const SURFACE_FRAGMENT_GLOSS = /* glsl */ `
+gl_FragColor.rgb *= gl_FragColor.a;
+gl_FragColor.a *= 1.0 - clamp(uGlossLift, 0.0, 1.0);
 `;
 
 export const SURFACE_FRAGMENT_ROUGHNESS = /* glsl */ `
