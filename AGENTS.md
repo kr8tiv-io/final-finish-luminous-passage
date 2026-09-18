@@ -47,7 +47,7 @@ Heavy Playwright runs go against the **built** app on port **4334**, not the dev
 - Git hooks are repo-local (`core.hooksPath`); never rely on the global `C:/Users/lucid/.git-hooks` hook, which fails with `fork` errors on this machine.
 - Never `git add -A` from an orphan branch — it has previously scooped up `node_modules` and `.worktrees`.
 - Do not commit `_seo_rewrite_resources.py`, `continue.md`, or `output/**`.
-- Do not commit. (Per current task scope — commits happen only when explicitly requested.)
+- Commit only the files your brief owns, on your own worktree branch, when the orchestrator's brief asks for it (every step brief does); never `git add -A`; never push. Identity: Matt-Aurora-Ventures <lucidbloks@gmail.com>, trailer `Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>`.
 
 ## Do not (carried from the G1 `continue.md` ledger)
 
