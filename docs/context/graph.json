@@ -684,7 +684,7 @@
       "id": "step-13",
       "type": "step",
       "title": "Manrope refinement: tokens, scale, leading, tracking, preload variable woff2, subset to Latin",
-      "status": "doing",
+      "status": "done",
       "phase": "phase-2",
       "tier": "S",
       "owner": "ui",

@@ -23,7 +23,7 @@ flowchart TD
     step-12["step-12: Route transitions and island lifecycle: ClientRo"]:::stDone
   end
   subgraph phase-2["phase-2"]
-    step-13["step-13: Manrope refinement: tokens, scale, leading, trac"]:::stDoing
+    step-13["step-13: Manrope refinement: tokens, scale, leading, trac"]:::stDone
     step-14["step-14: MOTION-VOCABULARY.md: complete every id with dur"]:::stDone
     step-15["step-15: GSAP consolidation + layout canvas: one plugin r"]:::stDone
     step-16["step-16: Surfaces: paper/ink/cobalt/bronze tokens, per-ch"]:::stTodo
@@ -313,7 +313,7 @@ flowchart TD
 - **Phase:** phase-2
 - **Tier:** S
 - **Owner(s):** ui
-- **Status:** doing
+- **Status:** done
 - **Files:** readable-experience.css, BaseLayout.astro
 - **Inputs (informs):** none recorded
 - **Constraints (locks):** M1
