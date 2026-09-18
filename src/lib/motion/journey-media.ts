@@ -120,6 +120,35 @@ export function veilPlateChoice({ image, video }: {
   return 'fallback';
 }
 
+/**
+ * Which rung of the pearl pour Act 1 plays.
+ *
+ * The markup carries the 480/720 ladder as its no-JS answer (`<source media>` is
+ * resolved once, at load, and knows nothing about the capability tier). This is
+ * the tier-aware half of the same decision, applied by `JourneyMotion` at the
+ * moment it promotes the film — before which `preload="none"` has fetched nothing,
+ * so naming a rung here never costs a second download.
+ *
+ *   >= 1440 px on `full`  -> 1080 (5.0 MB; the only rung wide enough for a 1440
+ *                            plate to be sampled by the compositor at 1:1)
+ *   >= 681 px             -> 720
+ *   phones                -> 480
+ *
+ * The 1080 rung is gated to `full` on purpose: `balanced` is a device that failed
+ * the WebGL2/float-buffer admission or is on a coarse pointer, and `still` never
+ * decodes a film at all (`journey.css` hides it). Neither should pay 5 MB for a
+ * picture the page is about to hand back to a poster.
+ *
+ * Returns `null` when the markup ladder is already the right answer.
+ */
+export function pourFilmSource({ viewportWidth, tier }: {
+  readonly viewportWidth: number;
+  readonly tier: 'full' | 'balanced' | 'still';
+}): string | null {
+  if (tier !== 'full' || !Number.isFinite(viewportWidth) || viewportWidth < 1440) return null;
+  return '/videos/follow-floor/1080/epoxy-pour-pearl.mp4';
+}
+
 export function thresholdHdrSupported(capabilities: {
   readonly webgl2: boolean;
   readonly colorBufferFloat: boolean;

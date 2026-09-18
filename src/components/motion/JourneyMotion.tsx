@@ -10,16 +10,19 @@ import {
 } from '../../lib/motion/journey-director';
 import { journeyFilmTime } from '../../lib/motion/journey-film-timing';
 import {
+  HERO_SUPPORT_TIMING,
   headlineMotionMode,
   headlineMotionSpec,
   headlineStagger,
   headlineStyleForChapter,
   isJourneyMotionOwnedNode,
+  wordConvergeFrom,
   type HeadlinePhase,
   type HeadlineStyle,
 } from '../../lib/motion/headline-motion';
 import {
   journeyMediaResidents,
+  pourFilmSource,
   shouldInvalidateForMediaReadiness,
   shouldRequestVideo,
   videoSeekTarget,
@@ -41,6 +44,32 @@ interface HeadlineRecord {
   style: HeadlineStyle;
   title: HTMLElement;
 }
+
+/**
+ * Wait for the face this headline will actually be measured with.
+ *
+ * `word-converge` splits into words and animates each one from its own direction.
+ * `autoSplit` re-splits on a font swap, which is right for a line mask and wrong
+ * here: a re-split mid-tween re-seeds every word at its start offset and the
+ * headline visibly jumps back.
+ *
+ * `document.fonts.ready` alone does NOT prevent that. Measured on this build, it
+ * resolves at 36 ms — before `#hero-title` has even been parsed — because nothing
+ * was pending at that instant. So the face is requested explicitly first
+ * (`FontFaceSet.load` resolves when the matching faces are loaded), and only then
+ * is the set awaited. Either step failing falls through to splitting immediately,
+ * which is one frame of a settled headline, never a stuck start state.
+ */
+const fontsSettled = (title: HTMLElement): Promise<void> => {
+  const fonts = (document as Document & { fonts?: FontFaceSet }).fonts;
+  if (!fonts?.ready) return Promise.resolve();
+  const style = getComputedStyle(title);
+  const shorthand = `${style.fontStyle} ${style.fontWeight} ${style.fontSize} ${style.fontFamily}`;
+  const requested = typeof fonts.load === 'function'
+    ? fonts.load(shorthand, title.textContent ?? '').then(() => undefined, () => undefined)
+    : Promise.resolve();
+  return requested.then(() => fonts.ready).then(() => undefined, () => undefined);
+};
 
 export default function JourneyMotion() {
   useEffect(() => {
@@ -74,6 +103,10 @@ export default function JourneyMotion() {
     const headlines = new Map<JourneyChapterId, HeadlineRecord[]>();
     const revealed = new Set<JourneyChapterId>();
     const activeTweens = new Set<gsap.core.Tween>();
+    /** The hero's own eyebrow/lead splits, each with the `.sr-only` twin that speaks for it. */
+    const supportSplits: Array<{ split: SplitText; spoken: HTMLElement }> = [];
+    /** Set at teardown so a deferred `fonts.ready` split cannot land on a dead document. */
+    let disposed = false;
     const readyVideos = new WeakMap<HTMLVideoElement, boolean>();
     const requestedVideos = new WeakSet<HTMLVideoElement>();
     const pendingSeeks = new WeakSet<HTMLVideoElement>();
@@ -91,6 +124,14 @@ export default function JourneyMotion() {
       record.title.dataset.headlineState = 'settled';
     };
 
+    /** T8: a refused entrance keeps the words — split reverted, `.sr-only` twin removed. */
+    const revertSupportSplits = () => {
+      supportSplits.splice(0).forEach(({ split, spoken }) => {
+        split.revert();
+        spoken.remove();
+      });
+    };
+
     chapters.forEach((chapter, id) => {
       const records = [...chapter.querySelectorAll<HTMLElement>('.display-title, .chapter-title')]
         .filter((title) => isJourneyMotionOwnedNode(title, chapter))
@@ -103,19 +144,22 @@ export default function JourneyMotion() {
     });
 
     const createHeadlineSplit = (record: HeadlineRecord) => {
+      const words = headlineMotionSpec(record.style, compactQuery.matches).split === 'words';
       record.title.dataset.headlineStyle = record.style;
       record.title.dataset.headlineState = 'entering';
       record.split = SplitText.create(record.title, {
-        type: 'lines',
-        mask: 'lines',
+        type: words ? 'words' : 'lines',
+        mask: words ? 'words' : 'lines',
         linesClass: 'headline-line',
+        wordsClass: 'headline-word',
         aria: 'auto',
         autoSplit: true,
         onSplit: (split) => {
+          const units = words ? split.words : split.lines;
           const mode = headlineMotionMode({ presentationEnabled, phase: record.phase });
           if (mode === 'static' || mode === 'settled') {
             record.title.dataset.headlineState = mode;
-            const reset = gsap.set(split.lines, { clearProps: 'all' });
+            const reset = gsap.set(units, { clearProps: 'all' });
             record.animation = reset;
             return reset;
           }
@@ -124,8 +168,15 @@ export default function JourneyMotion() {
           const timeline = gsap.timeline();
           record.animation = timeline;
           const epoxyMask = record.style === 'epoxy-mask';
-          timeline.fromTo(split.lines, {
+          const converge = spec.converge ?? 0;
+          timeline.fromTo(units, {
             ...spec.from,
+            // Act 1 only: the offset is per unit, so it is a function of the word's
+            // index rather than one value shared by the whole headline.
+            ...(converge > 0 ? {
+              x: (index: number) => wordConvergeFrom(index, converge).x,
+              y: (index: number) => wordConvergeFrom(index, converge).y,
+            } : {}),
             transformOrigin: epoxyMask ? undefined : '50% 80%',
             willChange: epoxyMask ? 'clip-path' : 'transform, opacity',
           }, {
@@ -139,7 +190,7 @@ export default function JourneyMotion() {
             ...spec.to,
             duration: spec.duration,
             ease: spec.ease,
-            stagger: headlineStagger(spec, split.lines.length),
+            stagger: headlineStagger(spec, units.length),
             clearProps: 'transform,opacity,clipPath,willChange',
             overwrite: 'auto',
           });
@@ -149,21 +200,99 @@ export default function JourneyMotion() {
       });
     };
 
+    /**
+     * Act 1's supporting copy: `line-rise` on the eyebrow, `line-rise` on the lead
+     * 0.12 s behind it, then the CTAs and the phone link fading up last — after the
+     * lead has finished arriving, so nothing is still moving under the headline
+     * while it converges (storyboard §3, T7).
+     *
+     * The eyebrow and the lead are `<p>`s, so `aria:'auto'` is out (T3: a generic
+     * role prohibits `aria-label`). The approved pattern is `aria:'hidden'` plus one
+     * real `.sr-only` string beside the element, removed again on revert.
+     * @motion line-rise
+     */
+    const buildHeroSupport = (chapter: HTMLElement) => {
+      const spec = headlineMotionSpec('line-rise', compactQuery.matches);
+      const rise = (element: HTMLElement, delay: number) => {
+        const spoken = document.createElement('span');
+        spoken.className = 'sr-only';
+        spoken.textContent = element.textContent?.trim() ?? '';
+        element.insertAdjacentElement('afterend', spoken);
+        const split = SplitText.create(element, {
+          type: 'lines',
+          mask: 'lines',
+          linesClass: 'headline-line',
+          aria: 'hidden',
+          autoSplit: true,
+          onSplit: (self) => (presentationEnabled
+            ? gsap.fromTo(self.lines, { ...spec.from, willChange: 'transform, opacity' }, {
+              yPercent: 0,
+              opacity: 1,
+              duration: spec.duration,
+              ease: spec.ease,
+              delay,
+              stagger: headlineStagger(spec, self.lines.length),
+              clearProps: 'transform,opacity,willChange',
+              overwrite: 'auto',
+            })
+            : gsap.set(self.lines, { clearProps: 'all' })),
+        });
+        supportSplits.push({ split, spoken });
+      };
+
+      const eyebrow = chapter.querySelector<HTMLElement>('.hero-content .eyebrow');
+      const lead = chapter.querySelector<HTMLElement>('.hero-content .lead');
+      if (eyebrow && isJourneyMotionOwnedNode(eyebrow, chapter)) rise(eyebrow, HERO_SUPPORT_TIMING.eyebrowAt);
+      if (lead && isJourneyMotionOwnedNode(lead, chapter)) rise(lead, HERO_SUPPORT_TIMING.leadLag);
+
+      // Opacity and a 14 px rise only: a CTA is a hit target, and the row must not
+      // travel across the place a pointer is already heading for.
+      const actions = [...chapter.querySelectorAll<HTMLElement>('.hero-content .button-row > *')]
+        .filter((element) => isJourneyMotionOwnedNode(element, chapter));
+      if (actions.length) {
+        trackTween(gsap.fromTo(actions, HERO_SUPPORT_TIMING.actionsFrom, {
+          y: 0,
+          opacity: 1,
+          duration: HERO_SUPPORT_TIMING.actionsDuration,
+          ease: spec.ease,
+          delay: HERO_SUPPORT_TIMING.leadLag + spec.duration + HERO_SUPPORT_TIMING.actionsLag,
+          stagger: HERO_SUPPORT_TIMING.actionsStagger,
+          clearProps: 'transform,opacity',
+          overwrite: 'auto',
+        }));
+      }
+    };
+
     const revealChapter = (id: JourneyChapterId) => {
       if (!presentationEnabled || revealed.has(id)) return;
       revealed.add(id);
       headlines.get(id)?.forEach((record) => {
         if (record.phase === 'settled') return;
         record.phase = 'entering';
-        if (!record.split) createHeadlineSplit(record);
-        else record.animation?.play(0);
+        if (record.split) {
+          record.animation?.play(0);
+          return;
+        }
+        // `word-converge` is the one entrance that must not be split before the face
+        // it will be measured with has resolved; every other style is split inline.
+        if (headlineMotionSpec(record.style, compactQuery.matches).split === 'words') {
+          void fontsSettled(record.title).then(() => {
+            if (disposed || !presentationEnabled || record.split || record.phase === 'settled') return;
+            createHeadlineSplit(record);
+          });
+          return;
+        }
+        createHeadlineSplit(record);
       });
       const chapter = chapters.get(id);
-      const supporting = chapter
-        ? [...chapter.querySelectorAll<HTMLElement>('.eyebrow, .lead, .chapter-link')]
-          .filter((element) => isJourneyMotionOwnedNode(element, chapter))
-        : [];
-      if (supporting?.length) {
+      if (!chapter) return;
+      if (id === 'portico') {
+        buildHeroSupport(chapter);
+        return;
+      }
+      const supporting = [...chapter.querySelectorAll<HTMLElement>('.eyebrow, .lead, .chapter-link')]
+        .filter((element) => isJourneyMotionOwnedNode(element, chapter));
+      if (supporting.length) {
         const spec = headlineMotionSpec('lateral-curtain', compactQuery.matches, 'label');
         trackTween(gsap.fromTo(supporting, spec.from, {
           xPercent: 0,
@@ -226,6 +355,15 @@ export default function JourneyMotion() {
       if (!video) return;
       if (shouldRequestVideo(requestedVideos.has(video), id, residentChapters, documentActive)) {
         requestedVideos.add(video);
+        // The pour's top rung is chosen here rather than by a `<source media>` query,
+        // because the rung depends on the capability tier as well as the viewport and
+        // only this module knows the tier. The markup keeps the 480/720 ladder as the
+        // no-JS answer; `preload="none"` means nothing has been fetched yet, so
+        // naming a `src` now costs no second download.
+        if (id === 'portico') {
+          const rung = pourFilmSource({ viewportWidth: window.innerWidth, tier });
+          if (rung && !video.currentSrc.endsWith(rung)) video.src = rung;
+        }
         video.preload = 'auto';
         if (video.readyState < 2) video.load();
       }
@@ -298,6 +436,7 @@ export default function JourneyMotion() {
         // scrolls back into the boundary it just left, and a one-shot seed would
         // leave that plate showing wherever the scrub had reached. `requestVideoTime`
         // no-ops inside its tolerance, so repeating it every frame costs nothing.
+        // @motion frame-zero-hold
         if (transitionInterior) {
           const incoming = videos.get(snapshot.toChapter);
           if (incoming && incoming.readyState >= 2) requestVideoTime(incoming, 0);
@@ -324,6 +463,7 @@ export default function JourneyMotion() {
       if (!presentationEnabled) {
         activeTweens.forEach((tween) => tween.kill());
         activeTweens.clear();
+        revertSupportSplits();
         headlines.forEach((records) => records.forEach((record) => {
           record.animation?.kill();
           if (record.phase === 'entering') settleHeadline(record);
@@ -356,11 +496,13 @@ export default function JourneyMotion() {
     // Same reason as the director above: this whole teardown has to land before the
     // swap, not after it, or the outgoing page's splits and tweens outlive it.
     return onRouteTeardown(() => {
+      disposed = true;
       unsubscribe();
       unsubscribeControls();
       reducedQuery.removeEventListener('change', applyMotionPreference);
       window.removeEventListener(JOURNEY_COMPOSITOR_READY_EVENT, renderSnapshot);
       activeTweens.forEach((tween) => tween.kill());
+      revertSupportSplits();
       videoCleanups.forEach((cleanup) => cleanup());
       videos.forEach((video) => {
         video.removeAttribute('data-video-ready');

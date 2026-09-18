@@ -33,11 +33,53 @@ test.describe('Final Finish homepage', () => {
     await expect(page.locator('.pour-stage')).toBeVisible();
     await expect(page.locator('.pour-poster')).toHaveAttribute('fetchpriority', 'high');
     await expect(page.locator('.pour-poster')).toHaveAttribute('src', /follow-floor\/720\/epoxy-pour-pearl-poster/);
+    // The poster is the LCP element, so it may never carry a lazy attribute and must
+    // keep intrinsic dimensions: an image that arrives without them is a layout shift
+    // in the one frame the whole page is measured on.
+    await expect(page.locator('.pour-poster')).not.toHaveAttribute('loading', 'lazy');
+    await expect(page.locator('.pour-poster')).toHaveAttribute('width', '1280');
+    await expect(page.locator('.pour-poster')).toHaveAttribute('height', '720');
     await expect(film).toHaveAttribute('muted', '');
     await expect(film).toHaveAttribute('playsinline', '');
-    await expect(film.locator('source')).toHaveCount(2);
+    // `preload` is asserted on the SERVED markup, not the live element: `JourneyMotion`
+    // promotes the resident film to `auto` on purpose, and reading the live attribute
+    // would assert the opposite of the rule — that nothing is downloaded before the
+    // director asks for it.
+    const markup = await (await page.request.get('/')).text();
+    expect(markup).toMatch(/<video[^>]*class="pour-film"[^>]*preload="none"|<video[^>]*preload="none"[^>]*class="pour-film"/);
+    // The markup ladder is the no-JS answer and stays at two rungs: 480 on a phone,
+    // 720 everywhere else. The 1080 rung is never declared here, because `<source
+    // media>` cannot know the capability tier and a `balanced` desktop must not be
+    // handed a 5 MB encode for a film it will scrub behind a poster.
+    expect(await film.locator('source').evaluateAll((nodes) => nodes.map((node) => [
+      node.getAttribute('media'),
+      node.getAttribute('src'),
+    ]))).toEqual([
+      ['(max-width: 680px)', '/videos/follow-floor/480/epoxy-pour-pearl.mp4'],
+      [null, '/videos/follow-floor/720/epoxy-pour-pearl.mp4'],
+    ]);
     await expect(page.locator('.passage-host')).toHaveCount(0);
     expect(heavyRequests).toEqual([]);
+  });
+
+  /**
+   * `pourFilmSource` owns the top rung, because it is the only decision here that
+   * depends on the capability tier as well as the viewport. Asserted both ways: a
+   * `full` desktop at 1440 must reach the 1080 encode, and anything else must not.
+   */
+  test('reaches the 1080 pour only on a full-tier desktop', async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await page.goto('/', { waitUntil: 'domcontentloaded' });
+    await page.waitForFunction(() => document.documentElement.dataset.journeyTier !== undefined, null, { timeout: 30_000 });
+    const tier = await page.getAttribute('html', 'data-journey-tier');
+    await page.waitForFunction(
+      () => (document.querySelector<HTMLVideoElement>('.pour-film')?.currentSrc ?? '') !== '',
+      null,
+      { timeout: 45_000 },
+    ).catch(() => {});
+    const source = await page.locator('.pour-film').evaluate((node: HTMLVideoElement) => node.currentSrc);
+    if (tier === 'full') expect(source, `tier ${tier}`).toMatch(/follow-floor\/1080\/epoxy-pour-pearl\.mp4$/);
+    else expect(source, `tier ${tier}`).not.toMatch(/follow-floor\/1080\//);
   });
 
   test('keeps each chapter narrative in six readable white panels', async ({ page }) => {

@@ -165,6 +165,38 @@ function nextFrames(page: Page): Promise<void> {
   }));
 }
 
+/**
+ * The white target is not a breath, so it cannot be driven by `seek`.
+ *
+ * `journey-director.ts` measures it as a band ending at the top of
+ * `#customer-reviews` and reaching back `min(420, max(180, innerHeight * 0.34))`
+ * px, with progress taken from the viewport centre. This reproduces that band
+ * from the rendered document rather than from a constant, so a change to the
+ * director's distance is a failure here rather than a silently different sample.
+ */
+async function seekWhiteTarget(page: Page, p: number): Promise<number> {
+  let achieved = Number.NaN;
+  for (let attempt = 0; attempt < 24; attempt += 1) {
+    achieved = await page.evaluate((target) => {
+      const stage = document.querySelector<HTMLElement>('#customer-reviews[data-journey-white-stage]');
+      if (!stage) return Number.NaN;
+      const band = () => {
+        const end = stage.getBoundingClientRect().top + window.scrollY;
+        const distance = Math.min(420, Math.max(180, window.innerHeight * 0.34));
+        return { start: end - distance, end };
+      };
+      const { start, end } = band();
+      window.scrollTo(0, Math.round(start + (end - start) * Number(target) - window.innerHeight / 2));
+      const settled = band();
+      return (window.scrollY + window.innerHeight / 2 - settled.start)
+        / Math.max(1, settled.end - settled.start);
+    }, String(p));
+    await nextFrames(page);
+    if (Math.abs(achieved - p) < 0.004) break;
+  }
+  return achieved;
+}
+
 /** Wait until the plate crossfade has actually reached the weight this `p` implies. */
 async function settle(page: Page, expected: number): Promise<void> {
   await page.waitForFunction((target) => {
@@ -619,6 +651,75 @@ for (const key of BOUNDARY_KEYS) {
       .toBeLessThanOrEqual(2);
   });
 }
+
+/**
+ * Act 1's exit — `resin-wipe` into the proof white stage (Step 17).
+ *
+ * The white target is the only boundary with no incoming plate: the DOM keeps
+ * showing the outgoing room and `handoff` is pinned to 0, so the wipe is the
+ * compositor's alone on `full` and is simply the arrival of the white stage on
+ * `balanced`. That is why this is measured separately from the seven breaths and
+ * why it asserts a *changing* picture rather than a plate handover.
+ */
+test('the customer-reviews white target wipes without a cut or a flash', async ({ page }) => {
+  const tier = await openJourney(page);
+  await expect(page.locator('#customer-reviews[data-journey-white-stage]')).toHaveCount(1);
+
+  // (a) the seam: two samples 0.02 of progress apart across the midpoint must look
+  // like one picture, and the same measurement over the whole wipe must not.
+  await seekWhiteTarget(page, -0.2);
+  await nextFrames(page);
+  const opening = await seekWhiteTarget(page, 0.49);
+  expect(Math.abs(opening - 0.49), 'the white target must settle at p=0.49').toBeLessThan(0.02);
+  await nextFrames(page);
+  await awaitStagedPlates(page);
+  const before = await mediaShot(page);
+  const closing = await seekWhiteTarget(page, 0.51);
+  expect(Math.abs(closing - 0.51), 'the white target must settle at p=0.51').toBeLessThan(0.02);
+  await nextFrames(page);
+  await awaitStagedPlates(page);
+  const after = await mediaShot(page);
+  const seam = await pixelDiff(page, before, after, SEAM_CHANNEL_TOLERANCE);
+  // eslint-disable-next-line no-console
+  console.log(`[seam] customer-reviews:white-target ${(seam.fraction * 100).toFixed(3)}% changed,`
+    + ` mean delta ${seam.mean.toFixed(2)}, max ${seam.max} (tier ${tier})`);
+  expect(seam.fraction, 'the resin wipe cuts at its own midpoint instead of dissolving through it')
+    .toBeLessThan(SEAM_PIXEL_BUDGET);
+
+  // The control: without it a frozen wipe would pass the seam check trivially.
+  await seekWhiteTarget(page, 0.05);
+  await nextFrames(page);
+  const start = await mediaShot(page);
+  await seekWhiteTarget(page, 0.95);
+  await nextFrames(page);
+  const end = await mediaShot(page);
+  const control = await pixelDiff(page, start, end, SEAM_CHANNEL_TOLERANCE);
+  // eslint-disable-next-line no-console
+  console.log(`[control] customer-reviews:white-target ${(control.fraction * 100).toFixed(2)}% changed across the wipe`);
+  expect(control.fraction, 'the resin wipe never changes picture, so the seam measurement proves nothing')
+    .toBeGreaterThan(CONTROL_PIXEL_FLOOR);
+
+  // (b) the exit: the refined front samples an alpha plate, so a plate that fails to
+  // decode part-way, or a bloom that lifts the whole frame, would show up here as a
+  // single-frame excursion off the luminance trend.
+  const distance = await page.evaluate(() => Math.min(420, Math.max(180, window.innerHeight * 0.34)));
+  await seekWhiteTarget(page, -0.15);
+  const step = Math.max(4, Math.round((distance * 1.5) / SCAN_FRAMES));
+  const luminance: number[] = [];
+  for (let i = 0; i < SCAN_FRAMES; i += 1) {
+    await page.evaluate((delta) => window.scrollBy(0, Number(delta)), String(step));
+    await nextFrames(page);
+    luminance.push(await meanLuminance(page, await mediaShot(page)));
+  }
+  const flash = scoreFlashes(luminance);
+  // eslint-disable-next-line no-console
+  console.log(`[flash] customer-reviews:white-target worst single-frame excursion ${(flash.worst * 100).toFixed(2)}%`
+    + ` at frame ${flash.at}; largest step ${(flash.handoverStep * 100).toFixed(2)}%, median ${(flash.medianStep * 100).toFixed(2)}%`);
+  expect(
+    flash.worst,
+    `the resin wipe: frame ${flash.at} jumps ${(flash.worst * 100).toFixed(2)}% off the trend and back`,
+  ).toBeLessThan(FLASH_BUDGET);
+});
 
 test('the capability tier matches what this browser can actually do', async ({ page }) => {
   const tier = await openJourney(page);
