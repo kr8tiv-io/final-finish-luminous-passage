@@ -128,14 +128,17 @@
 }
 
 /* The diagram is the point of this aside: let it take the whole editorial
-   measure instead of only the reading column, while the copy keeps its 62ch. */
+   measure instead of only the reading column, while the copy keeps the same
+   reading measure every other paragraph on the site gets. That used to be a
+   hard-coded 62ch beside `.reading-body`'s own 62ch; Step 13 made the measure a
+   token, and two copies of one number is how they drift apart. */
 .chapter-reading .reading-body:has(.prep-layers) {
   max-width: none;
 }
 
 .chapter-reading .reading-body:has(.prep-layers) > p,
 .chapter-reading .reading-body:has(.prep-layers) > .chapter-link {
-  max-width: 62ch;
+  max-width: var(--measure-body);
 }
 
 @media (min-width: 1024px) {

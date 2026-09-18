@@ -63,7 +63,7 @@
   right: var(--resin-gutter);
   top: 4%;
   margin: 0;
-  font-family: 'Manrope Variable', 'Segoe UI', sans-serif;
+  font-family: var(--sans);
   font-weight: 200;
   font-size: min(46svh, 34vw);
   line-height: 0.82;
@@ -85,7 +85,7 @@
 }
 
 .resin-register span {
-  font-family: 'Manrope Variable', 'Segoe UI', sans-serif;
+  font-family: var(--sans);
   font-size: var(--resin-kicker);
   font-weight: 700;
   letter-spacing: 0.44em;
@@ -131,7 +131,7 @@
 
 .resin-line {
   fill: #17222a;
-  font-family: 'Manrope Variable', 'Segoe UI', sans-serif;
+  font-family: var(--sans);
   font-weight: 550;
   font-size: var(--resin-display);
   font-variation-settings: 'wght' 550;
@@ -140,7 +140,7 @@
 
 .resin-note {
   fill: #164f83;
-  font-family: 'Manrope Variable', 'Segoe UI', sans-serif;
+  font-family: var(--sans);
   font-weight: 500;
   font-size: var(--resin-note);
   letter-spacing: -0.005em;
@@ -185,7 +185,7 @@
 .resin-readable-title {
   margin: 0;
   max-width: 14ch;
-  font-family: 'Manrope Variable', 'Segoe UI', sans-serif;
+  font-family: var(--sans);
   font-weight: 550;
   font-size: var(--resin-display);
   line-height: 0.96;

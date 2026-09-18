@@ -55,9 +55,28 @@ describe('Follow the Floor semantic fallback', () => {
     expect(homepage).not.toContain('aggregateRating');
     expect(homepage).not.toContain('[...reviews, ...reviews]');
   });
+  /**
+   * Step 13 replaced `@import '@fontsource-variable/manrope'` with a self-hosted
+   * @font-face over `public/fonts/manrope-latin-var.woff2`. The family is
+   * unchanged and still the only one — what changed is that the URL is now
+   * stable enough for `BaseLayout.astro` to preload by name, which a
+   * Vite-hashed import could never be.
+   */
   it('uses one architectural-modern font family and native scroll', () => {
-    expect(styles).toContain("@import '@fontsource-variable/manrope'");
+    expect(styles).toContain("font-family: 'Manrope Variable'");
+    expect(styles).toContain("src: url('/fonts/manrope-latin-var.woff2') format('woff2')");
+    expect(styles).toContain('font-display: swap');
+    expect(styles).not.toContain("@import '@fontsource-variable/manrope'");
     expect(styles).not.toContain("@import '@fontsource/instrument-serif");
     expect(styles).not.toContain('scroll-behavior: smooth');
+  });
+  it('holds the layout with a metric-matched fallback rather than an unstyled swap', () => {
+    expect(styles).toContain("font-family: 'Manrope Fallback'");
+    for (const descriptor of ['size-adjust:', 'ascent-override:', 'descent-override:', 'line-gap-override:']) {
+      expect(styles).toContain(descriptor);
+    }
+    // The stack has to reach the adjusted face before any system font, or the
+    // overrides never apply and the swap reflows every paragraph.
+    expect(styles).toContain("--sans: 'Manrope Variable', 'Manrope Fallback',");
   });
 });
