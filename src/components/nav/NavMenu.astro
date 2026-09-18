@@ -1,0 +1,25 @@
+---
+import './nav-menu.css';
+import NavMenuFloor from './NavMenu.tsx';
+---
+
+{/* The header's own <nav id="primary-navigation"> is moved into
+    [data-nav-menu-list] on open, so there is exactly one copy of the links in
+    the document and one navigation landmark. */}
+<div class="nav-menu" id="site-menu" data-nav-menu data-nav-finish="idle" hidden>
+  <div class="nav-menu__veil" data-nav-menu-veil aria-hidden="true"></div>
+  <div class="nav-menu__floor" data-nav-menu-floor aria-hidden="true">
+    <NavMenuFloor client:idle />
+  </div>
+  <div class="nav-menu__panel" data-nav-menu-panel>
+    <div class="nav-menu__list-host" data-nav-menu-list>
+      <svg class="nav-menu__spine" viewBox="0 0 2 100" preserveAspectRatio="none" aria-hidden="true" focusable="false">
+        <line data-nav-menu-spine x1="1" y1="0" x2="1" y2="100" />
+      </svg>
+    </div>
+    <div class="nav-menu__meta" data-nav-menu-meta>
+      <a href="tel:+17809911651">(780) 991-1651</a>
+      <a href="mailto:finalfinishepoxy@gmail.com">finalfinishepoxy@gmail.com</a>
+    </div>
+  </div>
+</div>

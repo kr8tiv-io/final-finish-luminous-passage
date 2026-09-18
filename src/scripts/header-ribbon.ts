@@ -1,5 +1,6 @@
 import gsap from 'gsap';
 import { journeyControls } from '../lib/motion/journey-controls';
+import { NAV_MENU_STATE_EVENT, type NavMenuStateDetail } from '../components/nav/nav-destinations';
 
 /** The highlight moves; links and their hit areas never do. */
 export function initializeHeaderRibbon(header:HTMLElement, navigation:HTMLElement) {
@@ -16,9 +17,11 @@ export function initializeHeaderRibbon(header:HTMLElement, navigation:HTMLElemen
   let frame=0;
   let disposed=false;
   const still=()=>reduced.matches || journeyControls.getSnapshot().motionPreference==='still';
+  /** While the full-screen menu owns the links they are no longer header-sized. */
+  const menuOpen=()=>header.hasAttribute('data-menu-open')||header.hasAttribute('data-menu-closing');
   const move=(link:HTMLAnchorElement|null)=>{
     active=link;
-    if(!link) { highlight.dataset.active='false'; return; }
+    if(!link||menuOpen()) { highlight.dataset.active='false'; return; }
     const box=link.getBoundingClientRect();
     const nav=navigation.getBoundingClientRect();
     if(!box.width || !nav.width) return;
@@ -55,6 +58,13 @@ export function initializeHeaderRibbon(header:HTMLElement, navigation:HTMLElemen
   resize.observe(document.body);
   const onPreference=()=>{header.toggleAttribute('data-header-still',still());move(active);schedule();};
   reduced.addEventListener('change',onPreference,{signal:abort.signal});
+  // The menu takes the nav out of the header and hands it back; re-seat the
+  // highlight once the returning links have settled at header size.
+  window.addEventListener(NAV_MENU_STATE_EVENT,(event)=>{
+    const detail=(event as CustomEvent<NavMenuStateDetail>).detail;
+    if(detail.open) move(null);
+    else if(detail.settled&&!disposed) restore();
+  },{signal:abort.signal});
   const unsubscribe=journeyControls.subscribe(onPreference);
   void document.fonts.ready.then(()=>{if(!disposed){restore();schedule();}});
   onPreference();restore();update();

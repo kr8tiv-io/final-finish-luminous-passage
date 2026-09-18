@@ -1,0 +1,355 @@
+/* Full-screen navigation — the header's own <nav> becomes this list on open.
+   Palette is warm white / ink / cobalt only, type is Manrope only. */
+
+.nav-menu {
+  /* The brief's clamp(2.5rem, 6vw, 5.5rem), with an svh ceiling so six lines
+     plus the contact rail always fit without the panel scrolling. */
+  --nav-type: clamp(2.5rem, min(5.6vw, 7.8svh), 5.5rem);
+  /* 1.45 is the header's own .nav-label-window line-height — keeping it identical
+     is what makes the Flip scale uniform. Never below a 48px touch row. */
+  --nav-lead: 1.45;
+  --nav-row: max(3.1rem, calc(var(--nav-type) * var(--nav-lead) * 1.04));
+  --nav-rail: clamp(3.4rem, 7vw, 7.5rem);
+  position: fixed;
+  z-index: 46;
+  inset: 0;
+  overflow: hidden;
+  overscroll-behavior: contain;
+  isolation: isolate;
+  contain: layout paint;
+}
+
+.nav-menu[hidden] { display: none; }
+/* The one-off idle layout warm-up: laid out, never painted. */
+.nav-menu[data-nav-warm] { visibility: hidden; pointer-events: none; }
+
+/* 1. Paper field. 96% so the page underneath stays felt, never read. */
+.nav-menu__veil {
+  position: absolute;
+  inset: 0;
+  background: #faf9f6;
+  opacity: 0.96;
+}
+
+/* 2. The floor. The CSS gradient is the whole floor at the still tier, after a
+   lost WebGL context, and behind the canvas everywhere else. */
+.nav-menu__floor {
+  position: absolute;
+  z-index: 1;
+  inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(120% 62% at 50% 108%, rgba(22, 79, 131, 0.13), transparent 62%),
+    linear-gradient(180deg, rgba(250, 249, 246, 0) 34%, rgba(23, 34, 42, 0.05) 56%, rgba(23, 34, 42, 0.13) 100%);
+}
+
+.nav-menu__floor canvas { display: block; }
+
+/* 3. The list and the rail. */
+.nav-menu__panel {
+  --nav-parallax-x: 0px;
+  --nav-parallax-y: 0px;
+  position: relative;
+  z-index: 2;
+  display: grid;
+  align-content: center;
+  gap: clamp(1.6rem, 4svh, 3.4rem);
+  width: 100%;
+  height: 100%;
+  padding: calc(env(safe-area-inset-top, 0px) + 5.2rem) var(--gutter) calc(env(safe-area-inset-bottom, 0px) + 1.8rem);
+}
+
+/* min-height, not auto: the host must not collapse when the nav is handed back
+   to the header mid-close, or the panel re-centres and that is a layout shift. */
+.nav-menu__list-host { position: relative; min-height: calc(6 * var(--nav-row)); }
+
+.nav-menu__spine {
+  position: absolute;
+  top: 0.5rem;
+  left: calc(var(--nav-rail) - 0.85rem);
+  width: 2px;
+  height: calc(100% - 1rem);
+  overflow: visible;
+  pointer-events: none;
+}
+
+.nav-menu__spine line {
+  stroke: rgba(22, 79, 131, 0.34);
+  stroke-width: 2;
+  vector-effect: non-scaling-stroke;
+}
+
+/* The nav element itself, once it has been moved in here. */
+.nav-menu [data-primary-navigation] {
+  position: static;
+  display: block;
+  visibility: visible;
+  padding: 0;
+  border: 0;
+  background: none;
+  box-shadow: none;
+  pointer-events: auto;
+}
+
+.nav-menu [data-primary-navigation] .nav-material { display: none; }
+
+.nav-menu [data-primary-navigation] ul {
+  position: relative;
+  display: grid;
+  grid-auto-rows: var(--nav-row);
+  gap: 0;
+  min-height: calc(6 * var(--nav-row));
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* Every box in the row is sized by CSS rather than by its content, so nothing
+   here changes size when Flip lifts the label out of flow. */
+.nav-menu [data-primary-navigation] li {
+  position: relative;
+  display: block;
+  height: var(--nav-row);
+  transform: translate3d(calc(var(--nav-parallax-x) * var(--nav-depth, 1)), calc(var(--nav-parallax-y) * var(--nav-depth, 1)), 0);
+  will-change: transform;
+}
+
+.nav-menu [data-primary-navigation] li::after {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: var(--nav-rail);
+  height: 1px;
+  background: rgba(23, 34, 42, 0.11);
+  content: '';
+}
+
+.nav-menu [data-primary-navigation] a {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  width: 100%;
+  height: 100%;
+  padding: 0 0 0 var(--nav-rail);
+  color: var(--ink);
+  font-family: var(--sans);
+  font-size: var(--nav-type);
+  font-weight: 550;
+  letter-spacing: -0.035em;
+  line-height: var(--nav-lead);
+  text-align: left;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.nav-menu [data-primary-navigation] a::after { display: none; }
+
+/* The header's own label/echo roll, at display scale — and the echo keeps its
+   box rather than being display:none, so switching states never removes a laid
+   out element (which the browser reports as a layout shift). */
+.nav-menu [data-primary-navigation] .nav-label-window { flex: 0 0 auto; }
+.nav-menu [data-primary-navigation] a:is(:hover, :focus-visible) .nav-label { transform: translateY(-110%); }
+.nav-menu [data-primary-navigation] a:is(:hover, :focus-visible) .nav-label-echo { transform: translateY(0); }
+
+/* Numbering and the harvested chapter-station labels. */
+.nav-index,
+.nav-station,
+.nav-dot { display: none; }
+
+/* Siblings of the link, not children: the link's label is the Flip target, and
+   anything inside it would inherit the flight transform. */
+.nav-menu .nav-index {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  display: block;
+  color: var(--cobalt);
+  font-size: clamp(0.6rem, 0.82vw, 0.74rem);
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  line-height: 1;
+  translate: 0 -50%;
+  font-feature-settings: 'tnum' 1;
+  pointer-events: none;
+}
+
+.nav-menu .nav-station {
+  position: absolute;
+  top: 50%;
+  right: 0;
+  display: block;
+  color: var(--muted);
+  font-size: clamp(0.58rem, 0.78vw, 0.72rem);
+  font-weight: 650;
+  letter-spacing: 0.16em;
+  line-height: 1;
+  text-transform: uppercase;
+  translate: 0 -50%;
+  pointer-events: none;
+}
+
+.nav-menu .nav-dot {
+  position: absolute;
+  top: 50%;
+  left: calc(var(--nav-rail) - 1.15rem);
+  display: block;
+  width: 0.6rem;
+  height: 0.6rem;
+  border: 1px solid var(--cobalt);
+  border-radius: 50%;
+  background: #faf9f6;
+  translate: 0 -50%;
+}
+
+.nav-menu [data-primary-navigation] a:is(:hover, :focus-visible) ~ .nav-dot,
+.nav-menu [data-primary-navigation] a[aria-current='page'] ~ .nav-dot { background: var(--cobalt); }
+
+@media (max-width: 1199px) {
+  .nav-menu .nav-dot,
+  .nav-menu__spine { display: none; }
+  .nav-menu { --nav-rail: 3.1rem; }
+}
+
+/* 4. Contact rail under the list. Locked facts only. */
+.nav-menu__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem 2.2rem;
+  padding-left: var(--nav-rail);
+}
+
+.nav-menu__meta a {
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-decoration: none;
+}
+
+.nav-menu__meta a:is(:hover, :focus-visible) { color: var(--cobalt); }
+
+@media (max-width: 880px) {
+  .nav-menu__meta { padding-left: 0; gap: 0.1rem 1.4rem; }
+  .nav-menu { --nav-rail: 2.6rem; }
+  /* "See your floor" at the 2.5rem clamp floor already fills a 390px line, so
+     the station word is a tablet/desktop affordance; the numbering carries the
+     rail on phones. */
+  .nav-menu .nav-station { display: none; }
+}
+
+/* 5. Closed state. The links stay measurable so Flip has a real "first" state.
+   Above 1100px they are the live inline header links; below — where
+   readable-experience.css collapses the inline nav — they are stacked behind the
+   toggle, invisible and untabbable, and fan out of it on open. Selectors carry an
+   extra attribute so they outrank `body .site-header [data-primary-navigation]`
+   in readable-experience.css without depending on bundle order. */
+.site-header .nav-slot { display: block; }
+.site-header .header-actions { display: flex; align-items: center; gap: 0.65rem; justify-self: end; }
+
+@media (max-width: 1100px) {
+  .site-header .nav-slot { display: none; }
+
+  .site-header[data-site-header] [data-primary-navigation] {
+    position: absolute;
+    top: 50%;
+    right: calc(var(--gutter) + 9rem);
+    left: auto;
+    display: block;
+    width: max-content;
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    background: none;
+    box-shadow: none;
+    visibility: hidden;
+    pointer-events: none;
+    transform: translateY(-50%);
+  }
+
+  .site-header[data-menu-closing] [data-primary-navigation] { visibility: visible; }
+  .site-header[data-site-header] [data-primary-navigation] ul { display: grid; gap: 0; }
+  .site-header[data-site-header] [data-primary-navigation] li { grid-area: 1 / 1; }
+  .site-header[data-site-header] [data-primary-navigation] a { display: block; min-height: 0; padding: 0; font-size: 0.68rem; white-space: nowrap; }
+}
+
+/* 6. The toggle exists at every width now. */
+.site-header .menu-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  justify-self: end;
+  min-height: 2.75rem;
+  padding: 0.5rem 0.95rem;
+  border: 1px solid rgba(22, 79, 131, 0.38);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--cobalt-dark);
+  font-family: var(--sans);
+  font-size: 0.68rem;
+  font-weight: 750;
+  letter-spacing: 0.11em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: border-color 320ms var(--ease-out), color 320ms var(--ease-out);
+}
+
+.site-header .menu-toggle:is(:hover, :focus-visible) { border-color: var(--cobalt); color: var(--cobalt); }
+
+.menu-toggle__bars {
+  position: relative;
+  display: block;
+  width: 0.95rem;
+  height: 0.55rem;
+}
+
+.menu-toggle__bars::before,
+.menu-toggle__bars::after {
+  position: absolute;
+  left: 0;
+  width: 100%;
+  height: 1.5px;
+  background: currentcolor;
+  content: '';
+  transition: transform 420ms var(--ease-out), top 260ms var(--ease-out);
+}
+
+.menu-toggle__bars::before { top: 0; }
+.menu-toggle__bars::after { top: calc(100% - 1.5px); }
+
+.site-header[data-menu-open] .menu-toggle__bars::before { top: calc(50% - 0.75px); transform: rotate(45deg); }
+.site-header[data-menu-open] .menu-toggle__bars::after { top: calc(50% - 0.75px); transform: rotate(-45deg); }
+
+/* 7. Header chrome while open: the strip dissolves into the paper field so the
+   logo, progress line and "Talk to Denis" read as part of the menu. */
+.site-header[data-menu-open],
+.site-header[data-menu-open][data-scrolled] {
+  border-bottom-color: transparent;
+  background: transparent;
+  box-shadow: none;
+  backdrop-filter: none;
+}
+
+/* Floating controls that outrank the overlay's z-index are marked one by one
+   from JS. An `html[data-menu-open] …` descendant rule would invalidate style
+   for the entire document on every open, which on the homepage costs more than
+   the whole transition. */
+[data-menu-veiled] {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+/* 8. Reduced motion and the still tier: no transition, no canvas, same menu. */
+@media (prefers-reduced-motion: reduce) {
+  .nav-menu [data-primary-navigation] li,
+  .site-header .menu-toggle,
+  .menu-toggle__bars::before,
+  .menu-toggle__bars::after { transition: none; }
+  .nav-menu [data-primary-navigation] li { transform: none; }
+}
+
+html[data-journey-tier='still'] .nav-menu [data-primary-navigation] li,
+html[data-journey-motion='still'] .nav-menu [data-primary-navigation] li { transform: none; }

@@ -1,15 +1,10 @@
 ---
 import '../styles/header-ribbon.css';
 import '../styles/intent-motion.css';
+import NavMenu from './nav/NavMenu.astro';
+import { NAV_DESTINATIONS, navIndexLabel } from './nav/nav-destinations';
 const currentPath = Astro.url.pathname;
-const links = [
-  { href: '/services', label: 'Services' },
-  { href: '/services/commercial-epoxy-flooring', label: 'Commercial' },
-  { href: '/projects', label: 'Projects' },
-  { href: '/finishes', label: 'Finishes' },
-  { href: '/floor-visualizer', label: 'See your floor' },
-  { href: '/resources', label: 'Resources' },
-];
+const links = NAV_DESTINATIONS;
 const currentHref = links.filter(link => currentPath === link.href || currentPath.startsWith(`${link.href}/`)).sort((a,b)=>b.href.length-a.href.length)[0]?.href;
 ---
 
@@ -18,37 +13,51 @@ const currentHref = links.filter(link => currentPath === link.href || currentPat
     <img class="brand-mark" src="/images/brand/final-finish-epoxy-mark.png" alt="" width="67" height="52" />
   </a>
 
-  <button class="menu-toggle" type="button" aria-expanded="false" aria-controls="primary-navigation" data-menu-toggle>
-    <span class="sr-only">Open primary menu</span>
-    <span aria-hidden="true">Menu</span>
-  </button>
-
   <nav id="primary-navigation" aria-label="Primary navigation" data-primary-navigation>
     <span class="nav-material" data-nav-highlight aria-hidden="true"></span>
     <ul>
-      {links.map((link) => (
-        <li>
-          <a href={link.href} aria-current={currentHref === link.href ? 'page' : undefined}>
-            <span class="nav-label-window"><span class="nav-label">{link.label}</span><span class="nav-label-echo" aria-hidden="true">{link.label}</span></span>
+      {links.map((link, index) => (
+        <li style={`--nav-depth:${(0.4 + index * 0.14).toFixed(2)}`}>
+          <a
+            href={link.href}
+            data-nav-finish={link.finish}
+            aria-current={currentHref === link.href ? 'page' : undefined}
+          >
+            <span class="nav-label-window" data-nav-flip><span class="nav-label">{link.label}</span><span class="nav-label-echo" aria-hidden="true">{link.label}</span></span>
           </a>
+          <span class="nav-index" data-nav-index aria-hidden="true">{navIndexLabel(index)}</span>
+          <span class="nav-station" data-nav-station aria-hidden="true">{link.station}</span>
+          <span class="nav-dot" data-nav-dot aria-hidden="true"></span>
         </li>
       ))}
     </ul>
   </nav>
 
-  <a class="header-phone" href="tel:+17809911651">Call (780) 991-1651</a>
-  <a class="header-cta" href="/contact#quote">Talk to Denis</a>
+  <div class="header-actions">
+    <a class="header-phone" href="tel:+17809911651">Call (780) 991-1651</a>
+    <button class="menu-toggle" type="button" aria-expanded="false" aria-controls="site-menu" data-menu-toggle>
+      <span class="sr-only">Open primary menu</span>
+      <span class="menu-toggle__bars" aria-hidden="true"></span>
+      <span aria-hidden="true">Menu</span>
+    </button>
+    <a class="header-cta" href="/contact#quote">Talk to Denis</a>
+  </div>
   <div class="header-progress" aria-hidden="true"><span data-header-progress></span></div>
 </header>
+
+<NavMenu />
 
 <noscript>
   <style is:inline>
     .journey-motion-control { display: none; }
+    body .site-header .menu-toggle { display: none; }
+    body .site-header [data-primary-navigation] { position: static; display: block; visibility: visible; width: auto; padding: 0; border: 0; transform: none; pointer-events: auto; }
+    body .site-header [data-primary-navigation] ul { display: flex; flex-wrap: wrap; }
+    body .site-header [data-primary-navigation] li { grid-area: auto; }
     @media (max-width: 1100px) {
       body .site-header { position: relative; grid-template-columns: 1fr auto; }
-      body .site-header .menu-toggle { display: none; }
       body .site-header .header-cta { grid-column: 2; grid-row: 1; }
-      body .site-header [data-primary-navigation] { display: block; position: static; grid-column: 1 / -1; padding: .5rem 0; border: 0; }
+      body .site-header [data-primary-navigation] { grid-column: 1 / -1; padding: .5rem 0; }
       body .site-header [data-primary-navigation] ul { display: grid; grid-template-columns: 1fr 1fr; }
       body .site-header [data-primary-navigation] a { min-height: 44px; }
     }
@@ -58,6 +67,7 @@ const currentHref = links.filter(link => currentPath === link.href || currentPat
 <script>
   import { initializeHeaderRibbon } from '../scripts/header-ribbon';
   import { initializeIntentMotion } from '../scripts/intent-motion';
+  import { initializeNavMenu } from './nav/nav-menu-controller';
   const disposeIntent = initializeIntentMotion();
   document.addEventListener('astro:before-swap', disposeIntent, {once:true});
   const header = document.querySelector<HTMLElement>('[data-site-header]');
@@ -66,29 +76,7 @@ const currentHref = links.filter(link => currentPath === link.href || currentPat
 
   if (header && toggle && navigation) {
     const disposeRibbon = initializeHeaderRibbon(header, navigation);
-    document.addEventListener('astro:before-swap', disposeRibbon, {once:true});
-    const setOpen = (open: boolean) => {
-      toggle.setAttribute('aria-expanded', String(open));
-      toggle.querySelector('.sr-only')!.textContent = open ? 'Close primary menu' : 'Open primary menu';
-      header.toggleAttribute('data-menu-open', open);
-    };
-
-    toggle.addEventListener('click', () => {
-      const open = toggle.getAttribute('aria-expanded') === 'true';
-      setOpen(!open);
-      if (!open) navigation.querySelector<HTMLAnchorElement>('a')?.focus();
-    });
-    document.addEventListener('keydown', (event) => {
-      if (event.key === 'Escape' && toggle.getAttribute('aria-expanded') === 'true') {
-        setOpen(false);
-        toggle.focus();
-      }
-    });
-    document.addEventListener('click', (event) => {
-      if (!header.contains(event.target as Node)) setOpen(false);
-    });
-    navigation.addEventListener('click', (event) => {
-      if ((event.target as HTMLElement).closest('a')) setOpen(false);
-    });
+    const disposeMenu = initializeNavMenu(header, toggle, navigation);
+    document.addEventListener('astro:before-swap', () => { disposeMenu(); disposeRibbon(); }, {once:true});
   }
 </script>
