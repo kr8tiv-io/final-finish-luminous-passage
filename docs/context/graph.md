@@ -19,7 +19,7 @@ flowchart TD
     step-08["step-08: Handoff + tiers (one owner): mediaOwner via repo"]:::stDone
     step-09["step-09: Gallery owner + production fallback: restore del"]:::stDone
     step-10["step-10: Security and delivery basics: Nodemailer advisor"]:::stDone
-    step-11["step-11: One numbering, one comparison: single chapter nu"]:::stDoing
+    step-11["step-11: One numbering, one comparison: single chapter nu"]:::stDone
     step-12["step-12: Route transitions and island lifecycle: ClientRo"]:::stDoing
   end
   subgraph phase-2["phase-2"]
@@ -287,7 +287,7 @@ flowchart TD
 - **Phase:** phase-1
 - **Tier:** S
 - **Owner(s):** ui
-- **Status:** doing
+- **Status:** done
 - **Files:** index.astro, projects.astro, src/components/projects/*
 - **Inputs (informs):** none recorded
 - **Constraints (locks):** none recorded

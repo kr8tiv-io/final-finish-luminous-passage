@@ -641,7 +641,7 @@
       "id": "step-11",
       "type": "step",
       "title": "One numbering, one comparison: single chapter numbering, single Comparison component",
-      "status": "doing",
+      "status": "done",
       "phase": "phase-1",
       "tier": "S",
       "owner": "ui",
