@@ -46,12 +46,12 @@ flowchart TD
   subgraph phase-4["phase-4"]
     step-29["step-29: Copy pass in Denis voice; complete CLAIMS-LEDGER"]:::stDone
     step-30["step-30: Services as decision pages plus a dedicated Edmo"]:::stDone
-    step-31["step-31: Guides: fix documented contradictions, truthful "]:::stDoing
+    step-31["step-31: Guides: fix documented contradictions, truthful "]:::stDone
     step-32["step-32: Structured data and AI search: Service/LocalBusi"]:::stDone
     step-33["step-33: Resilience pack: webglcontextrestored recovery, "]:::stTodo
   end
   subgraph phase-5["phase-5"]
-    step-34["step-34: Budgets enforced in CI: phone = 0.8MB, desktop ="]:::stTodo
+    step-34["step-34: Budgets enforced in CI: phone = 0.8MB, desktop ="]:::stDoing
     step-35["step-35: Mobile and tablet composition: per-breakpoint re"]:::stTodo
     step-36["step-36: Accessibility: axe on every route, keyboard jour"]:::stTodo
   end
@@ -560,7 +560,7 @@ flowchart TD
 - **Phase:** phase-4
 - **Tier:** S
 - **Owner(s):** ui
-- **Status:** doing
+- **Status:** done
 - **Files:** src/content/resources/*, validate-content.mjs, print css
 - **Inputs (informs):** none recorded
 - **Constraints (locks):** none recorded
@@ -599,7 +599,7 @@ flowchart TD
 - **Phase:** phase-5
 - **Tier:** S
 - **Owner(s):** ui
-- **Status:** todo
+- **Status:** doing
 - **Files:** scripts/measure-delivery.mjs, quality.yml
 - **Inputs (informs):** none recorded
 - **Constraints (locks):** none recorded

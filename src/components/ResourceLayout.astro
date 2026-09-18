@@ -60,7 +60,7 @@ const articleSchema = buildArticleSchema({
     </header>
     <div class="article-grid">
       <aside class="article-rail">
-        <p>Updated<br /><time datetime={data.updatedAt.toISOString()}>{data.updatedAt.toLocaleDateString('en-CA', { dateStyle: 'long' })}</time></p>
+        <p>Updated<br /><time datetime={data.updatedAt.toISOString()}>{data.updatedAt.toLocaleDateString('en-CA', { dateStyle: 'long', timeZone: 'UTC' })}</time></p>
         <a href="/contact#quote">Ask Denis about your floor</a>
       </aside>
       <article class="article-body"><Content />{serviceTurn && <p class="service-turn"><a href={serviceTurn.href}>{serviceTurn.label}</a></p>}</article>
