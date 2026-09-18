@@ -1,0 +1,149 @@
+---
+/**
+ * Spike C — "Find your finish" resin mask (vocabulary id `resin-mask`).
+ * Reference mechanic: Creative Ocean `qBbBLyB` (CONTEXT-SHEET A4b, step 24).
+ *
+ * Self-contained pinned interstitial between the finish-hall chapter and its
+ * reading aside. The poured-resin silhouette is drawn twice — once visible,
+ * once as `<mask id="resin-mask">` content with a white field below it — so a
+ * single tween reveals the statement inside the resin's own edge and resolves
+ * the frame to paper.
+ *
+ * Layer split is deliberate: everything that only translates or fades lives in
+ * GPU-composited HTML behind the SVG; the SVG carries only the mask, the resin
+ * plates and the statement, because that subtree is the one that must
+ * re-rasterise per frame.
+ */
+import '../../styles/resin-reveal.css';
+
+const poster = '/images/brand/epoxy-finish-poster.jpg';
+const registerLabel = 'Flake · Solid · Metallic';
+---
+
+<section class="resin-stage" data-resin-stage aria-labelledby="resin-statement-title">
+  <div class="resin-back" aria-hidden="true">
+    <img
+      class="resin-photo"
+      data-resin-photo
+      src={poster}
+      alt=""
+      width="1280"
+      height="720"
+      loading="lazy"
+      decoding="async"
+    />
+    <div class="resin-veil" data-resin-veil></div>
+    <div class="resin-vignette" data-resin-vignette></div>
+    <p class="resin-numeral" data-resin-numeral>04</p>
+    <div class="resin-register" data-resin-register>
+      <span>{registerLabel}</span>
+      <span>{registerLabel}</span>
+      <span>{registerLabel}</span>
+      <span>{registerLabel}</span>
+    </div>
+  </div>
+
+  <svg
+    class="resin-svg"
+    data-resin-svg
+    viewBox="0 0 1440 900"
+    preserveAspectRatio="xMidYMid slice"
+    aria-hidden="true"
+    focusable="false"
+  >
+    <defs>
+      <linearGradient id="resinUnderFill" data-resin-under-grad gradientUnits="userSpaceOnUse" x1="0" y1="-40" x2="0" y2="260">
+        <stop offset="0" stop-color="#164F83" stop-opacity="0.52" />
+        <stop offset="0.42" stop-color="#164F83" stop-opacity="0.28" />
+        <stop offset="1" stop-color="#17222A" stop-opacity="0" />
+      </linearGradient>
+
+      <linearGradient id="resinBodyFill" data-resin-body-grad gradientUnits="userSpaceOnUse" x1="0" y1="-20" x2="0" y2="200">
+        <stop offset="0" stop-color="#FAF9F6" stop-opacity="0.9" />
+        <stop offset="0.22" stop-color="#d9e3ee" stop-opacity="0.4" />
+        <stop offset="0.6" stop-color="#164F83" stop-opacity="0.12" />
+        <stop offset="1" stop-color="#164F83" stop-opacity="0" />
+      </linearGradient>
+
+      <linearGradient id="resinRimFill" data-resin-rim-grad gradientUnits="userSpaceOnUse" x1="0" y1="-60" x2="0" y2="110">
+        <stop offset="0" stop-color="#FAF9F6" stop-opacity="0" />
+        <stop offset="0.32" stop-color="#FAF9F6" stop-opacity="0.98" />
+        <stop offset="0.5" stop-color="#d9e3ee" stop-opacity="0.7" />
+        <stop offset="0.76" stop-color="#164F83" stop-opacity="0.28" />
+        <stop offset="1" stop-color="#164F83" stop-opacity="0" />
+      </linearGradient>
+
+      <!-- Liquid rim. The region is clamped to the meniscus band by the script so
+           the turbulence never pays for a full-frame rasterisation per scrub frame. -->
+      <filter
+        id="resinLiquid"
+        data-resin-liquid
+        filterUnits="userSpaceOnUse"
+        x="-120"
+        y="-110"
+        width="1680"
+        height="260"
+        color-interpolation-filters="sRGB"
+      >
+        <feTurbulence type="fractalNoise" baseFrequency="0.005 0.022" numOctaves="1" seed="7" result="resinNoise" />
+        <feDisplacementMap in="SourceGraphic" in2="resinNoise" scale="13" xChannelSelector="R" yChannelSelector="G" />
+      </filter>
+
+      <!-- mask-type: alpha is load-bearing, not cosmetic. The default luminance
+           mask makes Chrome run a luminance conversion over the whole mask region
+           every scrub frame and costs a full extra frame at 1440x900; the content
+           is pure white, so alpha is byte-identical and free. -->
+      <mask
+        id="resin-mask"
+        mask-type="alpha"
+        style="mask-type: alpha"
+        maskUnits="userSpaceOnUse"
+        x="-144"
+        y="-540"
+        width="1728"
+        height="2160"
+      >
+        <g class="resin-plate" data-resin-mask-plate>
+          <path data-resin-mask-body fill="#ffffff" d="M0,0 L1440,0 L1440,1080 L0,1080 Z" />
+          <rect data-resin-mask-below fill="#ffffff" x="-115" y="1035" width="1670" height="1980" />
+        </g>
+      </mask>
+    </defs>
+
+    <!-- 1. The under-pour: a second, earlier plate that floods the still first. -->
+    <g class="resin-plate" data-resin-under-plate>
+      <path class="resin-under" data-resin-under d="M0,0 L1440,0 L1440,1080 L0,1080 Z" />
+    </g>
+
+    <!-- 2. Revealed inside the resin silhouette: paper, then the statement. -->
+    <g data-resin-masked mask="url(#resin-mask)">
+      <rect class="resin-paper" data-resin-paper x="-144" y="-540" width="1728" height="2160" />
+      <g class="resin-statement" data-resin-statement>
+        <text class="resin-line" data-resin-line="1" x="96" y="392">Flake, solid,</text>
+        <text class="resin-line" data-resin-line="2" x="96" y="502">or metallic.</text>
+        <line class="resin-rule" data-resin-rule x1="96" y1="540" x2="436" y2="540" />
+        <text class="resin-note" data-resin-note x="96" y="576">Chosen for the room, not a catalogue.</text>
+      </g>
+    </g>
+
+    <!-- 3. The visible resin: gloss body, displaced meniscus, travelling specular. -->
+    <g class="resin-plate" data-resin-gloss-plate>
+      <path class="resin-body" data-resin-body d="M0,0 L1440,0 L1440,1080 L0,1080 Z" />
+      <path class="resin-menisc" data-resin-menisc d="M0,0 L1440,0 L1440,1080 L0,1080 Z" />
+      <path class="resin-spec-soft" data-resin-spec-soft d="M0,0 L1440,0" />
+      <path class="resin-spec" data-resin-spec d="M0,0 L1440,0" />
+    </g>
+  </svg>
+
+  <div class="resin-readable">
+    <p class="resin-readable-kicker">Flake · Solid · Metallic</p>
+    <h3 id="resin-statement-title" class="resin-readable-title">Flake, solid, or metallic.</h3>
+    <p class="resin-readable-note">Chosen for the room, not a catalogue.</p>
+  </div>
+</section>
+
+<script>
+  import { initializeResinReveal } from '../../scripts/resin-reveal';
+
+  initializeResinReveal();
+</script>
