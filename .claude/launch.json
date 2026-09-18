@@ -1,0 +1,27 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "ffe-dev",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "dev", "--", "--host", "127.0.0.1", "--port", "4333"],
+      "port": 4333,
+      "env": {
+        "SITE_ENV": "staging",
+        "PUBLIC_SITE_URL": "http://127.0.0.1:4333"
+      }
+    },
+    {
+      "name": "ffe-built",
+      "runtimeExecutable": "node",
+      "runtimeArgs": ["dist/server/entry.mjs"],
+      "port": 4334,
+      "env": {
+        "SITE_ENV": "staging",
+        "PUBLIC_SITE_URL": "http://127.0.0.1:4334",
+        "HOST": "127.0.0.1",
+        "PORT": "4334"
+      }
+    }
+  ]
+}

@@ -1,0 +1,2308 @@
+{
+  "version": 1,
+  "nodes": [
+    {
+      "id": "S1",
+      "type": "source",
+      "title": "Codex chat: 51 turns + 548 replies",
+      "status": "done"
+    },
+    {
+      "id": "S2",
+      "type": "source",
+      "title": "Antigravity chat + full transcript (24 turns)",
+      "status": "done"
+    },
+    {
+      "id": "S3",
+      "type": "source",
+      "title": "3 research docs (Downloads): copy/SEO framework, demographic profile, market analysis",
+      "status": "done"
+    },
+    {
+      "id": "S4",
+      "type": "source",
+      "title": "Live site truth: finalfinishepoxy.ca + Facebook + Google listing",
+      "status": "done"
+    },
+    {
+      "id": "S5",
+      "type": "source",
+      "title": "Decoded references: jh3y, Creative Ocean, isladjan, Igloo, Resn/Pioneer Corn, Young Multi, gsap.com, Lusion/Oryzo, aurahomes.fun",
+      "status": "done"
+    },
+    {
+      "id": "S6",
+      "type": "source",
+      "title": "G2 code tree + docs + captures (review/cinematic-readability-2026-09-14)",
+      "status": "done"
+    },
+    {
+      "id": "L1",
+      "type": "lock",
+      "title": "Denis locks: (780) 991-1651, finalfinishepoxy@gmail.com; no invented warranty/address/hours/prices/credentials",
+      "status": "done"
+    },
+    {
+      "id": "L2",
+      "type": "lock",
+      "title": "Palette: warm white #FAF9F6, charcoal #17222A, cobalt #164F83, bronze accent",
+      "status": "done"
+    },
+    {
+      "id": "L3",
+      "type": "lock",
+      "title": "Voice: plain, confident, Oxford comma, no exclamation points, no AI cadence",
+      "status": "done"
+    },
+    {
+      "id": "L4",
+      "type": "lock",
+      "title": "Keep the films + scroll-drawn pour; no magnetic buttons; one owner per property",
+      "status": "done"
+    },
+    {
+      "id": "M1",
+      "type": "lock",
+      "title": "Matt gate: Manrope locked (no comp round), still needs a fresh hPanel API token",
+      "status": "doing",
+      "owner": "orchestrator"
+    },
+    {
+      "id": "M2",
+      "type": "lock",
+      "title": "Matt gate: B6 footage policy (no new/paid footage) and B9 host path (Hostinger Node app, temp subdomain)",
+      "status": "done",
+      "owner": "orchestrator"
+    },
+    {
+      "id": "D1",
+      "type": "lock",
+      "title": "Denis gate: before/after pair approvals from the Phase 0 approval pack",
+      "status": "todo",
+      "owner": "orchestrator"
+    },
+    {
+      "id": "B1",
+      "type": "decision",
+      "title": "Base tree = G2 (review/cinematic-readability-2026-09-14); G3 archived to C:\\workspace\\_archive\\final-finish-epoxy-antigravity-2026-09-18; branch experience/awwwards-2026-09",
+      "status": "done"
+    },
+    {
+      "id": "B2",
+      "type": "decision",
+      "title": "Harvest table from G1 and G3 onto G2, recorded in docs/context/HARVEST.md",
+      "status": "done"
+    },
+    {
+      "id": "B3",
+      "type": "decision",
+      "title": "Keep and extend G2 architecture: native scroll, single journeyDirector owner, veil as transition overlay, one layout-level canvas with drei <View>s",
+      "status": "todo"
+    },
+    {
+      "id": "B4",
+      "type": "decision",
+      "title": "Tiers full/balanced/still from one pure resolver; touch never drops below balanced; Save-Data/2g/reduced-motion -> still",
+      "status": "todo"
+    },
+    {
+      "id": "B5",
+      "type": "decision",
+      "title": "Manrope only, locked. No comp round, no paid fonts",
+      "status": "done"
+    },
+    {
+      "id": "B6",
+      "type": "decision",
+      "title": "No new or paid footage; pearl-grade the existing walkway film and/or 2.5D depth-parallax from stills for the stair chapter",
+      "status": "done"
+    },
+    {
+      "id": "B7",
+      "type": "decision",
+      "title": "Before/after: 15-19 curated pairs, jh3y cylinder gallery with front-card slider, native snap ribbon on phones",
+      "status": "todo"
+    },
+    {
+      "id": "B8",
+      "type": "decision",
+      "title": "SEO/AI-SEO: no blog generator, real schema, llms.txt/llms-full.txt, ClientRouter route transitions",
+      "status": "todo"
+    },
+    {
+      "id": "B9",
+      "type": "decision",
+      "title": "Host = Hostinger Node app on a fresh temp subdomain via hosting_deployJsApplication; VPS Docker+Caddy is the later production option",
+      "status": "todo"
+    },
+    {
+      "id": "B10",
+      "type": "decision",
+      "title": "Orchestration via the Workflow tool, one workflow per phase, worktree isolation for parallel sets, auditor loop until two dry rounds",
+      "status": "todo"
+    },
+    {
+      "id": "B11",
+      "type": "decision",
+      "title": "Copy in Denis voice; every claim traceable in docs/context/CLAIMS-LEDGER.md to A8 or to Denis; warranty.astro stays",
+      "status": "doing"
+    },
+    {
+      "id": "asset-film-pour",
+      "type": "asset",
+      "title": "Film: epoxy-pour(-pearl).mp4, 480/720/1080 encodes",
+      "status": "done",
+      "files": [
+        "public/videos/follow-floor/480/epoxy-pour-pearl.mp4",
+        "public/videos/follow-floor/720/epoxy-pour-pearl.mp4",
+        "public/videos/follow-floor/1080/epoxy-pour-pearl.mp4"
+      ]
+    },
+    {
+      "id": "asset-film-walkway-g2",
+      "type": "asset",
+      "title": "Film: epoxy-walkway.mp4 (G2, current stair asset base)",
+      "status": "done",
+      "files": [
+        "public/videos/follow-floor/480/epoxy-walkway.mp4"
+      ]
+    },
+    {
+      "id": "asset-film-walkway-g1",
+      "type": "asset",
+      "title": "Film: epoxy-walkway.mp4 (G1 source, real camera walk, harvested for pearl-grade)",
+      "status": "done",
+      "files": [
+        "C:/Users/lucid/Documents/Codex/2026-08-31/the-subsequent-information-relates-to-this/work/final-finish-epoxy/public/videos/epoxy-walkway.mp4"
+      ]
+    },
+    {
+      "id": "asset-film-mancave-g1",
+      "type": "asset",
+      "title": "Film: epoxy-mancave.mp4 (G1 source, glass-mancave scene, harvested for Step 22)",
+      "status": "done",
+      "files": [
+        "C:/Users/lucid/Documents/Codex/2026-08-31/the-subsequent-information-relates-to-this/work/final-finish-epoxy/public/videos/epoxy-mancave.mp4"
+      ]
+    },
+    {
+      "id": "asset-film-garage",
+      "type": "asset",
+      "title": "Film: epoxy-garage.mp4, 480/720 encodes",
+      "status": "done",
+      "files": [
+        "public/videos/follow-floor/480/epoxy-garage.mp4"
+      ]
+    },
+    {
+      "id": "asset-film-basement",
+      "type": "asset",
+      "title": "Film: epoxy-basement.mp4, 480/720 encodes",
+      "status": "done",
+      "files": [
+        "public/videos/follow-floor/480/epoxy-basement.mp4"
+      ]
+    },
+    {
+      "id": "asset-film-finish",
+      "type": "asset",
+      "title": "Film: epoxy-finish.mp4, 480/720 encodes",
+      "status": "done",
+      "files": [
+        "public/videos/follow-floor/480/epoxy-finish.mp4"
+      ]
+    },
+    {
+      "id": "asset-film-consultation",
+      "type": "asset",
+      "title": "Film: epoxy-consultation.mp4",
+      "status": "done",
+      "files": [
+        "public/videos/follow-floor/480/epoxy-consultation.mp4"
+      ]
+    },
+    {
+      "id": "asset-still-pearl-stair",
+      "type": "asset",
+      "title": "Still: pearl-stair-v2.{avif,webp,jpg}, 1672x941, AI still edit, no Blender scene",
+      "status": "done",
+      "files": [
+        "public/images/brand/pearl-stair-v2.jpg"
+      ]
+    },
+    {
+      "id": "asset-photos-project-pairs",
+      "type": "asset",
+      "title": "96 project photo originals (LFS) + 384 derivatives + provenance",
+      "status": "done",
+      "files": [
+        "src/data/project-photo-pairs.json",
+        "docs/project-pair-approval-queue.md"
+      ]
+    },
+    {
+      "id": "asset-glb-luminous-passage",
+      "type": "asset",
+      "title": "3D: luminous-passage-*.glb (2.2MB, unused)",
+      "status": "done",
+      "files": [
+        "public/3d/luminous-passage-hero.glb"
+      ]
+    },
+    {
+      "id": "asset-glb-threshold",
+      "type": "asset",
+      "title": "3D: follow-floor-threshold/scene.glb (dev study)",
+      "status": "done",
+      "files": [
+        "public/scenes/follow-floor-threshold/scene.glb"
+      ]
+    },
+    {
+      "id": "asset-reviews-customer-proof",
+      "type": "asset",
+      "title": "Reviews: customer-proof.json (17 excerpts, 5.0/30 verified 2026-09-09, expires 2026-10-09)",
+      "status": "done",
+      "files": [
+        "src/data/customer-proof.json"
+      ]
+    },
+    {
+      "id": "asset-reviews-google",
+      "type": "asset",
+      "title": "Reviews: google-reviews.json (30 entries feeding ProofConsult.astro)",
+      "status": "done",
+      "files": [
+        "src/data/google-reviews.json"
+      ]
+    },
+    {
+      "id": "asset-guides-50",
+      "type": "asset",
+      "title": "Content: 50 SEO guides",
+      "status": "done",
+      "files": [
+        "src/content/resources"
+      ]
+    },
+    {
+      "id": "asset-areas-7",
+      "type": "asset",
+      "title": "Content: 7 area pages (city-substitution, open item)",
+      "status": "done",
+      "files": [
+        "src/data/areas.ts"
+      ]
+    },
+    {
+      "id": "asset-services-4",
+      "type": "asset",
+      "title": "Content: 4 service pages",
+      "status": "done",
+      "files": [
+        "src/pages/services"
+      ]
+    },
+    {
+      "id": "orchestrator",
+      "type": "agent",
+      "title": "Orchestrator (Fable 5.1) — art direction, contracts, graph, briefs, merges, approvals",
+      "status": "todo"
+    },
+    {
+      "id": "auditor",
+      "type": "agent",
+      "title": "Auditor (Fable, max) — read-only review, blind pairwise setup, one bounded polish batch",
+      "status": "todo"
+    },
+    {
+      "id": "motion-a",
+      "type": "agent",
+      "title": "Motion engineer A (Opus, xhigh) — FilmVeil.tsx, journey-media.ts, journey-transitions.ts, journey-director.ts, JourneyMotion.tsx",
+      "status": "todo"
+    },
+    {
+      "id": "motion-b",
+      "type": "agent",
+      "title": "Motion engineer B (Opus, xhigh) — TransformationGallery*, nav/*, SurfaceCanvas.tsx (after 15), StairAscent.tsx",
+      "status": "todo"
+    },
+    {
+      "id": "motion-c",
+      "type": "agent",
+      "title": "Motion engineer C (Opus, high) — steps 12, 19, 24, 35",
+      "status": "todo"
+    },
+    {
+      "id": "ui",
+      "type": "agent",
+      "title": "UI / content builders (Sonnet, medium) — mechanical-adjacent build, content, SEO, ledger, tests",
+      "status": "todo"
+    },
+    {
+      "id": "mechanical",
+      "type": "agent",
+      "title": "Mechanical (Haiku, low) — moves, encodes, upscales, manifests, captures",
+      "status": "todo"
+    },
+    {
+      "id": "verifier",
+      "type": "agent",
+      "title": "Verifiers (Opus, high) — re-run gates after auditor polish; never certify their own work",
+      "status": "todo"
+    },
+    {
+      "id": "artifact-context-sheet",
+      "type": "artifact",
+      "title": "docs/context/CONTEXT-SHEET.md",
+      "status": "done",
+      "files": [
+        "docs/context/CONTEXT-SHEET.md"
+      ]
+    },
+    {
+      "id": "artifact-harvest",
+      "type": "artifact",
+      "title": "docs/context/HARVEST.md",
+      "status": "done",
+      "files": [
+        "docs/context/HARVEST.md"
+      ]
+    },
+    {
+      "id": "artifact-motion-vocab",
+      "type": "artifact",
+      "title": "docs/context/MOTION-VOCABULARY.md (stub)",
+      "status": "done",
+      "files": [
+        "docs/context/MOTION-VOCABULARY.md"
+      ]
+    },
+    {
+      "id": "artifact-claims-ledger",
+      "type": "artifact",
+      "title": "docs/context/CLAIMS-LEDGER.md (stub)",
+      "status": "done",
+      "files": [
+        "docs/context/CLAIMS-LEDGER.md"
+      ]
+    },
+    {
+      "id": "artifact-graph",
+      "type": "artifact",
+      "title": "docs/context/graph.json + graph.md",
+      "status": "done",
+      "files": [
+        "docs/context/graph.json",
+        "docs/context/graph.md"
+      ]
+    },
+    {
+      "id": "artifact-claude-md",
+      "type": "artifact",
+      "title": "CLAUDE.md / AGENTS.md project brief",
+      "status": "done",
+      "files": [
+        "CLAUDE.md",
+        "AGENTS.md"
+      ]
+    },
+    {
+      "id": "step-01",
+      "type": "step",
+      "title": "Move G3 to archive; save reference patch; write HARVEST.md",
+      "status": "done",
+      "phase": "phase-0",
+      "tier": "H move, S harvest doc",
+      "owner": "mechanical,ui",
+      "files": [
+        "C:/workspace",
+        "docs/context/HARVEST.md"
+      ]
+    },
+    {
+      "id": "gate-01",
+      "type": "gate",
+      "title": "Folder moved; patch saved; HARVEST.md lists every B2 keep/drop with source paths.",
+      "status": "todo"
+    },
+    {
+      "id": "step-02",
+      "type": "step",
+      "title": "Fresh clone into C:\\workspace\\final-finish-epoxy; checkout G2; branch experience/awwwards-2026-09; npm ci",
+      "status": "done",
+      "phase": "phase-0",
+      "tier": "S",
+      "owner": "ui",
+      "files": [
+        "repo"
+      ]
+    },
+    {
+      "id": "gate-02",
+      "type": "gate",
+      "title": "src/** hash-diff vs worktree = 0; 96 originals + 384 variants decode; check/test(191)/build:staging green.",
+      "status": "todo"
+    },
+    {
+      "id": "step-03",
+      "type": "step",
+      "title": "Context layer: CONTEXT-SHEET.md, graph.json/graph.md, MOTION-VOCABULARY.md and CLAIMS-LEDGER.md stubs, ownership matrix, replace CLAUDE.md/AGENTS.md",
+      "status": "doing",
+      "phase": "phase-0",
+      "tier": "S",
+      "owner": "ui",
+      "files": [
+        "docs/context/*",
+        "CLAUDE.md",
+        "AGENTS.md"
+      ]
+    },
+    {
+      "id": "gate-03",
+      "type": "gate",
+      "title": "Files present; CLAUDE.md < 200 lines; every \"do not\" from continue.md carried over.",
+      "status": "todo"
+    },
+    {
+      "id": "step-04",
+      "type": "step",
+      "title": "Tooling + harness: GSAP skills, Astro docs MCP, Context7, capture-journey.mjs + measure-delivery.mjs baseline",
+      "status": "todo",
+      "phase": "phase-0",
+      "tier": "S",
+      "owner": "ui",
+      "files": [
+        "scripts/",
+        ".mcp.json"
+      ]
+    },
+    {
+      "id": "gate-04",
+      "type": "gate",
+      "title": "output/baseline/ holds captures + JSON for all chapters at three widths.",
+      "status": "todo"
+    },
+    {
+      "id": "step-05",
+      "type": "step",
+      "title": "Dev contract: port 4333, SITE_ENV=staging, serial Playwright, built app on 4334",
+      "status": "todo",
+      "phase": "phase-0",
+      "tier": "H",
+      "owner": "mechanical",
+      "files": [
+        ".claude/launch.json",
+        "README"
+      ]
+    },
+    {
+      "id": "gate-05",
+      "type": "gate",
+      "title": "Preview visible in the built-in browser; pour scrubs with scroll.",
+      "status": "todo"
+    },
+    {
+      "id": "step-06",
+      "type": "step",
+      "title": "Start the slow human gate: Denis approval pack for 23 gallery rows",
+      "status": "todo",
+      "phase": "phase-0",
+      "tier": "H pack, S captions",
+      "owner": "mechanical,ui",
+      "files": [
+        "docs/approvals/2026-09-project-pairs.md",
+        "scripts/build-approval-pack.mjs"
+      ]
+    },
+    {
+      "id": "gate-06",
+      "type": "gate",
+      "title": "Pack has >= 15 candidate pairs; Matt confirms it was sent.",
+      "status": "todo"
+    },
+    {
+      "id": "step-07",
+      "type": "step",
+      "title": "Dead-code sweep + harvest port (FinishOrbit, word-reveal vocab id, rail-station data)",
+      "status": "todo",
+      "phase": "phase-1",
+      "tier": "S",
+      "owner": "ui",
+      "files": [
+        "src/**",
+        "public/videos",
+        "package.json",
+        "scripts/grade-pearl-pour.mjs"
+      ]
+    },
+    {
+      "id": "gate-07",
+      "type": "gate",
+      "title": "Tests green; 0 console errors; poster/frame-0 pixel diff < 1%; every HARVEST keeper ported or assigned to a later step.",
+      "status": "todo"
+    },
+    {
+      "id": "step-08",
+      "type": "step",
+      "title": "Handoff + tiers (one owner): mediaOwner via reportVeil, single canvas-opacity writer, tier resolver, retire .journey-rail",
+      "status": "todo",
+      "phase": "phase-1",
+      "tier": "O+",
+      "owner": "motion-a",
+      "files": [
+        "journey-director.ts",
+        "JourneyMotion.tsx",
+        "FilmVeil.tsx",
+        "journey-media.ts",
+        "journey-controls.ts",
+        "FilmVeilLoader.tsx",
+        "journey.css",
+        "readable-experience.css"
+      ]
+    },
+    {
+      "id": "gate-08",
+      "type": "gate",
+      "title": "boundaries.spec: all seven boundaries at p in {.05,.25,.5,.75,.95} forward+reverse, pixelmatch < 2%, no all-paper frame; iPhone shows balanced tier.",
+      "status": "todo"
+    },
+    {
+      "id": "step-09",
+      "type": "step",
+      "title": "Gallery owner + production fallback: restore deleted desktop assertions, rejected admission state, never-empty fallback",
+      "status": "todo",
+      "phase": "phase-1",
+      "tier": "O",
+      "owner": "motion-b",
+      "files": [
+        "TransformationGallery.tsx",
+        "transformation-gallery.ts",
+        "src/lib/projects/gallery.ts",
+        "src/data/transformation-gallery.ts",
+        "projects.spec.ts"
+      ]
+    },
+    {
+      "id": "gate-09",
+      "type": "gate",
+      "title": "Both assertions green 3 serial runs; production build never renders the empty-state message.",
+      "status": "todo"
+    },
+    {
+      "id": "step-10",
+      "type": "step",
+      "title": "Security and delivery basics: Nodemailer advisory fix, same-origin quote API, CSP headers, expiry CI check",
+      "status": "todo",
+      "phase": "phase-1",
+      "tier": "S",
+      "owner": "ui",
+      "files": [
+        "package.json",
+        "api/quote.ts",
+        "src/middleware.ts",
+        "test/"
+      ]
+    },
+    {
+      "id": "gate-10",
+      "type": "gate",
+      "title": "npm audit --omit=dev clean; header tests; expiry test.",
+      "status": "todo"
+    },
+    {
+      "id": "step-11",
+      "type": "step",
+      "title": "One numbering, one comparison: single chapter numbering, single Comparison component",
+      "status": "todo",
+      "phase": "phase-1",
+      "tier": "S",
+      "owner": "ui",
+      "files": [
+        "index.astro",
+        "projects.astro",
+        "src/components/projects/*"
+      ]
+    },
+    {
+      "id": "gate-11",
+      "type": "gate",
+      "title": "e2e asserts the sequence; one --reveal semantic in the codebase.",
+      "status": "todo"
+    },
+    {
+      "id": "step-12",
+      "type": "step",
+      "title": "Route transitions and island lifecycle: <ClientRouter />, teardown on astro:before-swap, page-wipe transition",
+      "status": "todo",
+      "phase": "phase-1",
+      "tier": "O",
+      "owner": "motion-c",
+      "files": [
+        "BaseLayout.astro",
+        "SiteHeader.astro",
+        "motion loaders"
+      ]
+    },
+    {
+      "id": "gate-12",
+      "type": "gate",
+      "title": "e2e: navigate home -> services -> back twice, 0 console errors, 0 duplicate ScrollTriggers, no white flash frame.",
+      "status": "todo"
+    },
+    {
+      "id": "step-13",
+      "type": "step",
+      "title": "Manrope refinement: tokens, scale, leading, tracking, preload variable woff2, subset to Latin",
+      "status": "todo",
+      "phase": "phase-2",
+      "tier": "S",
+      "owner": "ui",
+      "files": [
+        "readable-experience.css",
+        "BaseLayout.astro"
+      ]
+    },
+    {
+      "id": "gate-13",
+      "type": "gate",
+      "title": "Tokens committed; no re-split in font-throttled capture; contrast >= 4.5:1; font transfer <= 60KB.",
+      "status": "todo"
+    },
+    {
+      "id": "step-14",
+      "type": "step",
+      "title": "MOTION-VOCABULARY.md: complete every id with duration/ease/reduced-motion/reference",
+      "status": "todo",
+      "phase": "phase-2",
+      "tier": "O",
+      "owner": "orchestrator",
+      "files": [
+        "docs/context/MOTION-VOCABULARY.md"
+      ]
+    },
+    {
+      "id": "gate-14",
+      "type": "gate",
+      "title": "context-graph.mjs validates every id has duration, ease, reduced-motion equivalent, reference; later motion steps cite ids.",
+      "status": "todo"
+    },
+    {
+      "id": "step-15",
+      "type": "step",
+      "title": "GSAP consolidation + layout canvas: one plugin registration, useGSAP, matchMedia, layout-level SurfaceCanvas with <View>s",
+      "status": "todo",
+      "phase": "phase-2",
+      "tier": "O",
+      "owner": "motion-a",
+      "files": [
+        "gsap-kit.ts",
+        "EditorialMotion.tsx",
+        "SurfaceCanvas.tsx",
+        "FilmVeil.tsx",
+        "BaseLayout.astro"
+      ]
+    },
+    {
+      "id": "gate-15",
+      "type": "gate",
+      "title": "document.querySelectorAll(\"canvas\").length === 1 on every route; Step 8 boundary spec still green.",
+      "status": "todo"
+    },
+    {
+      "id": "step-16",
+      "type": "step",
+      "title": "Surfaces: paper/ink/cobalt/bronze tokens, per-chapter reading zones, measure-contrast.mjs",
+      "status": "todo",
+      "phase": "phase-2",
+      "tier": "S script, O zones",
+      "owner": "ui",
+      "files": [
+        "journey-manifest.ts",
+        "scripts/measure-contrast.mjs",
+        "css"
+      ]
+    },
+    {
+      "id": "gate-16",
+      "type": "gate",
+      "title": "Body >= 4.5:1 and headings >= 3:1 for every chapter at 390/768/1440, or paper wash present.",
+      "status": "todo"
+    },
+    {
+      "id": "step-17",
+      "type": "step",
+      "title": "Opening: keep pearl pour scrub, add 1080 source, refine resin-wipe, hero type per vocabulary, poster is LCP",
+      "status": "todo",
+      "phase": "phase-3",
+      "tier": "O",
+      "owner": "motion-a",
+      "files": [
+        "index.astro",
+        "FilmVeil.tsx mode 3",
+        "journey-transitions.ts"
+      ]
+    },
+    {
+      "id": "gate-17",
+      "type": "gate",
+      "title": "video.currentTime monotonic over 20 samples; LCP element = .pour-poster; CLS sum < .02; boundary spec green.",
+      "status": "todo"
+    },
+    {
+      "id": "step-18",
+      "type": "step",
+      "title": "3D navigation: full-screen menu, Flip transitions over a live floor plane, harvested chapter-station rail",
+      "status": "todo",
+      "phase": "phase-3",
+      "tier": "O+",
+      "owner": "motion-b",
+      "files": [
+        "src/components/nav/*",
+        "SiteHeader.astro",
+        "header-ribbon.ts",
+        "SurfaceCanvas.tsx"
+      ]
+    },
+    {
+      "id": "gate-18",
+      "type": "gate",
+      "title": "p95 click->menu-open->next rAF <= 300ms over five opens at CPU x4; one canvas per route; axe clean; works after context loss.",
+      "status": "todo"
+    },
+    {
+      "id": "step-19",
+      "type": "step",
+      "title": "Social proof after the pour: scroll-linked review gallery, alternating-direction arrivals, freshness check",
+      "status": "todo",
+      "phase": "phase-3",
+      "tier": "O motion, S data",
+      "owner": "motion-c,ui",
+      "files": [
+        "SocialProof.astro",
+        "EditorialMotion.tsx",
+        "customer-proof.json"
+      ]
+    },
+    {
+      "id": "gate-19",
+      "type": "gate",
+      "title": "max(h)-min(h) <= 1px across .review-card at 320/768/1440; e2e; freshness check.",
+      "status": "todo"
+    },
+    {
+      "id": "step-20",
+      "type": "step",
+      "title": "Stair chapter: pearl-grade walkway film (A) vs 2.5D depth-parallax (B), Matt picks from side-by-side",
+      "status": "todo",
+      "phase": "phase-3",
+      "tier": "O+ (spike first)",
+      "owner": "motion-b,mechanical",
+      "files": [
+        "scripts/grade-stair-walk.mjs",
+        "StairAscent.tsx",
+        "DepthPlate.tsx",
+        "journey-film-timing.ts",
+        "assets/stair/"
+      ]
+    },
+    {
+      "id": "gate-20",
+      "type": "gate",
+      "title": "A: speckle luminance variance reduced >= 50%; B: riser-crop SSIM >= .85, holes < .01%; side-by-side reviewed by Matt.",
+      "status": "todo"
+    },
+    {
+      "id": "step-21",
+      "type": "step",
+      "title": "Preparation cutaway: layered illustrative diagram with staggered scrub lags (isladjan)",
+      "status": "todo",
+      "phase": "phase-3",
+      "tier": "S",
+      "owner": "ui",
+      "files": [
+        "src/components/home/PreparationLayers.astro"
+      ]
+    },
+    {
+      "id": "gate-21",
+      "type": "gate",
+      "title": "Reduced-motion static version; axe clean; capture; no invented thicknesses.",
+      "status": "todo"
+    },
+    {
+      "id": "step-22",
+      "type": "step",
+      "title": "Reclaim your garage or basement: garage, basement, harvested glass-mancave film, fold-and-shoot-left",
+      "status": "todo",
+      "phase": "phase-3",
+      "tier": "S copy, O motion",
+      "owner": "motion-a",
+      "files": [
+        "index.astro",
+        "journey-transitions.ts",
+        "FilmVeil.tsx (after 17)",
+        "public/videos/follow-floor/*/epoxy-mancave.mp4",
+        "copy"
+      ]
+    },
+    {
+      "id": "gate-22",
+      "type": "gate",
+      "title": "Boundary spec green for garage:vault and vault:mancave; copy passes the ledger; capture.",
+      "status": "todo"
+    },
+    {
+      "id": "step-23",
+      "type": "step",
+      "title": "See the difference: pin the inner passage, jh3y CSS cylinder, front-card slider, native snap ribbon fallback",
+      "status": "todo",
+      "phase": "phase-3",
+      "tier": "O+",
+      "owner": "motion-b",
+      "files": [
+        "TransformationGallery.tsx",
+        "css",
+        "transformation-gallery.ts"
+      ]
+    },
+    {
+      "id": "gate-23",
+      "type": "gate",
+      "title": "Step 9 assertions green; exactly one ScrollTrigger inside #proof; layout-shift sum < .02; drag never rotates cylinder.",
+      "status": "todo"
+    },
+    {
+      "id": "step-24",
+      "type": "step",
+      "title": "Epoxy layer-mask headline (Creative Ocean): resin alpha plate as layer + mask",
+      "status": "todo",
+      "phase": "phase-3",
+      "tier": "O",
+      "owner": "motion-c",
+      "files": [
+        "headline-motion.ts",
+        "src/components/motion/ResinMask.astro",
+        "JourneyMotion.tsx (after 8)"
+      ]
+    },
+    {
+      "id": "gate-24",
+      "type": "gate",
+      "title": "aria-safe; 60fps in capture trace; reduced-motion shows the settled heading.",
+      "status": "todo"
+    },
+    {
+      "id": "step-25",
+      "type": "step",
+      "title": "Finish alcove and visualizer: entrance from finish chapter, env map + flake sparkle, mobile editor gaps closed",
+      "status": "todo",
+      "phase": "phase-3",
+      "tier": "O",
+      "owner": "ui",
+      "files": [
+        "src/components/visualizer/*"
+      ]
+    },
+    {
+      "id": "gate-25",
+      "type": "gate",
+      "title": "Visualizer e2e; phone capture; no network calls without consent.",
+      "status": "todo"
+    },
+    {
+      "id": "step-26",
+      "type": "step",
+      "title": "Commercial chapter: poster becomes a DepthPlate with aperture in",
+      "status": "todo",
+      "phase": "phase-3",
+      "tier": "S",
+      "owner": "ui,motion-b",
+      "files": [
+        "index.astro",
+        "DepthPlate.tsx"
+      ]
+    },
+    {
+      "id": "gate-26",
+      "type": "gate",
+      "title": "Capture; ledger.",
+      "status": "todo"
+    },
+    {
+      "id": "step-27",
+      "type": "step",
+      "title": "Consultation: single poster, wash only behind words, three-stage form",
+      "status": "todo",
+      "phase": "phase-3",
+      "tier": "S",
+      "owner": "ui",
+      "files": [
+        "index.astro",
+        "QuoteForm.tsx",
+        "src/pages/privacy.astro"
+      ]
+    },
+    {
+      "id": "gate-27",
+      "type": "gate",
+      "title": "routes.spec quote flow green; capture.",
+      "status": "todo"
+    },
+    {
+      "id": "step-28",
+      "type": "step",
+      "title": "Micro-interactions and grade: hover vocabulary site-wide, disappearing chrome, logo-trace preloader, filmic grade",
+      "status": "todo",
+      "phase": "phase-3",
+      "tier": "S hover, O grade",
+      "owner": "motion-a",
+      "files": [
+        "intent-motion.ts",
+        "header-ribbon.ts (after 18)",
+        "FilmVeil.tsx (after 22)",
+        "src/components/Preloader.astro"
+      ]
+    },
+    {
+      "id": "gate-28",
+      "type": "gate",
+      "title": "No hover moves a hit target; preloader absent on repeat visits and never delays LCP; auditor review.",
+      "status": "todo"
+    },
+    {
+      "id": "step-29",
+      "type": "step",
+      "title": "Copy pass in Denis voice; complete CLAIMS-LEDGER.md; resolve \"Tadic\"; use two-day/photo-estimate facts",
+      "status": "todo",
+      "phase": "phase-4",
+      "tier": "O writing, S ledger",
+      "owner": "ui",
+      "files": [
+        "pages",
+        "docs/context/CLAIMS-LEDGER.md"
+      ]
+    },
+    {
+      "id": "gate-29",
+      "type": "gate",
+      "title": "Ledger complete; grep finds no competitor names/numbers and no unsourced claim; readability review.",
+      "status": "todo"
+    },
+    {
+      "id": "step-30",
+      "type": "step",
+      "title": "Services as decision pages plus a dedicated Edmonton garage floor page; areas consolidation + 301s",
+      "status": "todo",
+      "phase": "phase-4",
+      "tier": "S",
+      "owner": "ui",
+      "files": [
+        "src/pages/services/*",
+        "src/pages/areas/*",
+        "src/middleware.ts"
+      ]
+    },
+    {
+      "id": "gate-30",
+      "type": "gate",
+      "title": "Content tests; redirects tested; no two pages differ only by city name.",
+      "status": "todo"
+    },
+    {
+      "id": "step-31",
+      "type": "step",
+      "title": "Guides: fix documented contradictions, truthful dates, OG images, related links, print stylesheet",
+      "status": "todo",
+      "phase": "phase-4",
+      "tier": "S",
+      "owner": "ui",
+      "files": [
+        "src/content/resources/*",
+        "validate-content.mjs",
+        "print css"
+      ]
+    },
+    {
+      "id": "gate-31",
+      "type": "gate",
+      "title": "validate-content green; no \"draft\" text in published bodies; print preview capture.",
+      "status": "todo"
+    },
+    {
+      "id": "step-32",
+      "type": "step",
+      "title": "Structured data and AI search: Service/LocalBusiness/BreadcrumbList/Article, llms.txt, 404.astro",
+      "status": "todo",
+      "phase": "phase-4",
+      "tier": "S",
+      "owner": "ui",
+      "files": [
+        "BaseLayout.astro",
+        "ResourceLayout.astro",
+        "scripts/build-llms.mjs",
+        "public/"
+      ]
+    },
+    {
+      "id": "gate-32",
+      "type": "gate",
+      "title": "Google Rich Results test passes; seo.spec extended; 404 renders with nav.",
+      "status": "todo"
+    },
+    {
+      "id": "step-33",
+      "type": "step",
+      "title": "Resilience pack: webglcontextrestored recovery, 2g -> still, bfcache test, analytics decision recorded",
+      "status": "todo",
+      "phase": "phase-4",
+      "tier": "S",
+      "owner": "ui",
+      "files": [
+        "SurfaceCanvas.tsx",
+        "loaders",
+        "docs/context/DECISIONS.md"
+      ]
+    },
+    {
+      "id": "gate-33",
+      "type": "gate",
+      "title": "loseContext/restoreContext e2e passes; 2g emulation lands in still with full narrative; decision recorded.",
+      "status": "todo"
+    },
+    {
+      "id": "step-34",
+      "type": "step",
+      "title": "Budgets enforced in CI: phone <= 0.8MB, desktop <= 5MB, LCP <= 2.5s, CLS < .02, INP <= 200ms",
+      "status": "todo",
+      "phase": "phase-5",
+      "tier": "S",
+      "owner": "ui",
+      "files": [
+        "scripts/measure-delivery.mjs",
+        "quality.yml"
+      ]
+    },
+    {
+      "id": "gate-34",
+      "type": "gate",
+      "title": "JSON under thresholds on the built app at 4334, desktop and phone projects.",
+      "status": "todo"
+    },
+    {
+      "id": "step-35",
+      "type": "step",
+      "title": "Mobile and tablet composition: per-breakpoint reading zones, iOS Safari rules, touch -> balanced",
+      "status": "todo",
+      "phase": "phase-5",
+      "tier": "O",
+      "owner": "motion-c",
+      "files": [
+        "readable-experience.css",
+        "journey-manifest.ts"
+      ]
+    },
+    {
+      "id": "gate-35",
+      "type": "gate",
+      "title": "Captures on iPhone 15 Pro, Pixel 7, iPad emulation; Matt real-iPhone check recorded.",
+      "status": "todo"
+    },
+    {
+      "id": "step-36",
+      "type": "step",
+      "title": "Accessibility: axe on every route, keyboard journey, reduced-motion parity, sampled-frame contrast",
+      "status": "todo",
+      "phase": "phase-5",
+      "tier": "S",
+      "owner": "ui",
+      "files": [
+        "tests/e2e/accessibility.spec.ts"
+      ]
+    },
+    {
+      "id": "gate-36",
+      "type": "gate",
+      "title": "0 violations; keyboard video.",
+      "status": "todo"
+    },
+    {
+      "id": "step-37",
+      "type": "step",
+      "title": "Auditor loop: blind pairwise review by three Opus reviewers, contested-finding refute pass, verifier re-run",
+      "status": "todo",
+      "phase": "phase-6",
+      "tier": "F auditor, O reviewers/verifier",
+      "owner": "auditor,verifier",
+      "files": [
+        "docs/audits/2026-09-*.md"
+      ]
+    },
+    {
+      "id": "gate-37",
+      "type": "gate",
+      "title": "Candidate wins >= 7 of 8 criteria with >= 2/3 agreement; 0 critical findings; all gates green in one serial run.",
+      "status": "todo"
+    },
+    {
+      "id": "step-38",
+      "type": "step",
+      "title": "Staging on Hostinger (Matt token): Path A VPS or Path B hosting_deployJsApplication, SITE_ENV=staging noindex",
+      "status": "todo",
+      "phase": "phase-6",
+      "tier": "S + me",
+      "owner": "ui",
+      "files": [
+        "Dockerfile/Caddyfile or MCP deploy"
+      ]
+    },
+    {
+      "id": "gate-38",
+      "type": "gate",
+      "title": "Staging renders; quote email received; robots.txt disallows; PSI mobile >= 80.",
+      "status": "todo"
+    },
+    {
+      "id": "step-39",
+      "type": "step",
+      "title": "GitHub: push branch, PR to main with README rebuilt from real captures; make stray public repo private",
+      "status": "todo",
+      "phase": "phase-6",
+      "tier": "S",
+      "owner": "ui",
+      "files": [
+        "repo",
+        "README.md"
+      ]
+    },
+    {
+      "id": "gate-39",
+      "type": "gate",
+      "title": "PR open; README images render.",
+      "status": "todo"
+    },
+    {
+      "id": "step-40",
+      "type": "step",
+      "title": "Handoff: HANDOFF.md, CUTOVER.md, vault log bullets, memory update, Matt desktop + real-iPhone checklist",
+      "status": "todo",
+      "phase": "phase-6",
+      "tier": "S",
+      "owner": "ui",
+      "files": [
+        "docs/HANDOFF.md",
+        "docs/CUTOVER.md",
+        "vault"
+      ]
+    },
+    {
+      "id": "gate-40",
+      "type": "gate",
+      "title": "Matt sign-off on staging before any cutover step runs.",
+      "status": "todo"
+    }
+  ],
+  "edges": [
+    {
+      "from": "gate-01",
+      "to": "step-01",
+      "type": "verifies"
+    },
+    {
+      "from": "step-01",
+      "to": "mechanical",
+      "type": "owned_by"
+    },
+    {
+      "from": "step-01",
+      "to": "ui",
+      "type": "owned_by"
+    },
+    {
+      "from": "gate-02",
+      "to": "step-02",
+      "type": "verifies"
+    },
+    {
+      "from": "step-02",
+      "to": "ui",
+      "type": "owned_by"
+    },
+    {
+      "from": "step-02",
+      "to": "step-01",
+      "type": "depends_on"
+    },
+    {
+      "from": "gate-03",
+      "to": "step-03",
+      "type": "verifies"
+    },
+    {
+      "from": "step-03",
+      "to": "ui",
+      "type": "owned_by"
+    },
+    {
+      "from": "step-03",
+      "to": "step-02",
+      "type": "depends_on"
+    },
+    {
+      "from": "gate-04",
+      "to": "step-04",
+      "type": "verifies"
+    },
+    {
+      "from": "step-04",
+      "to": "ui",
+      "type": "owned_by"
+    },
+    {
+      "from": "step-04",
+      "to": "step-03",
+      "type": "depends_on"
+    },
+    {
+      "from": "gate-05",
+      "to": "step-05",
+      "type": "verifies"
+    },
+    {
+      "from": "step-05",
+      "to": "mechanical",
+      "type": "owned_by"
+    },
+    {
+      "from": "step-05",
+      "to": "step-04",
+      "type": "depends_on"
+    },
+    {
+      "from": "gate-06",
+      "to": "step-06",
+      "type": "verifies"
+    },
+    {
+      "from": "step-06",
+      "to": "mechanical",
+      "type": "owned_by"
+    },
+    {
+      "from": "step-06",
+      "to": "ui",
+      "type": "owned_by"
+    },
+    {
+      "from": "step-06",
+      "to": "step-05",
+      "type": "depends_on"
+    },
+    {
+      "from": "gate-07",
+      "to": "step-07",
+      "type": "verifies"
+    },
+    {
+      "from": "step-07",
+      "to": "ui",
+      "type": "owned_by"
+    },
+    {
+      "from": "gate-08",
+      "to": "step-08",
+      "type": "verifies"
+    },
+    {
+      "from": "step-08",
+      "to": "motion-a",
+      "type": "owned_by"
+    },
+    {
+      "from": "step-08",
+      "to": "step-07",
+      "type": "depends_on"
+    },
+    {
+      "from": "gate-09",
+      "to": "step-09",
+      "type": "verifies"
+    },
+    {
+      "from": "step-09",
+      "to": "motion-b",
+      "type": "owned_by"
+    },
+    {
+      "from": "step-09",
+      "to": "step-08",
+      "type": "depends_on"
+    },
+    {
+      "from": "gate-10",
+      "to": "step-10",
+      "type": "verifies"
+    },
+    {
+      "from": "step-10",
+      "to": "ui",
+      "type": "owned_by"
+    },
+    {
+      "from": "step-10",
+      "to": "step-09",
+      "type": "depends_on"
+    },
+    {
+      "from": "gate-11",
+      "to": "step-11",
+      "type": "verifies"
+    },
+    {
+      "from": "step-11",
+      "to": "ui",
+      "type": "owned_by"
+    },
+    {
+      "from": "step-11",
+      "to": "step-10",
+      "type": "depends_on"
+    },
+    {
+      "from": "gate-12",
+      "to": "step-12",
+      "type": "verifies"
+    },
+    {
+      "from": "step-12",
+      "to": "motion-c",
+      "type": "owned_by"
+    },
+    {
+      "from": "step-12",
+      "to": "step-11",
+      "type": "depends_on"
+    },
+    {
+      "from": "gate-13",
+      "to": "step-13",
+      "type": "verifies"
+    },
+    {
+      "from": "step-13",
+      "to": "ui",
+      "type": "owned_by"
+    },
+    {
+      "from": "gate-14",
+      "to": "step-14",
+      "type": "verifies"
+    },
+    {
+      "from": "step-14",
+      "to": "orchestrator",
+      "type": "owned_by"
+    },
+    {
+      "from": "step-14",
+      "to": "step-13",
+      "type": "depends_on"
+    },
+    {
+      "from": "gate-15",
+      "to": "step-15",
+      "type": "verifies"
+    },
+    {
+      "from": "step-15",
+      "to": "motion-a",
+      "type": "owned_by"
+    },
+    {
+      "from": "step-15",
+      "to": "step-14",
+      "type": "depends_on"
+    },
+    {
+      "from": "gate-16",
+      "to": "step-16",
+      "type": "verifies"
+    },
+    {
+      "from": "step-16",
+      "to": "ui",
+      "type": "owned_by"
+    },
+    {
+      "from": "step-16",
+      "to": "step-15",
+      "type": "depends_on"
+    },
+    {
+      "from": "gate-17",
+      "to": "step-17",
+      "type": "verifies"
+    },
+    {
+      "from": "step-17",
+      "to": "motion-a",
+      "type": "owned_by"
+    },
+    {
+      "from": "step-17",
+      "to": "step-08",
+      "type": "depends_on"
+    },
+    {
+      "from": "gate-18",
+      "to": "step-18",
+      "type": "verifies"
+    },
+    {
+      "from": "step-18",
+      "to": "motion-b",
+      "type": "owned_by"
+    },
+    {
+      "from": "step-18",
+      "to": "step-17",
+      "type": "depends_on"
+    },
+    {
+      "from": "step-18",
+      "to": "step-15",
+      "type": "depends_on"
+    },
+    {
+      "from": "gate-19",
+      "to": "step-19",
+      "type": "verifies"
+    },
+    {
+      "from": "step-19",
+      "to": "motion-c",
+      "type": "owned_by"
+    },
+    {
+      "from": "step-19",
+      "to": "ui",
+      "type": "owned_by"
+    },
+    {
+      "from": "step-19",
+      "to": "step-18",
+      "type": "depends_on"
+    },
+    {
+      "from": "step-19",
+      "to": "step-20",
+      "type": "depends_on"
+    },
+    {
+      "from": "step-19",
+      "to": "step-22",
+      "type": "depends_on"
+    },
+    {
+      "from": "step-19",
+      "to": "step-24",
+      "type": "depends_on"
+    },
+    {
+      "from": "gate-20",
+      "to": "step-20",
+      "type": "verifies"
+    },
+    {
+      "from": "step-20",
+      "to": "motion-b",
+      "type": "owned_by"
+    },
+    {
+      "from": "step-20",
+      "to": "mechanical",
+      "type": "owned_by"
+    },
+    {
+      "from": "step-20",
+      "to": "step-19",
+      "type": "depends_on"
+    },
+    {
+      "from": "step-20",
+      "to": "step-08",
+      "type": "depends_on"
+    },
+    {
+      "from": "gate-21",
+      "to": "step-21",
+      "type": "verifies"
+    },
+    {
+      "from": "step-21",
+      "to": "ui",
+      "type": "owned_by"
+    },
+    {
+      "from": "step-21",
+      "to": "step-20",
+      "type": "depends_on"
+    },
+    {
+      "from": "gate-22",
+      "to": "step-22",
+      "type": "verifies"
+    },
+    {
+      "from": "step-22",
+      "to": "motion-a",
+      "type": "owned_by"
+    },
+    {
+      "from": "step-22",
+      "to": "step-21",
+      "type": "depends_on"
+    },
+    {
+      "from": "step-22",
+      "to": "step-17",
+      "type": "depends_on"
+    },
+    {
+      "from": "gate-23",
+      "to": "step-23",
+      "type": "verifies"
+    },
+    {
+      "from": "step-23",
+      "to": "motion-b",
+      "type": "owned_by"
+    },
+    {
+      "from": "step-23",
+      "to": "step-22",
+      "type": "depends_on"
+    },
+    {
+      "from": "step-23",
+      "to": "step-09",
+      "type": "depends_on"
+    },
+    {
+      "from": "step-23",
+      "to": "step-11",
+      "type": "depends_on"
+    },
+    {
+      "from": "step-23",
+      "to": "step-14",
+      "type": "depends_on"
+    },
+    {
+      "from": "step-23",
+      "to": "step-15",
+      "type": "depends_on"
+    },
+    {
+      "from": "gate-24",
+      "to": "step-24",
+      "type": "verifies"
+    },
+    {
+      "from": "step-24",
+      "to": "motion-c",
+      "type": "owned_by"
+    },
+    {
+      "from": "step-24",
+      "to": "step-23",
+      "type": "depends_on"
+    },
+    {
+      "from": "step-24",
+      "to": "step-08",
+      "type": "depends_on"
+    },
+    {
+      "from": "gate-25",
+      "to": "step-25",
+      "type": "verifies"
+    },
+    {
+      "from": "step-25",
+      "to": "ui",
+      "type": "owned_by"
+    },
+    {
+      "from": "step-25",
+      "to": "step-24",
+      "type": "depends_on"
+    },
+    {
+      "from": "step-25",
+      "to": "step-20",
+      "type": "depends_on"
+    },
+    {
+      "from": "step-25",
+      "to": "step-22",
+      "type": "depends_on"
+    },
+    {
+      "from": "step-25",
+      "to": "step-24",
+      "type": "depends_on"
+    },
+    {
+      "from": "gate-26",
+      "to": "step-26",
+      "type": "verifies"
+    },
+    {
+      "from": "step-26",
+      "to": "ui",
+      "type": "owned_by"
+    },
+    {
+      "from": "step-26",
+      "to": "motion-b",
+      "type": "owned_by"
+    },
+    {
+      "from": "step-26",
+      "to": "step-25",
+      "type": "depends_on"
+    },
+    {
+      "from": "step-26",
+      "to": "step-20",
+      "type": "depends_on"
+    },
+    {
+      "from": "step-26",
+      "to": "step-22",
+      "type": "depends_on"
+    },
+    {
+      "from": "step-26",
+      "to": "step-24",
+      "type": "depends_on"
+    },
+    {
+      "from": "gate-27",
+      "to": "step-27",
+      "type": "verifies"
+    },
+    {
+      "from": "step-27",
+      "to": "ui",
+      "type": "owned_by"
+    },
+    {
+      "from": "step-27",
+      "to": "step-26",
+      "type": "depends_on"
+    },
+    {
+      "from": "step-27",
+      "to": "step-20",
+      "type": "depends_on"
+    },
+    {
+      "from": "step-27",
+      "to": "step-22",
+      "type": "depends_on"
+    },
+    {
+      "from": "step-27",
+      "to": "step-24",
+      "type": "depends_on"
+    },
+    {
+      "from": "gate-28",
+      "to": "step-28",
+      "type": "verifies"
+    },
+    {
+      "from": "step-28",
+      "to": "motion-a",
+      "type": "owned_by"
+    },
+    {
+      "from": "step-28",
+      "to": "step-27",
+      "type": "depends_on"
+    },
+    {
+      "from": "step-28",
+      "to": "step-19",
+      "type": "depends_on"
+    },
+    {
+      "from": "step-28",
+      "to": "step-21",
+      "type": "depends_on"
+    },
+    {
+      "from": "step-28",
+      "to": "step-25",
+      "type": "depends_on"
+    },
+    {
+      "from": "step-28",
+      "to": "step-26",
+      "type": "depends_on"
+    },
+    {
+      "from": "step-28",
+      "to": "step-27",
+      "type": "depends_on"
+    },
+    {
+      "from": "gate-29",
+      "to": "step-29",
+      "type": "verifies"
+    },
+    {
+      "from": "step-29",
+      "to": "ui",
+      "type": "owned_by"
+    },
+    {
+      "from": "step-29",
+      "to": "step-28",
+      "type": "depends_on"
+    },
+    {
+      "from": "gate-30",
+      "to": "step-30",
+      "type": "verifies"
+    },
+    {
+      "from": "step-30",
+      "to": "ui",
+      "type": "owned_by"
+    },
+    {
+      "from": "step-30",
+      "to": "step-29",
+      "type": "depends_on"
+    },
+    {
+      "from": "step-30",
+      "to": "step-29",
+      "type": "depends_on"
+    },
+    {
+      "from": "gate-31",
+      "to": "step-31",
+      "type": "verifies"
+    },
+    {
+      "from": "step-31",
+      "to": "ui",
+      "type": "owned_by"
+    },
+    {
+      "from": "step-31",
+      "to": "step-30",
+      "type": "depends_on"
+    },
+    {
+      "from": "step-31",
+      "to": "step-29",
+      "type": "depends_on"
+    },
+    {
+      "from": "gate-32",
+      "to": "step-32",
+      "type": "verifies"
+    },
+    {
+      "from": "step-32",
+      "to": "ui",
+      "type": "owned_by"
+    },
+    {
+      "from": "step-32",
+      "to": "step-31",
+      "type": "depends_on"
+    },
+    {
+      "from": "step-32",
+      "to": "step-30",
+      "type": "depends_on"
+    },
+    {
+      "from": "step-32",
+      "to": "step-31",
+      "type": "depends_on"
+    },
+    {
+      "from": "gate-33",
+      "to": "step-33",
+      "type": "verifies"
+    },
+    {
+      "from": "step-33",
+      "to": "ui",
+      "type": "owned_by"
+    },
+    {
+      "from": "step-33",
+      "to": "step-32",
+      "type": "depends_on"
+    },
+    {
+      "from": "step-33",
+      "to": "step-32",
+      "type": "depends_on"
+    },
+    {
+      "from": "gate-34",
+      "to": "step-34",
+      "type": "verifies"
+    },
+    {
+      "from": "step-34",
+      "to": "ui",
+      "type": "owned_by"
+    },
+    {
+      "from": "step-34",
+      "to": "step-33",
+      "type": "depends_on"
+    },
+    {
+      "from": "gate-35",
+      "to": "step-35",
+      "type": "verifies"
+    },
+    {
+      "from": "step-35",
+      "to": "motion-c",
+      "type": "owned_by"
+    },
+    {
+      "from": "step-35",
+      "to": "step-34",
+      "type": "depends_on"
+    },
+    {
+      "from": "step-35",
+      "to": "step-34",
+      "type": "depends_on"
+    },
+    {
+      "from": "gate-36",
+      "to": "step-36",
+      "type": "verifies"
+    },
+    {
+      "from": "step-36",
+      "to": "ui",
+      "type": "owned_by"
+    },
+    {
+      "from": "step-36",
+      "to": "step-35",
+      "type": "depends_on"
+    },
+    {
+      "from": "step-36",
+      "to": "step-35",
+      "type": "depends_on"
+    },
+    {
+      "from": "gate-37",
+      "to": "step-37",
+      "type": "verifies"
+    },
+    {
+      "from": "step-37",
+      "to": "auditor",
+      "type": "owned_by"
+    },
+    {
+      "from": "step-37",
+      "to": "verifier",
+      "type": "owned_by"
+    },
+    {
+      "from": "step-37",
+      "to": "step-36",
+      "type": "depends_on"
+    },
+    {
+      "from": "gate-38",
+      "to": "step-38",
+      "type": "verifies"
+    },
+    {
+      "from": "step-38",
+      "to": "ui",
+      "type": "owned_by"
+    },
+    {
+      "from": "step-38",
+      "to": "step-37",
+      "type": "depends_on"
+    },
+    {
+      "from": "step-38",
+      "to": "step-37",
+      "type": "depends_on"
+    },
+    {
+      "from": "gate-39",
+      "to": "step-39",
+      "type": "verifies"
+    },
+    {
+      "from": "step-39",
+      "to": "ui",
+      "type": "owned_by"
+    },
+    {
+      "from": "step-39",
+      "to": "step-38",
+      "type": "depends_on"
+    },
+    {
+      "from": "step-39",
+      "to": "step-38",
+      "type": "depends_on"
+    },
+    {
+      "from": "gate-40",
+      "to": "step-40",
+      "type": "verifies"
+    },
+    {
+      "from": "step-40",
+      "to": "ui",
+      "type": "owned_by"
+    },
+    {
+      "from": "step-40",
+      "to": "step-39",
+      "type": "depends_on"
+    },
+    {
+      "from": "step-40",
+      "to": "step-39",
+      "type": "depends_on"
+    },
+    {
+      "from": "step-07",
+      "to": "step-06",
+      "type": "depends_on"
+    },
+    {
+      "from": "step-13",
+      "to": "step-12",
+      "type": "depends_on"
+    },
+    {
+      "from": "step-17",
+      "to": "step-16",
+      "type": "depends_on"
+    },
+    {
+      "from": "step-18",
+      "to": "step-16",
+      "type": "depends_on"
+    },
+    {
+      "from": "step-23",
+      "to": "step-16",
+      "type": "depends_on"
+    },
+    {
+      "from": "step-29",
+      "to": "step-16",
+      "type": "depends_on"
+    },
+    {
+      "from": "step-34",
+      "to": "step-28",
+      "type": "depends_on"
+    },
+    {
+      "from": "step-37",
+      "to": "step-33",
+      "type": "depends_on"
+    },
+    {
+      "from": "artifact-context-sheet",
+      "to": "S1",
+      "type": "informs"
+    },
+    {
+      "from": "artifact-context-sheet",
+      "to": "S2",
+      "type": "informs"
+    },
+    {
+      "from": "artifact-context-sheet",
+      "to": "S3",
+      "type": "informs"
+    },
+    {
+      "from": "artifact-context-sheet",
+      "to": "S6",
+      "type": "informs"
+    },
+    {
+      "from": "artifact-claims-ledger",
+      "to": "S4",
+      "type": "informs"
+    },
+    {
+      "from": "artifact-motion-vocab",
+      "to": "S5",
+      "type": "informs"
+    },
+    {
+      "from": "step-03",
+      "to": "artifact-context-sheet",
+      "type": "produces"
+    },
+    {
+      "from": "step-03",
+      "to": "artifact-harvest",
+      "type": "produces"
+    },
+    {
+      "from": "step-03",
+      "to": "artifact-motion-vocab",
+      "type": "produces"
+    },
+    {
+      "from": "step-03",
+      "to": "artifact-claims-ledger",
+      "type": "produces"
+    },
+    {
+      "from": "step-03",
+      "to": "artifact-graph",
+      "type": "produces"
+    },
+    {
+      "from": "step-03",
+      "to": "artifact-claude-md",
+      "type": "produces"
+    },
+    {
+      "from": "step-01",
+      "to": "artifact-harvest",
+      "type": "produces"
+    },
+    {
+      "from": "step-14",
+      "to": "artifact-motion-vocab",
+      "type": "produces"
+    },
+    {
+      "from": "step-29",
+      "to": "artifact-claims-ledger",
+      "type": "produces"
+    },
+    {
+      "from": "artifact-claims-ledger",
+      "to": "step-29",
+      "type": "depends_on"
+    },
+    {
+      "from": "artifact-claims-ledger",
+      "to": "step-30",
+      "type": "depends_on"
+    },
+    {
+      "from": "artifact-claims-ledger",
+      "to": "step-31",
+      "type": "depends_on"
+    },
+    {
+      "from": "L1",
+      "to": "step-08",
+      "type": "constrains"
+    },
+    {
+      "from": "L1",
+      "to": "step-17",
+      "type": "constrains"
+    },
+    {
+      "from": "L1",
+      "to": "step-18",
+      "type": "constrains"
+    },
+    {
+      "from": "L1",
+      "to": "step-22",
+      "type": "constrains"
+    },
+    {
+      "from": "L1",
+      "to": "step-28",
+      "type": "constrains"
+    },
+    {
+      "from": "L1",
+      "to": "step-29",
+      "type": "constrains"
+    },
+    {
+      "from": "L2",
+      "to": "step-08",
+      "type": "constrains"
+    },
+    {
+      "from": "L2",
+      "to": "step-17",
+      "type": "constrains"
+    },
+    {
+      "from": "L2",
+      "to": "step-18",
+      "type": "constrains"
+    },
+    {
+      "from": "L2",
+      "to": "step-22",
+      "type": "constrains"
+    },
+    {
+      "from": "L2",
+      "to": "step-28",
+      "type": "constrains"
+    },
+    {
+      "from": "L2",
+      "to": "step-29",
+      "type": "constrains"
+    },
+    {
+      "from": "L3",
+      "to": "step-08",
+      "type": "constrains"
+    },
+    {
+      "from": "L3",
+      "to": "step-17",
+      "type": "constrains"
+    },
+    {
+      "from": "L3",
+      "to": "step-18",
+      "type": "constrains"
+    },
+    {
+      "from": "L3",
+      "to": "step-22",
+      "type": "constrains"
+    },
+    {
+      "from": "L3",
+      "to": "step-28",
+      "type": "constrains"
+    },
+    {
+      "from": "L3",
+      "to": "step-29",
+      "type": "constrains"
+    },
+    {
+      "from": "L4",
+      "to": "step-08",
+      "type": "constrains"
+    },
+    {
+      "from": "L4",
+      "to": "step-17",
+      "type": "constrains"
+    },
+    {
+      "from": "L4",
+      "to": "step-18",
+      "type": "constrains"
+    },
+    {
+      "from": "L4",
+      "to": "step-22",
+      "type": "constrains"
+    },
+    {
+      "from": "L4",
+      "to": "step-28",
+      "type": "constrains"
+    },
+    {
+      "from": "L4",
+      "to": "step-29",
+      "type": "constrains"
+    },
+    {
+      "from": "M1",
+      "to": "step-13",
+      "type": "constrains"
+    },
+    {
+      "from": "M1",
+      "to": "step-38",
+      "type": "constrains"
+    },
+    {
+      "from": "M2",
+      "to": "step-20",
+      "type": "constrains"
+    },
+    {
+      "from": "M2",
+      "to": "step-38",
+      "type": "constrains"
+    },
+    {
+      "from": "D1",
+      "to": "step-06",
+      "type": "constrains"
+    },
+    {
+      "from": "D1",
+      "to": "step-09",
+      "type": "constrains"
+    },
+    {
+      "from": "D1",
+      "to": "step-23",
+      "type": "constrains"
+    },
+    {
+      "from": "auditor",
+      "to": "step-17",
+      "type": "verifies"
+    },
+    {
+      "from": "auditor",
+      "to": "step-18",
+      "type": "verifies"
+    },
+    {
+      "from": "auditor",
+      "to": "step-23",
+      "type": "verifies"
+    },
+    {
+      "from": "auditor",
+      "to": "step-35",
+      "type": "verifies"
+    },
+    {
+      "from": "auditor",
+      "to": "step-37",
+      "type": "verifies"
+    }
+  ]
+}
