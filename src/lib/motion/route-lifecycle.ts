@@ -313,6 +313,15 @@ declare global {
       readonly generation: number;
       /** Live ScrollTrigger count — the number a route arrival has to match a fresh load on. */
       readonly scrollTriggers: () => number;
+      /**
+       * One descriptor per pinning trigger: the pinned element's tag, the id of
+       * the nearest element that has one, and whether it sits inside Act 4's
+       * Reclaim bay. The storyboard's directive 2 ("sticky before pin") allows a
+       * pin only on the inner wrapper of Act 5 and Act 7, so the gate is about
+       * WHERE the pins are and not only how many — and `.pin-spacer` in the DOM
+       * cannot answer it, because `pinSpacing: false` leaves none behind.
+       */
+      readonly pins: () => string[];
       /** Registered per-document cleanups and route-scoped bindings, to catch duplication. */
       readonly teardowns: () => number;
       readonly bindings: () => number;
@@ -333,6 +342,15 @@ function installProbe() {
     value: {
       get generation() { return generation; },
       scrollTriggers: () => ScrollTrigger.getAll().length,
+      pins: () => ScrollTrigger.getAll()
+        .filter((trigger) => Boolean(trigger.pin))
+        .map((trigger) => {
+          const pinned = trigger.pin as Element | undefined;
+          const tag = pinned?.nodeName?.toLowerCase() ?? 'unknown';
+          const named = pinned?.closest?.('[id]')?.id ?? '';
+          const inBay = pinned?.closest?.('[data-reclaim-bay]') ? ':in-bay' : '';
+          return `${tag}#${named}${inBay}`;
+        }),
       teardowns: () => teardowns.size,
       bindings: () => bindings.size,
     },

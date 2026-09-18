@@ -87,6 +87,12 @@ uniform vec2 uResinPlateScale;
 uniform vec2 uResinPlateOffset;
 /** Gaussian sigma for mode 3's edge light, in uv, sized so the bloom is <= 12 CSS px. */
 uniform float uResinBloom;
+/* Mode 5 only. Named for the fold they shape: how much sheet is within reach of
+   the crease, how much extra source that band swallows, and how far the incoming
+   room parallaxes in. Read only inside the mode 5 branch. */
+uniform float uFoldBand;
+uniform float uFoldReach;
+uniform float uFoldParallax;
 varying vec2 vUv;
 
 const vec3 VEIL_BLOOM = vec3(0.973, 0.969, 0.952);
@@ -121,6 +127,10 @@ void main() {
     float toWeight;
     float light = 0.0;
     vec3 bloomColor = VEIL_BLOOM;
+    // Mode 5 is the only mode that darkens rather than only lifting toward paper:
+    // a fold has a lit side and a side turned away from the light. Every other
+    // mode leaves this at 0, so their composite is byte-identical to before.
+    float shade = 0.0;
 
     if (uMode < 0.5) {
       toWeight = smoothstep(0.22, 0.78, progress + organic);
@@ -159,21 +169,94 @@ void main() {
       // colour is the paper itself, so the revealed paper cannot be tinted by it.
       light = exp(-pow((resinField - resinFront) / uResinBloom, 2.0)) * sin(progress * 3.14159265) * 0.34;
       bloomColor = VEIL_PAPER;
-    } else {
+    } else if (uMode < 4.5) {
       float curlAxis = uDirection > 0.0 ? vUv.x : 1.0 - vUv.x;
       float curlEdge = mix(-0.2, 1.2, eased);
       float curledField = curlAxis + sin(vUv.y * 3.14159265) * 0.075 + organic * 1.8;
       toWeight = 1.0 - smoothstep(curlEdge - 0.11, curlEdge + 0.11, curledField);
       light = exp(-pow((curledField - curlEdge) / 0.105, 2.0)) * sin(progress * 3.14159265) * 0.18;
+    } else {
+      // Mode 5 - fold-and-shoot-left (Act 4's two interior room changes).
+      //
+      // The outgoing room is a sheet of paper being folded under itself along a
+      // vertical crease that travels right to left; the incoming room slides in
+      // from the right behind it. Three rules shape the numbers:
+      //
+      //  1. EXACT ENDPOINTS. uFoldBand and uFoldReach scale with bend, which is
+      //     sin(pi*p) and therefore 0 at both ends, so the sheet's UV map is the
+      //     identity at p = 0. creaseTravel runs from past 1 to past 0 by the
+      //     feather (the same trick modes 1-4 use) so nothing of the incoming room
+      //     bleeds in at p = 0 and nothing of the outgoing survives at p = 1.
+      //     The crease travels on raw progress, not on eased: MOTION-VOCABULARY
+      //     gives this id ease "none", and a smoothstep would run the crease 50%
+      //     faster through the middle of the fold than through its ends, which is
+      //     both a wobble to the eye and the whole of an earlier 2.73% seam.
+      //  2. THE FOLD CONSUMES THE ROOM, IT DOES NOT DRAG IT. Only the band of
+      //     sheet within reach of the crease is warped; everything further left is
+      //     flat, still pixels. A transition that translated the whole frame would
+      //     move every pixel on every scroll step, which is a cut by any pixel
+      //     measurement even though the eye reads it as a pan.
+      //  3. NOTHING THAT MOVES MAY CARRY HIGH CONTRAST. The crease highlight is a
+      //     wide, weak gaussian and the sheet shadow is a smooth ramp, so the
+      //     per-frame delta of the moving features stays well under the seam
+      //     spec's per-channel step while the stationary picture carries the frame.
+      float axis = uDirection > 0.0 ? vUv.x : 1.0 - vUv.x;
+      float bend = sin(progress * 3.14159265);
+      float feather = 0.015 + 0.09 * bend;
+      float creaseTravel = mix(1.0 + feather + 0.04, -feather - 0.04, progress);
+      float crease = creaseTravel + sin(vUv.y * 3.14159265) * 0.018 * bend + organic * 0.9;
+      float band = uFoldBand * bend;
+      float reach = uFoldReach * bend;
+      float bandStart = crease - band;
+      // Named creaseDepth, not fold: mode 2's sibling block already uses "fold"
+      // for a different quantity (an edge POSITION, not a depth into the sheet),
+      // and one name meaning two things across the mode chain is how a reader ends
+      // up debugging the wrong branch. The two are separately scoped and the driver
+      // handles that correctly - this is a naming choice, not a workaround.
+      float creaseDepth = clamp((axis - bandStart) / max(band, 0.0004), 0.0, 1.0);
+      // Squared: the sheet foreshortens as it turns away, so the far end of the
+      // band swallows source faster than the near end - a rotating plane.
+      float folded = bandStart + (band + reach) * creaseDepth * creaseDepth;
+      float fromAxis = clamp(mix(axis, folded, step(bandStart, axis)), 0.0, 1.0);
+      // The incoming room is rigid and parallaxes in from the right, reaching the
+      // identity exactly at p = 1 where the DOM parks it at the same offset.
+      float toAxis = clamp(axis - (1.0 - progress) * uFoldParallax, 0.0, 1.0);
+      float fromX = uDirection > 0.0 ? fromAxis : 1.0 - fromAxis;
+      float toX = uDirection > 0.0 ? toAxis : 1.0 - toAxis;
+      fromColor = texture2D(tFrom, vec2(fromX, vUv.y) * uFromScale + uFromOffset);
+      toColor = texture2D(tTo, vec2(toX, vUv.y) * uToScale + uToOffset);
+      toWeight = smoothstep(crease - feather, crease + feather, axis);
+      // Two half planes: the one rotating away from the light falls into shadow,
+      // and the folded sheet throws a soft contact shadow onto the room behind it.
+      // The sheet's far half turns away from the light; the crease catches it. The
+      // contact shadow the sheet throws onto the room behind is kept deliberately
+      // light: Act 4 ends on the mancave, which is already a dark room, and a
+      // heavier one turned the incoming half of that fold into mud.
+      shade = bend * 0.44 * creaseDepth * (1.0 - toWeight)
+        + bend * 0.18 * (1.0 - smoothstep(crease, crease + 0.13, axis)) * toWeight;
+      light = exp(-pow((axis - crease) / 0.085, 2.0)) * bend * 0.3;
     }
 
     vec3 composite = mix(fromColor.rgb, toColor.rgb, clamp(toWeight, 0.0, 1.0));
     composite = mix(composite, bloomColor, clamp(light, 0.0, 0.72));
+    composite *= 1.0 - clamp(shade, 0.0, 0.62);
     outputColor = vec4(composite, 1.0);
   }
   gl_FragColor = outputColor;
 }
 `;
+
+/**
+ * Mode 5's three shape constants, measured against the seam spec on the built app
+ * rather than chosen by eye — see the mode-5 comment in the shader for the rule
+ * each one serves. They are uniforms rather than literals so the fold can be
+ * retuned from one place without editing GLSL.
+ *
+ * @motion fold-and-shoot-left
+ */
+export const FOLD_BAND = 0.115;
+export const FOLD_REACH = 0.125;
+export const FOLD_PARALLAX = 0.18;
 
 type PlateDom = {
   readonly id: JourneyChapterId;
@@ -338,6 +421,9 @@ export default function FilmVeil({ host, motionEnabled }: {
       uResinPlateScale: { value: new THREE.Vector2(1, 1) },
       uResinPlateOffset: { value: new THREE.Vector2(0, 0) },
       uResinBloom: { value: resinBloomSigma(RESIN_BLOOM_PIXELS, 900) },
+      uFoldBand: { value: FOLD_BAND },
+      uFoldReach: { value: FOLD_REACH },
+      uFoldParallax: { value: FOLD_PARALLAX },
     },
     vertexShader: VERT,
     fragmentShader: FILM_VEIL_FRAGMENT_SHADER,

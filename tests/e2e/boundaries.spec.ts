@@ -455,16 +455,23 @@ test('the flash detector catches a flash and ignores a steep ramp', () => {
 });
 
 /**
- * The seven adjacencies of the storyboard's act order (§2), after Step 11b put
- * `proof` (act 05) between Reclaim and Your finish. Spelled out rather than
- * counted: a table that reorders itself and a page that reorders with it would
- * both satisfy a length check while the acts came out in the wrong sequence.
+ * The eight adjacencies of the storyboard's act order (§2), after Step 11b put
+ * `proof` (act 05) between Reclaim and Your finish and Step 22 gave Act 4 its
+ * third room. Spelled out rather than counted: a table that reorders itself and
+ * a page that reorders with it would both satisfy a length check while the acts
+ * came out in the wrong sequence.
+ *
+ * `garage:vault` and `vault:mancave` are the bay's two interior folds. They are
+ * the first media-to-media boundaries in Act 4 — the Reclaim reading aside used
+ * to sit between the rooms, so `garage:vault` left a white stage — which means
+ * both are now held to the stricter "never blank at any sample" rule below.
  */
 const EXPECTED_BOUNDARY_KEYS = [
   'portico:foundation',
   'foundation:garage',
   'garage:vault',
-  'vault:proof',
+  'vault:mancave',
+  'mancave:proof',
   'proof:finish-hall',
   'finish-hall:commercial',
   'commercial:consultation',

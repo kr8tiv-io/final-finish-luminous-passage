@@ -3,6 +3,7 @@ import {
   JOURNEY_CHAPTER_IDS,
   createJourneyDirector,
   removeJourneyEnhancement,
+  sampleBayProgress,
   sampleJourneySnapshot,
   type JourneyMetrics,
 } from './journey-director';
@@ -29,17 +30,85 @@ const metrics: JourneyMetrics = {
 describe('native journey snapshots', () => {
   afterEach(() => vi.unstubAllGlobals());
 
-  it('publishes the stable eight-room manifest in storyboard act order', () => {
+  it('publishes the stable nine-room manifest in storyboard act order', () => {
     expect(JOURNEY_CHAPTER_IDS).toEqual([
       'portico',
       'foundation',
       'garage',
       'vault',
+      'mancave',
       'proof',
       'finish-hall',
       'commercial',
       'consultation',
     ]);
+  });
+
+  describe('the Act 4 bay slot', () => {
+    // Three rooms of 1000, two folds of 400, laid out the way index.astro does.
+    const rooms = ['garage', 'vault', 'mancave'] as const;
+    const bayChapters = [
+      { id: 'garage' as const, start: 0, end: 1_000 },
+      { id: 'vault' as const, start: 1_400, end: 2_400 },
+      { id: 'mancave' as const, start: 2_800, end: 3_800 },
+    ];
+    const bayFolds = [
+      { from: 'garage' as const, to: 'vault' as const, start: 1_000, end: 1_400 },
+      { from: 'vault' as const, to: 'mancave' as const, start: 2_400, end: 2_800 },
+    ];
+    const at = (viewportCenter: number) => sampleBayProgress(rooms, bayChapters, bayFolds, viewportCenter);
+
+    it('parks a room for the whole of its own hold and only moves across a fold', () => {
+      expect(at(200)).toBe(0);
+      expect(at(999)).toBe(0);
+      expect(at(1_200)).toBeCloseTo(0.25, 6);
+      expect(at(1_500)).toBe(0.5);
+      expect(at(2_399)).toBe(0.5);
+      expect(at(2_600)).toBeCloseTo(0.75, 6);
+      expect(at(3_000)).toBe(1);
+    });
+
+    it('lands exactly on a slot at both endpoints of every fold', () => {
+      // The whole reason the slot is flat inside a room: at p = 0 and p = 1 the
+      // veil is transparent, so the DOM train has to be parked on the same frame
+      // the shader hands back or the boundary cuts.
+      expect(at(1_000)).toBe(0);
+      expect(at(1_400)).toBe(0.5);
+      expect(at(2_400)).toBe(0.5);
+      expect(at(2_800)).toBe(1);
+    });
+
+    it('saturates outside the act so the entry and exit rooms are already parked', () => {
+      expect(at(-4_000)).toBe(0);
+      expect(at(9_000)).toBe(1);
+    });
+
+    it('is inert without a bay, and falsifiably so', () => {
+      expect(sampleBayProgress([], bayChapters, bayFolds, 1_200)).toBe(0);
+      expect(sampleBayProgress(['garage'], bayChapters, bayFolds, 1_200)).toBe(0);
+      // A bay whose rooms are not in the measured chapters cannot invent geometry.
+      expect(sampleBayProgress(rooms, [], bayFolds, 1_200)).toBe(0);
+      // ...while the real one does move, so the three checks above mean something.
+      expect(at(1_200)).toBeGreaterThan(0);
+    });
+
+    it('publishes the slot on the snapshot from the measured bay', () => {
+      const staged: JourneyMetrics = {
+        top: 0,
+        bottom: 5_000,
+        chapters: bayChapters,
+        transitions: bayFolds,
+        bay: { rooms },
+      };
+      // Viewport centre = scrollY + 500: 1_500 parks the vault, 1_200 is a
+      // quarter of the way through the first fold.
+      const inVault = sampleJourneySnapshot(staged, 1_000, 1_000, true, 1);
+      const midFold = sampleJourneySnapshot(staged, 700, 1_000, true, 2);
+
+      expect(inVault.bayProgress).toBe(0.5);
+      expect(midFold.bayProgress).toBeCloseTo(0.25, 6);
+      expect(sampleJourneySnapshot({ ...staged, bay: undefined }, 700, 1_000, true, 3).bayProgress).toBe(0);
+    });
   });
 
   it('restores the static journey when an optional motion island fails', () => {

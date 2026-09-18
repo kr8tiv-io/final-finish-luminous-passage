@@ -63,6 +63,7 @@ function snapshot(overrides: Partial<JourneySnapshot> = {}): JourneySnapshot {
     boundaryKey: null,
     mediaOwner: 'from',
     handoff: 0,
+    bayProgress: 0,
     ...overrides,
   };
 }
@@ -167,7 +168,8 @@ describe('chapterSurfaceTarget', () => {
 
   it('maps every remaining chapter to the storyboard state', () => {
     const states: ReadonlyArray<[JourneySnapshot['activeChapter'], number]> = [
-      ['garage', 2], ['vault', 3], ['finish-hall', 5], ['commercial', 6], ['proof', 3], ['consultation', 7],
+      ['garage', 2], ['vault', 3], ['mancave', 5],
+      ['finish-hall', 5], ['commercial', 6], ['proof', 3], ['consultation', 7],
     ];
     for (const [activeChapter, expected] of states) {
       const target = chapterSurfaceTarget(snapshot({ activeChapter, chapterProgress: 0.5 }));
@@ -175,6 +177,21 @@ describe('chapterSurfaceTarget', () => {
       expect(target.b).toBe(expected);
       expect(target.mix).toBe(0);
     }
+  });
+
+  it('morphs the floor 2 to 3 to 5 under Act 4’s three rooms', () => {
+    // The storyboard's Reclaim run: pearl under the garage, flake under the
+    // basement, metallic under the lounge, blended by each fold in between.
+    expect(chapterSurfaceTarget(snapshot({ activeChapter: 'garage', chapterProgress: 0.5 })))
+      .toMatchObject({ a: 2, b: 2 });
+    expect(chapterSurfaceTarget(snapshot({
+      activeChapter: 'vault', fromChapter: 'garage', toChapter: 'vault', transitionProgress: 0.5,
+    }))).toMatchObject({ a: 2, b: 3, mix: 0.5 });
+    expect(chapterSurfaceTarget(snapshot({
+      activeChapter: 'mancave', fromChapter: 'vault', toChapter: 'mancave', transitionProgress: 0.5,
+    }))).toMatchObject({ a: 3, b: 5, mix: 0.5 });
+    expect(chapterSurfaceTarget(snapshot({ activeChapter: 'mancave', chapterProgress: 0.5 })))
+      .toMatchObject({ a: 5, b: 5, presence: SURFACE_PRESENCE.sheen });
   });
 
   it('blends the outgoing end state into the incoming start state on a boundary', () => {
@@ -216,7 +233,7 @@ describe('chapterSurfaceTarget', () => {
 describe('plane presence', () => {
   it('holds every media chapter at a sheen, never at full strength', () => {
     const media: ReadonlyArray<JourneySnapshot['activeChapter']> = [
-      'foundation', 'garage', 'vault', 'finish-hall', 'commercial', 'consultation',
+      'foundation', 'garage', 'vault', 'mancave', 'finish-hall', 'commercial', 'consultation',
     ];
     for (const activeChapter of media) {
       expect(chapterSurfaceTarget(snapshot({ activeChapter, chapterProgress: 0.5 })).presence)

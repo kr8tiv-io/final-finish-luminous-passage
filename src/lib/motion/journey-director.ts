@@ -13,6 +13,7 @@ export const JOURNEY_CHAPTER_IDS = [
   'foundation',
   'garage',
   'vault',
+  'mancave',
   'proof',
   'finish-hall',
   'commercial',
@@ -68,6 +69,18 @@ export interface JourneyWhiteTargetSnapshot {
   readonly progress: number;
 }
 
+/**
+ * The Act 4 horizontal bay, in the order its rooms are laid out left to right.
+ *
+ * Only the membership and the order live here. The geometry is the rooms' own
+ * chapter metrics and the folds' own breath metrics — the same two tables every
+ * other published value is sampled from — so the bay can never disagree with the
+ * boundary it rides on.
+ */
+export interface JourneyBayMetric {
+  readonly rooms: readonly JourneyChapterId[];
+}
+
 export interface JourneyMetrics {
   readonly top: number;
   readonly bottom: number;
@@ -76,6 +89,7 @@ export interface JourneyMetrics {
   readonly whiteStages?: readonly JourneyWhiteStageMetric[];
   readonly readings?: readonly JourneyReadingMetric[];
   readonly whiteTargets?: readonly JourneyWhiteTargetMetric[];
+  readonly bay?: JourneyBayMetric;
 }
 
 /**
@@ -118,6 +132,18 @@ export interface JourneySnapshot {
   readonly mediaOwner: JourneyMediaOwner;
   /** Opacity of the incoming plate, 0 at the outgoing end and 1 at the incoming end. */
   readonly handoff: number;
+  /**
+   * Act 4's horizontal bay, as a slot position: 0 on the first room, 1 on the last,
+   * and `(i + foldProgress) / (rooms - 1)` in between. The ONE published value the
+   * bay has; the track's `translateX`, every room plate's offset and the act phase
+   * are all `calc()`ed from it, so nothing downstream owns a second coordinate.
+   *
+   * It is deliberately flat inside a room (`hold-window`) and moves only across a
+   * fold, which is what keeps the DOM train and the veil's own fold agreeing at
+   * both endpoints of every boundary: at p = 0 and p = 1 the veil is transparent
+   * and the rooms are parked exactly where its `from`/`to` textures put them.
+   */
+  readonly bayProgress: number;
 }
 
 export interface JourneyDirector {
@@ -168,11 +194,50 @@ const EMPTY_SNAPSHOT: JourneySnapshot = Object.freeze({
   boundaryKey: null,
   mediaOwner: 'from',
   handoff: 0,
+  bayProgress: 0,
 });
 
 function chapterIndex(id: JourneyChapterId, metrics: JourneyMetrics): number {
   const local = metrics.chapters.findIndex((chapter) => chapter.id === id);
   return local >= 0 ? JOURNEY_CHAPTER_IDS.indexOf(id) : 0;
+}
+
+/**
+ * Where the Act 4 train has travelled to, as a slot position in `[0, 1]`.
+ *
+ * Flat across a room, and only a room's own fold moves it — see `bayProgress` on
+ * the snapshot for why that flatness is load-bearing rather than a simplification.
+ * Outside the bay it saturates (0 before the first room, 1 after the last) so the
+ * room that takes part in the entry and exit boundaries is already parked at its
+ * slot when the veil hands the picture back to the DOM.
+ *
+ * @motion fold-and-shoot-left
+ */
+export function sampleBayProgress(
+  rooms: readonly JourneyChapterId[],
+  chapters: readonly JourneyChapterMetric[],
+  transitions: readonly JourneyTransitionMetric[],
+  viewportCenter: number,
+): number {
+  const steps = rooms.length - 1;
+  if (steps < 1) return 0;
+  const slots = rooms.map((id) => chapters.find((chapter) => chapter.id === id));
+  const first = slots[0];
+  const last = slots[steps];
+  if (!first || !last) return 0;
+  if (viewportCenter <= first.start) return 0;
+  if (viewportCenter >= last.end) return 1;
+  for (let index = 0; index <= steps; index += 1) {
+    const room = slots[index];
+    if (!room || viewportCenter >= room.end) continue;
+    if (viewportCenter >= room.start) return index / steps;
+    const fold = transitions.find(({ from, to }) => from === rooms[index - 1] && to === rooms[index]);
+    const inside = fold
+      ? clamp01((viewportCenter - fold.start) / Math.max(1, fold.end - fold.start))
+      : 0;
+    return (index - 1 + inside) / steps;
+  }
+  return 1;
 }
 
 function closestChapter(metrics: JourneyMetrics, viewportCenter: number): JourneyChapterMetric {
@@ -294,6 +359,7 @@ export function sampleJourneySnapshot(
     boundaryKey,
     mediaOwner,
     handoff,
+    bayProgress: sampleBayProgress(metrics.bay?.rooms ?? [], chapters, metrics.transitions, viewportCenter),
   });
 }
 
@@ -316,6 +382,7 @@ function snapshotChanged(previous: JourneySnapshot, next: JourneySnapshot): bool
     || previous.boundaryKey !== next.boundaryKey
     || previous.mediaOwner !== next.mediaOwner
     || previous.handoff !== next.handoff
+    || previous.bayProgress !== next.bayProgress
     || previous.whiteTarget?.id !== next.whiteTarget?.id
     || previous.whiteTarget?.from !== next.whiteTarget?.from
     || previous.whiteTarget?.progress !== next.whiteTarget?.progress;
@@ -416,6 +483,12 @@ export function createJourneyDirector(options: JourneyDirectorOptions = {}): Jou
       const distance = Math.min(420, Math.max(180, window.innerHeight * 0.34));
       return { id: 'customer-reviews' as const, from: 'portico' as const, start: end - distance, end };
     });
+    // Read from the DOM rather than hard-coded here: the bay's membership is a
+    // property of the page's Act 4 region, and a room added or dropped there must
+    // not need a second edit in the director to stay in step.
+    const bayRooms = [...journey.querySelectorAll<HTMLElement>('[data-reclaim-bay] [data-bay-room]')]
+      .map((node) => node.dataset.bayRoom)
+      .filter(isChapterId);
     metrics = Object.freeze({
       top: journeyRect.top + scrollY,
       bottom: journeyRect.bottom + scrollY,
@@ -424,6 +497,7 @@ export function createJourneyDirector(options: JourneyDirectorOptions = {}): Jou
       whiteStages: Object.freeze(whiteStages),
       readings: Object.freeze(readings),
       whiteTargets: Object.freeze(whiteTargets),
+      bay: Object.freeze({ rooms: Object.freeze(bayRooms) }),
     });
     publish();
   };

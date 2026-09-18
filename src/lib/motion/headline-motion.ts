@@ -32,6 +32,11 @@ const CHAPTER_STYLES: Readonly<Record<JourneyChapterId, HeadlineStyle>> = Object
   foundation: 'line-rise',
   garage: 'lateral-curtain',
   vault: 'depth-settle',
+  // Act 4's rooms carry captions, not chapter titles, from Step 22 on — the act
+  // headline is the bay's own persistent one. The entry stays so the table remains
+  // total over `JourneyChapterId`, and so a room that ever regains a title gets the
+  // same lateral arrival as the rest of the train.
+  mancave: 'lateral-curtain',
   'finish-hall': 'epoxy-mask',
   commercial: 'lateral-curtain',
   proof: 'line-rise',

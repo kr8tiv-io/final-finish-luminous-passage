@@ -266,7 +266,9 @@ export function scissorBox(
  * Chapter → material state, exactly as the storyboard's acts run.
  *
  * portico 0 → 2 in the last fifth of the pour · foundation 1 → 2 · garage 2 ·
- * vault 3 · finish-hall 5 · commercial 6 · proof 3 · consultation 7.
+ * vault 3 · mancave 5 · finish-hall 5 · commercial 6 · proof 3 · consultation 7.
+ * Act 4's three rooms therefore morph 2 → 3 → 5 under the horizontal bay, which is
+ * the storyboard's "pearl (garage) → flake (basement) → metallic (mancave)" run.
  * Boundaries blend the outgoing chapter's end state into the incoming chapter's start
  * state on `transitionProgress`, which is `material-morph` in its scrubbed form.
  * White stages do not change the material — they switch the plane off and leave the
@@ -277,6 +279,7 @@ const CHAPTER_STATES: Readonly<Record<JourneyChapterId, readonly [SurfaceStateId
   foundation: [1, 2],
   garage: [2, 2],
   vault: [3, 3],
+  mancave: [5, 5],
   'finish-hall': [5, 5],
   commercial: [6, 6],
   proof: [3, 3],
@@ -331,7 +334,7 @@ export const SURFACE_PRESENCE: Readonly<{
  * it stays at full presence by omission.
  */
 const MEDIA_CHAPTERS: ReadonlySet<JourneyChapterId> = new Set<JourneyChapterId>([
-  'portico', 'foundation', 'garage', 'vault', 'finish-hall', 'commercial', 'consultation',
+  'portico', 'foundation', 'garage', 'vault', 'mancave', 'finish-hall', 'commercial', 'consultation',
 ]);
 
 /* -------------------------------------------------------------------------- */

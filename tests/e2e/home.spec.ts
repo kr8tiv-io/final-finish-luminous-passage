@@ -82,10 +82,13 @@ test.describe('Final Finish homepage', () => {
     else expect(source, `tier ${tier}`).not.toMatch(/follow-floor\/1080\//);
   });
 
-  test('keeps each chapter narrative in six readable white panels', async ({ page }) => {
+  test('keeps each chapter narrative in five readable white panels', async ({ page }) => {
     await page.goto('/', { waitUntil: 'domcontentloaded' });
     const readings = page.locator('.chapter-reading');
-    await expect(readings).toHaveCount(6);
+    // Five, not six, since Step 22: Act 4's two asides became the single Act 4
+    // aside the copy deck authors, hung off the bay's last room. See the note on
+    // the reading list in `homepage-contract.test.ts`.
+    await expect(readings).toHaveCount(5);
     expect(await readings.evaluateAll((nodes) => nodes.every((node) => node.hasAttribute('data-journey-white-stage')))).toBe(true);
     await expect(page.getByRole('heading', { name: 'The finish begins below the surface.' })).toBeVisible();
     await expect(page.getByRole('heading', { name: 'Let’s talk about your space.' })).toBeVisible();
@@ -100,10 +103,10 @@ test.describe('Final Finish homepage', () => {
    * archive lattice, which has no section yet — when Step 23b builds it, it is
    * added here only if it lands out of position, never to hide a regression.
    */
-  const ACT_ORDER = ['portico', 'foundation', 'garage', 'vault', 'proof', 'finish-hall', 'commercial', 'consultation'];
+  const ACT_ORDER = ['portico', 'foundation', 'garage', 'vault', 'mancave', 'proof', 'finish-hall', 'commercial', 'consultation'];
   const PENDING_ACT_MOVE: string[] = [];
 
-  test('numbers the acts 01 to 10 with one shared number for the two Reclaim rooms', async ({ page }) => {
+  test('numbers the acts 01 to 10 with one shared number for the three Reclaim rooms', async ({ page }) => {
     await page.goto('/', { waitUntil: 'domcontentloaded' });
 
     const rendered = await page.evaluate(() => [...document.querySelectorAll<HTMLElement>('.chapter-index')].map((node) => {
@@ -129,14 +132,16 @@ test.describe('Final Finish homepage', () => {
     expect([...byChapter.keys()].sort()).toEqual([...ACT_ORDER].sort());
 
     // Starts at 01, and no number ever comes back after a different one has
-    // been shown — a repeat is only legal for consecutive rooms of one act.
+    // been shown — equal consecutive numbers are legal, and only for the rooms
+    // of one act. Step 22 made Act 4 three rooms, so the run is three long.
     expect(domOrder[0]).toBe('01');
     const firstSeen = domOrder.map((number, index) => domOrder.indexOf(number) === index || domOrder[index - 1] === number);
     expect(firstSeen.every(Boolean), `no number repeats non-consecutively: ${domOrder.join(' ')}`).toBe(true);
     const repeated = [...new Set(domOrder.filter((number, index) => domOrder.indexOf(number) !== index))];
-    expect(repeated, `the only repeated act number is the Reclaim pair: ${domOrder.join(' ')}`).toEqual(['04']);
-    expect(domOrder.filter((number) => number === '04')).toHaveLength(2);
-    expect([byChapter.get('garage'), byChapter.get('vault')]).toEqual(['04', '04']);
+    expect(repeated, `the only repeated act number is the Reclaim run: ${domOrder.join(' ')}`).toEqual(['04']);
+    expect(domOrder.filter((number) => number === '04')).toHaveLength(3);
+    expect([byChapter.get('garage'), byChapter.get('vault'), byChapter.get('mancave')])
+      .toEqual(['04', '04', '04']);
 
     // Non-decreasing through the acts as the storyboard tells them.
     const actOrder = ACT_ORDER.map((chapter) => byChapter.get(chapter)!);
@@ -157,7 +162,7 @@ test.describe('Final Finish homepage', () => {
       node.dataset.readingFor ?? '',
       node.querySelector<HTMLElement>('[data-reading-act]')?.textContent?.trim() ?? '',
     ]));
-    expect(readings.length).toBe(6);
+    expect(readings.length).toBe(5);
     for (const [chapter, number] of readings) {
       expect(number, `reading panel for #${chapter}`).toBe(byChapter.get(chapter));
     }

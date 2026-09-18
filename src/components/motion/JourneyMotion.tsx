@@ -113,6 +113,60 @@ export default function JourneyMotion() {
     let tier: JourneyTier = currentJourneyTier(journeyControls.getSnapshot().motionPreference);
     let presentationEnabled = tier !== 'still';
 
+    /**
+     * Act 4's horizontal bay. This island already owns `data-media-active` and
+     * `--handoff`, so the bay is published from the same render pass rather than
+     * from a second writer: one `--bay-progress` (straight off the director's
+     * `snapshot.bayProgress`), one phase per room, one strength per crease.
+     *
+     * The mode itself is the only thing decided here rather than published: the
+     * train is a `full`-tier, wide-viewport composition. Everything narrower or
+     * weaker stacks the rooms vertically and keeps the DOM crossfade — the
+     * storyboard's Act 4 risk row is "never pinned on phone", and a bay that only
+     * exists where it can be afforded is how that is honoured.
+     *
+     * @motion fold-and-shoot-left
+     * @motion caption-drift
+     */
+    const bay = journey.querySelector<HTMLElement>('[data-reclaim-bay]');
+    const bayRooms = bay ? [...bay.querySelectorAll<HTMLElement>('[data-bay-room]')] : [];
+    const bayIds = bayRooms.map((room) => room.dataset.bayRoom ?? '');
+    const baySeams = bay ? [...bay.querySelectorAll<HTMLElement>('[data-bay-seam]')] : [];
+    const baySteps = Math.max(1, bayIds.length - 1);
+    const bayWideQuery = window.matchMedia('(min-width: 1024px)');
+    let bayHorizontal = false;
+
+    const renderBay = (snapshot: JourneySnapshot, interior: boolean) => {
+      if (!bay) return;
+      journey.dataset.bayMode = bayHorizontal ? 'horizontal' : 'stacked';
+      journey.style.setProperty('--bay-progress', snapshot.bayProgress.toFixed(4));
+      const live = Math.min(baySteps, Math.max(0, Math.round(snapshot.bayProgress * baySteps)));
+      journey.dataset.bayPhase = bayIds[live] ?? '';
+      bayRooms.forEach((room, index) => {
+        room.dataset.roomPhase = index < live ? 'behind' : index === live ? 'live' : 'ahead';
+      });
+      // The crease plate is brightest where the fold is deepest and gone at both
+      // endpoints, so it can never be the thing that changes when the veil retires.
+      const strength = interior ? Math.sin(Math.PI * snapshot.transitionProgress) : 0;
+      baySeams.forEach((seam) => {
+        const live = interior && seam.dataset.baySeam === snapshot.boundaryKey;
+        seam.style.setProperty('--bay-seam-strength', live ? strength.toFixed(3) : '0');
+        const swirl = seam.querySelector<HTMLVideoElement>('.reclaim-bay__swirl');
+        if (!swirl) return;
+        if (live && bayHorizontal && presentationEnabled && !saveDataEnabled()) {
+          if (!swirl.dataset.swirlRequested) {
+            swirl.dataset.swirlRequested = 'true';
+            if (swirl.dataset.swirlPoster) swirl.poster = swirl.dataset.swirlPoster;
+            swirl.preload = 'auto';
+            swirl.load();
+          }
+          if (swirl.paused) void swirl.play().catch(() => undefined);
+        } else if (!swirl.paused) {
+          swirl.pause();
+        }
+      });
+    };
+
     const trackTween = (tween: gsap.core.Tween) => {
       activeTweens.add(tween);
       tween.eventCallback('onComplete', () => activeTweens.delete(tween));
@@ -397,6 +451,7 @@ export default function JourneyMotion() {
       journey.style.setProperty('--handoff', snapshot.handoff.toFixed(4));
       if (stageOwned) journey.dataset.mediaStage = tier;
       else delete journey.dataset.mediaStage;
+      renderBay(snapshot, transitionInterior);
 
       const onStage = new Set<JourneyChapterId>();
       chapters.forEach((chapter, id) => {
@@ -458,6 +513,7 @@ export default function JourneyMotion() {
       const wasEnabled = presentationEnabled;
       tier = currentJourneyTier(journeyControls.getSnapshot().motionPreference);
       presentationEnabled = tier !== 'still';
+      bayHorizontal = Boolean(bay) && bayIds.length > 1 && tier === 'full' && bayWideQuery.matches;
       root.dataset.journeyTier = tier;
       root.dataset.journeyMotion = presentationEnabled ? 'enhanced' : 'still';
       if (!presentationEnabled) {
@@ -490,6 +546,10 @@ export default function JourneyMotion() {
     const unsubscribe = journeyDirector.subscribe(renderSnapshot);
     const unsubscribeControls = journeyControls.subscribe(applyMotionPreference);
     reducedQuery.addEventListener('change', applyMotionPreference);
+    // A resize across 1024 px changes which composition Act 4 is in, and the
+    // director has to re-measure because the rooms change height with it.
+    bayWideQuery.addEventListener('change', applyMotionPreference);
+    bayWideQuery.addEventListener('change', journeyDirector.invalidateGeometry);
     window.addEventListener(JOURNEY_COMPOSITOR_READY_EVENT, renderSnapshot);
     applyMotionPreference();
 
@@ -500,6 +560,8 @@ export default function JourneyMotion() {
       unsubscribe();
       unsubscribeControls();
       reducedQuery.removeEventListener('change', applyMotionPreference);
+      bayWideQuery.removeEventListener('change', applyMotionPreference);
+      bayWideQuery.removeEventListener('change', journeyDirector.invalidateGeometry);
       window.removeEventListener(JOURNEY_COMPOSITOR_READY_EVENT, renderSnapshot);
       activeTweens.forEach((tween) => tween.kill());
       revertSupportSplits();
@@ -519,8 +581,16 @@ export default function JourneyMotion() {
         chapter.removeAttribute('data-media-active');
         delete chapter.dataset.mediaRole;
       });
+      baySeams.forEach((seam) => {
+        seam.style.removeProperty('--bay-seam-strength');
+        seam.querySelector<HTMLVideoElement>('.reclaim-bay__swirl')?.pause();
+      });
+      bayRooms.forEach((room) => delete room.dataset.roomPhase);
       journey.removeAttribute('data-journey-on-white');
       journey.style.removeProperty('--handoff');
+      journey.style.removeProperty('--bay-progress');
+      delete journey.dataset.bayMode;
+      delete journey.dataset.bayPhase;
       delete journey.dataset.mediaStage;
       delete journey.dataset.mediaOwner;
       delete journey.dataset.journeyRevision;
