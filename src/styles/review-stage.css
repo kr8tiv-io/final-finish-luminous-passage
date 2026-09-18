@@ -1,0 +1,154 @@
+/* The customer-word stage — layout, scale, and rhythm only.
+   Every transform on this section is owned by EditorialMotion.tsx.
+   Selectors are scoped to `.social-proof` and carry one class more than
+   `readable-experience.css` so the cascade result does not depend on
+   bundle order. Nothing here sets opacity or a start-state transform:
+   with motion off, this file alone is the finished, readable stage. */
+
+body .journey .social-proof {
+  padding-block: clamp(6rem, 13vw, 14rem);
+}
+
+/* --- heading block ------------------------------------------------ */
+
+body .journey .social-proof .social-heading {
+  grid-template-columns: minmax(0, .82fr) minmax(0, 1.18fr);
+  gap: clamp(2.5rem, 7vw, 9rem);
+  align-items: end;
+  padding-bottom: clamp(3.5rem, 7vw, 7rem);
+}
+
+body .journey .social-proof .interlude-title {
+  font-size: var(--type-hero);
+  font-weight: 550;
+  line-height: 1.1;
+  letter-spacing: -.04em;
+  max-width: 15ch;
+}
+
+/* SplitText nests each char two levels down; perspective has to live on
+   the element that directly parents the chars, so every generated wrapper
+   carries it. */
+body .journey .social-proof .interlude-title div {
+  perspective: 700px;
+}
+
+body .journey .social-proof .social-intro > p:not(.eyebrow) {
+  max-width: 34ch;
+  margin-top: 1.75rem;
+}
+
+body .journey .social-proof .eyebrow {
+  margin-bottom: 1.5rem;
+  color: var(--cobalt);
+}
+
+/* --- rating ------------------------------------------------------- */
+
+/* The clip wrapper is the mask the 5.0 slides up through. It replaces the
+   anchor as the grid item, so it inherits the anchor's placement rules. */
+body .journey .social-proof .rating-clip {
+  display: block;
+  overflow: hidden;
+  padding-bottom: .04em;
+}
+
+body .journey .social-proof .rating-number {
+  font-size: clamp(6rem, 14vw, 12rem);
+  line-height: .92;
+  letter-spacing: -.06em;
+}
+
+body .journey .social-proof .rating-number span {
+  font-size: clamp(.85rem, .95vw, 1.05rem);
+  margin-left: 1rem;
+}
+
+body .journey .social-proof .rating-stars {
+  display: flex;
+  gap: .28em;
+  margin: 1.2rem 0 1rem;
+  font-size: clamp(1.1rem, 1.7vw, 1.65rem);
+  letter-spacing: 0;
+}
+
+body .journey .social-proof .rating-stars i {
+  display: inline-block;
+  font-style: normal;
+}
+
+/* --- review window ------------------------------------------------ */
+
+body .journey .social-proof .review-gallery {
+  gap: clamp(1.25rem, 2vw, 2rem);
+  padding-block: clamp(1.75rem, 3vw, 3rem);
+}
+
+/* The cobalt ring is declared here at zero alpha so the hover tween has a
+   numeric start value to interpolate from — GSAP cannot tween out of the
+   `none` that `readable-experience.css` leaves on the card. */
+body .journey .social-proof .review-card {
+  box-shadow: 0 0 0 1px rgba(22, 79, 131, 0);
+}
+
+body .journey .social-proof .review-card > p {
+  opacity: 1;
+}
+
+body .journey .social-proof .review-card footer a {
+  position: relative;
+  width: fit-content;
+}
+
+body .journey .social-proof .link-rule {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: .6rem;
+  height: 1px;
+  background: currentColor;
+  transform: scaleX(0);
+  transform-origin: 0 50%;
+  pointer-events: none;
+}
+
+body .journey .social-proof .review-bottom {
+  margin-top: clamp(1.5rem, 3vw, 3rem);
+}
+
+@media (max-width: 1100px) {
+  body .journey .social-proof .social-heading {
+    grid-template-columns: minmax(0, .9fr) minmax(0, 1.1fr);
+    gap: clamp(2rem, 5vw, 5rem);
+  }
+}
+
+@media (max-width: 680px) {
+  body .journey .social-proof .social-heading {
+    grid-template-columns: 1fr;
+    gap: 2.75rem;
+    align-items: start;
+  }
+  body .journey .social-proof .google-rating {
+    grid-template-columns: auto 1fr;
+    align-items: center;
+    column-gap: 1.35rem;
+  }
+  body .journey .social-proof .rating-clip {
+    grid-row: span 3;
+  }
+  body .journey .social-proof .rating-number {
+    font-size: clamp(4.5rem, 21vw, 7rem);
+  }
+  body .journey .social-proof .rating-number span {
+    display: none;
+  }
+  body .journey .social-proof .rating-stars {
+    margin: 0;
+    align-self: end;
+    font-size: 1.05rem;
+  }
+  body .journey .social-proof .interlude-title {
+    max-width: 13ch;
+  }
+}
