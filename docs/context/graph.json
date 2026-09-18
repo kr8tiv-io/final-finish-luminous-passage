@@ -692,7 +692,7 @@
       "id": "step-15",
       "type": "step",
       "title": "GSAP consolidation + layout canvas: one plugin registration, useGSAP, matchMedia, layout-level SurfaceCanvas with <View>s — pulled forward 2026-09-18: SurfaceCanvas + SurfaceFloor (material states 0–7) are the storyboard's backbone",
-      "status": "doing",
+      "status": "done",
       "phase": "phase-2",
       "tier": "O",
       "owner": "motion-a",
@@ -708,7 +708,7 @@
       "id": "gate-15",
       "type": "gate",
       "title": "document.querySelectorAll(\"canvas\").length === 1 on every route; Step 8 boundary spec still green.",
-      "status": "todo"
+      "status": "done"
     },
     {
       "id": "step-16",

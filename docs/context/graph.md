@@ -25,7 +25,7 @@ flowchart TD
   subgraph phase-2["phase-2"]
     step-13["step-13: Manrope refinement: tokens, scale, leading, trac"]:::stTodo
     step-14["step-14: MOTION-VOCABULARY.md: complete every id with dur"]:::stTodo
-    step-15["step-15: GSAP consolidation + layout canvas: one plugin r"]:::stDoing
+    step-15["step-15: GSAP consolidation + layout canvas: one plugin r"]:::stDone
     step-16["step-16: Surfaces: paper/ink/cobalt/bronze tokens, per-ch"]:::stTodo
   end
   subgraph phase-3["phase-3"]
@@ -339,7 +339,7 @@ flowchart TD
 - **Phase:** phase-2
 - **Tier:** O
 - **Owner(s):** motion-a
-- **Status:** doing
+- **Status:** done
 - **Files:** gsap-kit.ts, EditorialMotion.tsx, SurfaceCanvas.tsx, FilmVeil.tsx, BaseLayout.astro
 - **Inputs (informs):** S7
 - **Constraints (locks):** none recorded
