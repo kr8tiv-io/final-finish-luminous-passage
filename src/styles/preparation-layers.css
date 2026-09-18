@@ -1,0 +1,181 @@
+/* Preparation layers — cross-section diagram inside the foundation reading aside.
+   The default (no-JS, reduced-motion, still-tier) state is the fully assembled
+   stack with every caption legible. GSAP only ever writes transforms, opacity,
+   stroke-dash and gradient attributes on top of this. */
+
+.prep-layers {
+  --prep-aside-gap: clamp(2rem, 7vw, 8rem);
+  margin: clamp(2.5rem, 5vw, 4.5rem) 0 0;
+}
+
+.prep-layers-head {
+  max-width: 34ch;
+}
+
+.prep-layers .prep-eyebrow {
+  margin: 0 0 1.1rem;
+  font: 700 0.65rem/1.5 var(--sans);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--cobalt);
+}
+
+.prep-statement {
+  margin: 0;
+  font-family: var(--sans);
+  font-size: clamp(2.5rem, 6vw, 5.25rem);
+  font-weight: 450;
+  line-height: 1.02;
+  letter-spacing: -0.06em;
+  color: var(--ink);
+}
+
+.prep-layers .prep-lede {
+  margin: 1.1rem 0 0;
+  max-width: 38ch;
+  font: 400 var(--type-body)/1.6 var(--sans);
+  color: #3f4e57;
+}
+
+.prep-layers-body {
+  display: grid;
+  grid-template-columns: minmax(0, 1.62fr) minmax(12.5rem, 0.9fr);
+  gap: clamp(1.25rem, 3.2vw, 3.25rem);
+  margin-top: clamp(1.5rem, 3vw, 2.75rem);
+}
+
+/* The stage never moves: it is the shared ScrollTrigger element for every
+   layer, so the figure inside it can drift without shifting start/end. */
+.prep-stage {
+  position: relative;
+  /* Matches the SVG viewBox, so the drawing fills the stage instead of
+     letterboxing inside it at narrow widths. */
+  aspect-ratio: 1160 / 884;
+}
+
+.prep-figure {
+  position: relative;
+  height: 100%;
+}
+
+.prep-svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+/* Reading order stays 01 -> 07 in the DOM; the column is reversed visually so
+   each caption sits beside the plate it names in the bottom-up stack. */
+.prep-captions {
+  display: flex;
+  flex-direction: column-reverse;
+  justify-content: space-between;
+  gap: 0.9rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border-left: 1px solid var(--line);
+}
+
+.prep-caption {
+  position: relative;
+  padding-left: clamp(1rem, 1.7vw, 1.75rem);
+}
+
+.prep-caption-rule {
+  position: absolute;
+  left: 0;
+  top: 0.66em;
+  display: block;
+  width: clamp(0.65rem, 1.15vw, 1.2rem);
+  height: 1px;
+  background: var(--cobalt);
+  transform-origin: left center;
+}
+
+.prep-caption-line {
+  display: block;
+  overflow: clip;
+}
+
+.prep-caption-line > span {
+  display: block;
+}
+
+.prep-caption-index {
+  font: 650 0.68rem/1.7 var(--sans);
+  letter-spacing: 0.12em;
+  font-variant-numeric: tabular-nums;
+  color: var(--cobalt);
+}
+
+.prep-caption-title {
+  font: 650 0.95rem/1.45 var(--sans);
+  letter-spacing: -0.01em;
+  color: var(--ink);
+}
+
+.prep-caption-text {
+  font: 400 0.875rem/1.55 var(--sans);
+  color: #3f4e57;
+}
+
+.prep-layers .prep-note {
+  margin: clamp(1.25rem, 2.5vw, 2rem) 0 0;
+  font: 400 var(--type-caption)/1.6 var(--sans);
+  color: #5a666e;
+}
+
+/* The diagram is the point of this aside: let it take the whole editorial
+   measure instead of only the reading column, while the copy keeps its 62ch. */
+.chapter-reading .reading-body:has(.prep-layers) {
+  max-width: none;
+}
+
+.chapter-reading .reading-body:has(.prep-layers) > p,
+.chapter-reading .reading-body:has(.prep-layers) > .chapter-link {
+  max-width: 62ch;
+}
+
+@media (min-width: 1024px) {
+  /* `.chapter-reading-inner` is `minmax(12rem,.65fr) minmax(0,1.35fr)` with the
+     same gap token, so the label column measures 48.148% of this column. */
+  .chapter-reading .reading-body:has(.prep-layers) .prep-layers {
+    width: calc(148.148% + var(--prep-aside-gap));
+    margin-left: calc(-48.148% - var(--prep-aside-gap));
+  }
+
+  /* At the breakout width the column is ~1.31:1, so this height both clears
+     60vh and keeps the drawing edge to edge in its stage. */
+  .prep-stage {
+    aspect-ratio: auto;
+    height: clamp(60vh, 46vw, 40rem);
+  }
+}
+
+@media (max-width: 860px) {
+  .prep-layers-body {
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+  }
+
+  .prep-captions {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr));
+    gap: 1.1rem 1.5rem;
+    border-left: 0;
+    border-top: 1px solid var(--line);
+    padding-top: 1.25rem;
+  }
+
+  .prep-caption {
+    padding-left: 0;
+    padding-top: 0.9rem;
+  }
+
+  .prep-caption-rule {
+    top: 0;
+    width: clamp(1.25rem, 6vw, 2.25rem);
+  }
+}

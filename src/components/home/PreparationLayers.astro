@@ -1,0 +1,239 @@
+---
+/**
+ * Preparation layers — illustrative cross-section of a coated floor.
+ * Motion id: `layered-scrub` (MOTION-VOCABULARY.md), mechanic decoded from
+ * isladjan `abdyPBw` in CONTEXT-SHEET.md A4b: one ScrollTrigger per layer
+ * group, each with a different scrub lag, so the stack moves as one body with
+ * velocity-dependent separation. Geometry and captions are illustrative only —
+ * no claim here traces to Denis or the live site beyond the generic system
+ * order already described in the foundation chapter copy.
+ */
+import '../../styles/preparation-layers.css';
+
+// Isometric plate geometry. Front edge runs FX0 -> FX1; the depth vector
+// (DX, DY) pushes the back edge up and to the right. Gaps between plates are
+// wider than |DY| so no plate ever occludes the top face of the one below it.
+const FX0 = 120;
+const FX1 = 940;
+const DX = 130;
+const DY = -74;
+
+const topFace = (y: number) => `${FX0},${y} ${FX1},${y} ${FX1 + DX},${y + DY} ${FX0 + DX},${y + DY}`;
+const frontFace = (y: number, t: number) => `${FX0},${y} ${FX1},${y} ${FX1},${y + t} ${FX0},${y + t}`;
+const sideFace = (y: number, t: number) => `${FX1},${y} ${FX1 + DX},${y + DY} ${FX1 + DX},${y + DY + t} ${FX1},${y + t}`;
+
+const SLAB_Y = 700, SLAB_T = 140;
+const PRIMER_Y = 520, PRIMER_T = 20;
+const BASE_Y = 360, BASE_T = 36;
+const TOP_Y = 190, TOP_T = 40;
+// Framed so the assembled stack fills the box and the deepest arrival offset
+// (+140) still lands inside it: no clipping, no protrusion over the captions.
+const VIEW_BOX = '0 60 1160 884';
+
+// Deterministic pseudo-random source: the broadcast must be identical on the
+// server, in the client bundle, and in every screenshot comparison.
+function mulberry32(seed: number) {
+  let a = seed >>> 0;
+  return () => {
+    a = (a + 0x6d2b79f5) >>> 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+const random = mulberry32(0x5eed10c);
+const FLAKE_TONES = ['#f6f4f0', '#ffffff', '#c6c0b6', '#98a2a8'];
+const FLAKE_UNIT = [[-1, -0.82], [0.92, -1], [1, 0.86], [-0.86, 1]] as const;
+
+const flakes = Array.from({ length: 124 }, () => {
+  const u = 0.025 + random() * 0.95;
+  const v = 0.04 + random() * 0.9;
+  const x = Math.round((FX0 + u * (FX1 - FX0) + v * DX) * 10) / 10;
+  const y = Math.round((BASE_Y + v * DY) * 10) / 10;
+  const size = 6 + (1 - v) * 5.6;
+  const points = FLAKE_UNIT
+    .map(([a, b]) => `${(a * size * (0.7 + random() * 0.6)).toFixed(1)},${(b * size * (0.7 + random() * 0.6)).toFixed(1)}`)
+    .join(' ');
+  return { x, y, points, rotate: Math.round(random() * 360), tone: FLAKE_TONES[Math.floor(random() * FLAKE_TONES.length)] };
+});
+
+// Diamond-cup passes read as overlapping swirls across the slab's top face.
+const swirls = Array.from({ length: 9 }, (_, index) => ({
+  cx: 215 + index * 95,
+  cy: 663 + (index % 3) * 9,
+  rx: 70 - (index % 2) * 10,
+  ry: 24 - (index % 2) * 4,
+}));
+
+// One crack, read across the slab's top face and down its front edge.
+const CRACK_TOP = 'M 300,700 L 336,684 L 362,692 L 400,670 L 440,679 L 478,658 L 520,638';
+const CRACK_FRONT = 'M 300,700 L 276,736 L 294,766 L 274,800 L 292,832';
+
+const speckles = Array.from({ length: 13 }, () => ({
+  cx: Math.round(random() * 92),
+  cy: Math.round(random() * 92),
+  r: (1.4 + random() * 4.2).toFixed(1),
+  tone: random() > 0.55 ? '#a49f96' : '#d2cdc4',
+}));
+
+const captions = [
+  ['01', 'Slab', 'Bare concrete, read before anything is added.'],
+  ['02', 'Grind', 'Diamond grinding opens the surface profile.'],
+  ['03', 'Repair', 'Cracks and pits are filled back to level.'],
+  ['04', 'Primer', 'A primer keys the system into the slab.'],
+  ['05', 'Base coat', 'The base coat carries the colour.'],
+  ['06', 'Flake', 'Flake is broadcast into the wet base.'],
+  ['07', 'Clear coat', 'A clear coat seals the flake and takes the wear.'],
+];
+const layerIds = ['slab', 'grind', 'repair', 'primer', 'base', 'flakes', 'topcoat'];
+---
+
+<div class="prep-layers" data-prep-layers data-prep-motion="still">
+  <div class="prep-layers-head">
+    <p class="prep-eyebrow">Under the finish</p>
+    <h3 class="prep-statement" data-prep-statement>Grind. Repair. Build.</h3>
+    <p class="prep-lede">The part of the job you never see again, drawn in section.</p>
+  </div>
+
+  <div class="prep-layers-body">
+    <div class="prep-stage" data-prep-stage>
+    <div class="prep-figure" data-prep-figure>
+      <svg class="prep-svg" viewBox={VIEW_BOX} preserveAspectRatio="xMidYMid meet" aria-hidden="true" focusable="false">
+        <defs>
+          <pattern id="prep-aggregate" width="92" height="92" patternUnits="userSpaceOnUse">
+            <rect width="92" height="92" fill="#bfbab1"></rect>
+            {speckles.map((speckle) => (
+              <circle cx={speckle.cx} cy={speckle.cy} r={speckle.r} fill={speckle.tone} opacity="0.85"></circle>
+            ))}
+          </pattern>
+          <linearGradient id="prep-slab-shade" gradientUnits="userSpaceOnUse" x1="0" y1={SLAB_Y} x2="0" y2={SLAB_Y + SLAB_T}>
+            <stop offset="0" stop-color="#17222a" stop-opacity="0.04"></stop>
+            <stop offset="1" stop-color="#17222a" stop-opacity="0.34"></stop>
+          </linearGradient>
+          <linearGradient id="prep-dust" gradientUnits="userSpaceOnUse" x1="0" y1={SLAB_Y - 52} x2="0" y2={SLAB_Y}>
+            <stop offset="0" stop-color="#f4f1ea" stop-opacity="0"></stop>
+            <stop offset="1" stop-color="#efe9dd" stop-opacity="0.92"></stop>
+          </linearGradient>
+          <linearGradient id="prep-base-shade" gradientUnits="userSpaceOnUse" x1={FX0} y1="0" x2={FX1} y2="0">
+            <stop offset="0" stop-color="#0d355b" stop-opacity="0.55"></stop>
+            <stop offset="1" stop-color="#0d355b" stop-opacity="0"></stop>
+          </linearGradient>
+          <linearGradient id="prep-gloss" gradientUnits="userSpaceOnUse" x1="330" y1="0" x2="600" y2="0">
+            <stop offset="0" stop-color="#ffffff" stop-opacity="0"></stop>
+            <stop offset="0.46" stop-color="#ffffff" stop-opacity="0.9"></stop>
+            <stop offset="0.56" stop-color="#ffffff" stop-opacity="0.9"></stop>
+            <stop offset="1" stop-color="#ffffff" stop-opacity="0"></stop>
+          </linearGradient>
+          <clipPath id="prep-clip-slab-top"><polygon points={topFace(SLAB_Y)}></polygon></clipPath>
+          <clipPath id="prep-clip-base-top"><polygon points={topFace(BASE_Y)}></polygon></clipPath>
+        </defs>
+
+        <g data-prep-layer="slab">
+          <polygon points={sideFace(SLAB_Y, SLAB_T)} fill="#9d988f"></polygon>
+          <polygon points={frontFace(SLAB_Y, SLAB_T)} fill="url(#prep-aggregate)"></polygon>
+          <polygon points={frontFace(SLAB_Y, SLAB_T)} fill="url(#prep-slab-shade)"></polygon>
+          <polygon points={topFace(SLAB_Y)} fill="#cdc8bf"></polygon>
+          <polygon points={topFace(SLAB_Y)} fill="url(#prep-aggregate)" opacity="0.4"></polygon>
+          <g fill="none" stroke="rgba(23,34,42,.22)" stroke-width="1.25">
+            <polygon points={topFace(SLAB_Y)}></polygon>
+            <polygon points={frontFace(SLAB_Y, SLAB_T)}></polygon>
+            <polygon points={sideFace(SLAB_Y, SLAB_T)}></polygon>
+          </g>
+        </g>
+
+        <g data-prep-layer="grind" clip-path="url(#prep-clip-slab-top)">
+          <g data-prep-swirls fill="none" stroke="rgba(23,34,42,.3)" stroke-width="2.2" stroke-linecap="round">
+            {swirls.map((swirl) => (
+              <ellipse cx={swirl.cx} cy={swirl.cy} rx={swirl.rx} ry={swirl.ry}></ellipse>
+            ))}
+          </g>
+          <polygon data-prep-dust points={`${FX0},${SLAB_Y - 52} ${FX1 + DX},${SLAB_Y - 52} ${FX1 + DX},${SLAB_Y} ${FX0},${SLAB_Y}`} fill="url(#prep-dust)"></polygon>
+        </g>
+
+        <g data-prep-layer="repair">
+          {[CRACK_FRONT, CRACK_TOP].map((path) => (
+            <path data-prep-crack d={path} fill="none" stroke="#5f5a52" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"></path>
+          ))}
+          {[CRACK_FRONT, CRACK_TOP].map((path) => (
+            <path data-prep-fill d={path} fill="none" stroke="#ded3c0" stroke-width="5.5" stroke-linecap="round" stroke-linejoin="round"></path>
+          ))}
+        </g>
+
+        <g data-prep-layer="primer">
+          <polygon points={sideFace(PRIMER_Y, PRIMER_T)} fill="#77848d"></polygon>
+          <polygon points={frontFace(PRIMER_Y, PRIMER_T)} fill="#8c99a2"></polygon>
+          <polygon points={topFace(PRIMER_Y)} fill="#a7b4bc"></polygon>
+          <g fill="none" stroke="rgba(23,34,42,.24)" stroke-width="1.25">
+            <polygon points={topFace(PRIMER_Y)}></polygon>
+            <polygon points={frontFace(PRIMER_Y, PRIMER_T)}></polygon>
+            <polygon points={sideFace(PRIMER_Y, PRIMER_T)}></polygon>
+          </g>
+        </g>
+
+        <g data-prep-layer="base">
+          <polygon points={sideFace(BASE_Y, BASE_T)} fill="#113f6a"></polygon>
+          <polygon points={frontFace(BASE_Y, BASE_T)} fill="#164f83"></polygon>
+          <polygon points={topFace(BASE_Y)} fill="#1d61a0"></polygon>
+          <polygon points={topFace(BASE_Y)} fill="url(#prep-base-shade)"></polygon>
+          <g fill="none" stroke="rgba(13,53,91,.55)" stroke-width="1.25">
+            <polygon points={topFace(BASE_Y)}></polygon>
+            <polygon points={frontFace(BASE_Y, BASE_T)}></polygon>
+            <polygon points={sideFace(BASE_Y, BASE_T)}></polygon>
+          </g>
+        </g>
+
+        <g data-prep-layer="flakes" clip-path="url(#prep-clip-base-top)">
+          {flakes.map((flake) => (
+            <g class="prep-flake" transform={`translate(${flake.x} ${flake.y}) rotate(${flake.rotate})`}>
+              <polygon data-prep-flake points={flake.points} fill={flake.tone} opacity="0.95"></polygon>
+            </g>
+          ))}
+        </g>
+
+        <g data-prep-layer="topcoat">
+          <polygon points={sideFace(TOP_Y, TOP_T)} fill="rgba(22,79,131,.26)"></polygon>
+          <polygon points={frontFace(TOP_Y, TOP_T)} fill="rgba(22,79,131,.18)"></polygon>
+          <polygon points={topFace(TOP_Y)} fill="rgba(22,79,131,.12)"></polygon>
+          <polygon data-prep-gloss-face points={topFace(TOP_Y)} fill="url(#prep-gloss)"></polygon>
+          <g fill="none" stroke="rgba(22,79,131,.62)" stroke-width="1.4">
+            <polygon points={topFace(TOP_Y)}></polygon>
+            <polygon points={frontFace(TOP_Y, TOP_T)}></polygon>
+            <polygon points={sideFace(TOP_Y, TOP_T)}></polygon>
+          </g>
+          <line
+            data-prep-edge
+            x1={FX0 + DX}
+            y1={TOP_Y + DY}
+            x2={FX1 + DX}
+            y2={TOP_Y + DY}
+            stroke="#ffffff"
+            stroke-width="2.5"
+            stroke-linecap="round"
+            opacity="0.9"
+          ></line>
+        </g>
+      </svg>
+    </div>
+    </div>
+
+    <ol class="prep-captions">
+      {captions.map(([index, title, text], position) => (
+        <li class="prep-caption" data-prep-caption={layerIds[position]}>
+          <span class="prep-caption-rule" data-prep-rule aria-hidden="true"></span>
+          <span class="prep-caption-line"><span data-prep-caption-part class="prep-caption-index">{index}</span></span>
+          <span class="prep-caption-line"><span data-prep-caption-part class="prep-caption-title">{title}</span></span>
+          <span class="prep-caption-line"><span data-prep-caption-part class="prep-caption-text">{text}</span></span>
+        </li>
+      ))}
+    </ol>
+  </div>
+
+  <p class="prep-note">Illustrative cross-section, not to scale.</p>
+</div>
+
+<script>
+  import { initializePreparationLayers } from '../../scripts/preparation-layers';
+  const dispose = initializePreparationLayers();
+  document.addEventListener('astro:before-swap', dispose, { once: true });
+</script>
