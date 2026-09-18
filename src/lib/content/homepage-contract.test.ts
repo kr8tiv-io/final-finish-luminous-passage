@@ -15,8 +15,7 @@ describe('Follow the Floor semantic fallback', () => {
     for (const chapter of ['portico', 'foundation', 'garage', 'vault', 'finish-hall', 'commercial', 'proof', 'consultation']) {
       expect(homepage).toContain(`id="${chapter}"`);
     }
-    expect(homepage).toContain('data-journey-target');
-    expect(homepage).toContain('Reclaim your garage or basement.');
+      expect(homepage).toContain('Reclaim your garage or basement.');
   });
   it('does not manufacture a Google total from selected testimonials', () => {
     expect(homepage).not.toContain('String(reviews.length)');

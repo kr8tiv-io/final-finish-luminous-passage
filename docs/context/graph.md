@@ -16,7 +16,7 @@ flowchart TD
   end
   subgraph phase-1["phase-1"]
     step-07["step-07: Dead-code sweep + harvest port (FinishOrbit, wor"]:::stDone
-    step-08["step-08: Handoff + tiers (one owner): mediaOwner via repo"]:::stDoing
+    step-08["step-08: Handoff + tiers (one owner): mediaOwner via repo"]:::stDone
     step-09["step-09: Gallery owner + production fallback: restore del"]:::stDone
     step-10["step-10: Security and delivery basics: Nodemailer advisor"]:::stDone
     step-11["step-11: One numbering, one comparison: single chapter nu"]:::stTodo
@@ -248,7 +248,7 @@ flowchart TD
 - **Phase:** phase-1
 - **Tier:** O+
 - **Owner(s):** motion-a
-- **Status:** doing
+- **Status:** done
 - **Files:** journey-director.ts, JourneyMotion.tsx, FilmVeil.tsx, journey-media.ts, journey-controls.ts, FilmVeilLoader.tsx, journey.css, readable-experience.css
 - **Inputs (informs):** none recorded
 - **Constraints (locks):** L1, L2, L3, L4

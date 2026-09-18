@@ -547,7 +547,7 @@
       "id": "step-08",
       "type": "step",
       "title": "Handoff + tiers (one owner): mediaOwner via reportVeil, single canvas-opacity writer, tier resolver, retire .journey-rail",
-      "status": "doing",
+      "status": "done",
       "phase": "phase-1",
       "tier": "O+",
       "owner": "motion-a",
@@ -566,7 +566,7 @@
       "id": "gate-08",
       "type": "gate",
       "title": "boundaries.spec: all seven boundaries at p in {.05,.25,.5,.75,.95} forward+reverse, pixelmatch < 2%, no all-paper frame; iPhone shows balanced tier.",
-      "status": "todo"
+      "status": "done"
     },
     {
       "id": "step-09",
