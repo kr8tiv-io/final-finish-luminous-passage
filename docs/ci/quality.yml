@@ -1,0 +1,97 @@
+# ---------------------------------------------------------------------------
+# NOT PUSHED BY THE REBUILD AGENTS — EDITED AS TEXT ONLY.
+#
+# The GitHub token this project's agents hold lacks the `workflow` scope, so a
+# push that touches `.github/workflows/**` is rejected by GitHub before it
+# reaches the branch. This file is therefore committed on the step branch as
+# text and must be pushed (or pasted) by a human with a `workflow`-scoped
+# token before CI will ever run it. Nothing in this repo has executed it yet;
+# treat every job below as unverified-on-CI until a real run exists.
+# Locally the same commands are `npm run check`, `npm test`,
+# `npm run build:staging`, `npm run measure:delivery -- --label ci --port 4334`
+# and `npm run check:budgets`, all of which HAVE been run.
+# ---------------------------------------------------------------------------
+name: quality
+
+on:
+  push:
+    branches: ['**']
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: quality-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  SITE_ENV: staging
+
+jobs:
+  static:
+    name: types, unit tests, staging build
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # The journey films, posters and .glb assets are LFS pointers; a build
+          # without them fails `npm run validate:3d` / `assets:validate`.
+          lfs: true
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.12'
+          cache: npm
+      - run: npm ci --no-audit --no-fund
+      - name: astro check
+        run: npm run check
+      - name: unit tests
+        run: npm test
+      - name: staging build
+        run: npm run build:staging
+        env:
+          PUBLIC_SITE_URL: http://127.0.0.1:4334
+
+  delivery-budgets:
+    name: delivery budgets (Step 34)
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          lfs: true
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.12'
+          cache: npm
+      - run: npm ci --no-audit --no-fund
+      - name: install chromium for playwright
+        run: npx playwright install --with-deps chromium
+
+      - name: build the staging app
+        run: npm run build:staging
+        env:
+          PUBLIC_SITE_URL: http://127.0.0.1:4334
+
+      # measure-delivery.mjs starts `node dist/server/entry.mjs` itself on the
+      # port given here, waits for /api/health, and stops only the process it
+      # started. Do not add a separate server step — two servers on one port is
+      # how the local harness has broken before.
+      - name: measure delivery against the built app
+        run: npm run measure:delivery -- --label ci --port 4334
+        env:
+          PUBLIC_SITE_URL: http://127.0.0.1:4334
+
+      # Redundant on a green run (the probe gates too) but it is the step that
+      # proves the JSON artifact alone is enough to re-derive the verdict.
+      - name: re-check the written report against budgets.json
+        if: always()
+        run: npm run check:budgets -- --label ci
+
+      - name: upload delivery report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: delivery-${{ github.run_id }}
+          path: output/delivery/ci.json
+          if-no-files-found: error
+          retention-days: 30

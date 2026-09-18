@@ -32,7 +32,9 @@
     "test:project-assets": "node --test tests/project-assets.test.mjs",
     "astro": "astro",
     "validate:content": "node scripts/validate-content.mjs",
-    "check:reviews": "node scripts/check-review-freshness.mjs"
+    "check:reviews": "node scripts/check-review-freshness.mjs",
+    "measure:delivery": "node scripts/measure-delivery.mjs",
+    "check:budgets": "node scripts/check-budgets.mjs"
   },
   "dependencies": {
     "@astrojs/mdx": "^7.0.8",

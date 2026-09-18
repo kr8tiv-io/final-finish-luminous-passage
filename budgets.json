@@ -1,0 +1,33 @@
+{
+  "$schema": "./docs/context/DELIVERY-BUDGETS.md",
+  "version": 1,
+  "note": "Single source of truth for Step 34 delivery budgets. Read by scripts/measure-delivery.mjs (gates the run) and scripts/check-budgets.mjs (re-checks the last written report). Byte budgets are EXACT INTEGER BYTES — never rounded to MB before comparing. Definitions of every window and metric: docs/context/DELIVERY-BUDGETS.md.",
+  "units": {
+    "bytes": "exact transfer bytes (response body + response headers), MiB = 1048576 B",
+    "ms": "milliseconds since navigation start unless stated otherwise"
+  },
+  "gated": {
+    "arrivalBytes": {
+      "desktop": 5242880,
+      "phone": 838861,
+      "_desktop_note": "5.0 MiB exactly (5 * 1048576). A run at 5242880 passes; 5245261 (the last integration-branch number) fails by 2381 B and must be reported as a fail, not rounded to '5.00 MB PASS'.",
+      "_phone_note": "0.8 MiB = 838860.8 B; rounded UP to the next whole byte so the budget is expressible as an integer."
+    },
+    "routeBytes": {
+      "desktop": 18874368,
+      "phone": 12582912,
+      "_note": "18 MiB desktop / 12 MiB phone. The plan states '12/18 MB' without naming the viewport; the larger figure goes to desktop, which loads the 1080 pour rung. See DEV-CONTRACT.md and DELIVERY-BUDGETS.md."
+    },
+    "lcpMs": 2500,
+    "clsArrival": 0.02,
+    "inpMs": 200,
+    "longTaskMaxMs": 200
+  },
+  "reported": {
+    "clsScroll": "Session-window CLS accumulated during the scripted scroll. Measured and printed, NEVER gated: a programmatic scrollIntoView storm is not a user's scroll, and the CLS spec's field metric does not include shifts the harness itself provoked.",
+    "clsSession": "Session-window CLS over the whole run (arrival + scroll + interaction). Diagnostic only.",
+    "clsNaiveSum": "Plain sum of every layout-shift value in the run. This is what the pre-Step-34 probe gated on and the reason it read exactly 1.0 / 2.0.",
+    "fontBytes": "Owned by Step 13 (subsetting). Reported here so a regression is visible; not gated by Step 34.",
+    "videoPreload": "Owned by Step 17. Reported here so a video that stops being preload=none/metadata is visible; not gated by Step 34."
+  }
+}
