@@ -1,0 +1,270 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import StairLab from '../../components/motion/StairLab';
+
+export const prerender = false;
+
+// Staging/dev only, the same shape `src/pages/dev/surface.astro` uses. The client
+// route never serves this page, and `noindex` covers the staging host as well.
+if (import.meta.env.SITE_ENV === 'production') {
+  return new Response('Not found', { status: 404, headers: { 'content-type': 'text/plain' } });
+}
+
+const HEADLINE = ['The finish begins', 'below the surface.'];
+const CAPTION = 'The coat you see is the last one down.';
+---
+
+<BaseLayout
+  title="Stair chapter — A/B spike"
+  description="Step 20 spike: the pearl-graded walkway film against the 2.5D depth plate. Not a client route."
+  canonicalPath="/lab/stairs"
+  noindex
+>
+  <main id="main-content" class="stair-lab">
+    <p class="stair-lab__note">Step 20 spike · Act 3 stair, A against B · visual direction not approved · not a client route</p>
+
+    <nav class="stair-lab__toggle" aria-label="Spike panels">
+      <a href="#stair-a" data-stair-jump="a"><b>A</b> <span>film</span></a>
+      <span aria-hidden="true">/</span>
+      <a href="#stair-b" data-stair-jump="b"><b>B</b> <span>plate</span></a>
+    </nav>
+
+    <section class="stair-panel" id="stair-a" data-stair-panel="a" aria-labelledby="stair-a-title">
+      <div class="stair-panel__media">
+        <video
+          class="stair-panel__film"
+          data-stair-film
+          src="/videos/follow-floor/720/epoxy-walkway-pearl.mp4"
+          poster="/images/brand/epoxy-walkway-pearl-poster.jpg"
+          preload="auto"
+          muted
+          playsinline
+          disablepictureinpicture
+          aria-hidden="true"
+        ></video>
+      </div>
+      <div class="stair-panel__overlay">
+        <div class="stair-panel__scrim" aria-hidden="true"></div>
+        <div class="stair-panel__reading">
+          <p class="stair-panel__tag">A — pearl-graded walkway film</p>
+          <h2 class="stair-panel__headline line-rise" id="stair-a-title" data-line-rise>
+            {HEADLINE.map((line) => (<span class="rise"><span>{line}</span></span>))}
+          </h2>
+          <p class="stair-panel__caption line-rise" data-line-rise data-line-rise-delay>
+            <span class="rise"><span>{CAPTION}</span></span>
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <section class="stair-panel" id="stair-b" data-stair-panel="b" aria-labelledby="stair-b-title">
+      <div class="stair-panel__media">
+        <div class="stair-panel__plate" data-stair-plate-host></div>
+      </div>
+      <div class="stair-panel__overlay">
+        <div class="stair-panel__scrim" aria-hidden="true"></div>
+        <div class="stair-panel__reading">
+          <p class="stair-panel__tag">B — 2.5D depth plate (stair-dolly)</p>
+          <h2 class="stair-panel__headline line-rise" id="stair-b-title" data-line-rise>
+            {HEADLINE.map((line) => (<span class="rise"><span>{line}</span></span>))}
+          </h2>
+          <p class="stair-panel__caption line-rise" data-line-rise data-line-rise-delay>
+            <span class="rise"><span>{CAPTION}</span></span>
+          </p>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <StairLab client:only="react" />
+</BaseLayout>
+
+<style>
+  /*
+   * Sticky-in-flow, not a GSAP pin and not Lenis (storyboard §6, act 1's iOS rule):
+   * the section is four screens tall and its first screen stays put, which gives the
+   * three screens of scroll the brief asks for without a pin-spacer or a refresh cost.
+   */
+  .stair-lab { padding: 0; }
+  .stair-lab__note {
+    margin: 0;
+    padding: 7rem var(--gutter) 1.5rem;
+    font-size: .68rem;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+    color: var(--cobalt);
+  }
+
+  .stair-lab__toggle {
+    position: fixed;
+    top: 5.5rem;
+    right: var(--gutter);
+    z-index: 40;
+    display: flex;
+    align-items: center;
+    gap: .55rem;
+    padding: .4rem .85rem;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    background: var(--paper-bright);
+    font-size: .68rem;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+  }
+  .stair-lab__toggle a { color: var(--muted); text-decoration: none; display: inline-flex; gap: .35rem; align-items: baseline; }
+  .stair-lab__toggle a b { font-weight: 700; }
+  .stair-lab__toggle a[aria-current='true'] { color: var(--cobalt); }
+
+  .stair-panel { position: relative; height: 400lvh; }
+  /*
+   * Two sticky siblings, not one box, and the reason is the shared canvas.
+   * `.surface-canvas-host` is `position: fixed; z-index: 1` in the ROOT stacking
+   * context, and a `position: sticky` element opens a stacking context of its own at
+   * z-index auto — so every descendant of a single sticky host paints *under* the
+   * canvas however high its own z-index is. With the copy inside the host, panel B's
+   * headline, caption and scrim were completely hidden by the plate (captured).
+   * So the media keeps the low stack (the canvas draws the plate over it) and the
+   * overlay is a second sticky block at z-index 2, pulled back up over the media with
+   * a negative margin so it adds no height.
+   */
+  .stair-panel__media,
+  .stair-panel__overlay {
+    position: sticky;
+    top: 0;
+    height: 100lvh;
+  }
+  .stair-panel__media { overflow: hidden; background: #11161a; }
+  .stair-panel__overlay { margin-top: -100lvh; z-index: 2; pointer-events: none; }
+  .stair-panel__film,
+  .stair-panel__plate {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+  }
+  .stair-panel__film { object-fit: cover; display: block; }
+
+  /* A plain bottom scrim so the reading zone holds contrast. Not a frosted panel. */
+  .stair-panel__scrim {
+    position: absolute;
+    inset: auto 0 0 0;
+    height: 52%;
+    background: linear-gradient(180deg, rgba(10, 14, 17, 0) 0%, rgba(10, 14, 17, .55) 62%, rgba(10, 14, 17, .78) 100%);
+  }
+
+  .stair-panel__reading {
+    position: absolute;
+    left: var(--gutter);
+    bottom: clamp(2.5rem, 8vh, 5.5rem);
+    max-width: min(36rem, 74vw);
+    color: var(--paper-bright);
+  }
+  .stair-panel__tag {
+    margin: 0 0 1rem;
+    font-size: .64rem;
+    letter-spacing: .16em;
+    text-transform: uppercase;
+    color: rgba(250, 249, 246, .72);
+  }
+  .stair-panel__headline {
+    margin: 0;
+    font-size: clamp(2rem, 4.6vw, 3.6rem);
+    font-weight: 450;
+    letter-spacing: -.045em;
+    line-height: 1.04;
+  }
+  .stair-panel__caption {
+    margin: 1.1rem 0 0;
+    font-size: clamp(.95rem, 1.5vw, 1.15rem);
+    line-height: 1.45;
+    color: rgba(250, 249, 246, .84);
+  }
+
+  /*
+   * `line-rise` (MOTION-VOCABULARY.md): 0.6 s, stagger 0.055, power3.out, per-line
+   * yPercent 30 -> 0 plus opacity, inside a line mask. Authored in CSS rather than
+   * through `headline-motion.ts` because that module belongs to the journey's
+   * director and this route has no director; the values are the vocabulary's.
+   * power3.out is approximated by cubic-bezier(.165,.84,.44,1).
+   */
+  .rise { display: block; overflow: hidden; }
+  .rise > span {
+    display: block;
+    transform: translateY(30%);
+    opacity: 0;
+    transition: transform .6s cubic-bezier(.165, .84, .44, 1), opacity .6s cubic-bezier(.165, .84, .44, 1);
+  }
+  .line-rise[data-entered] .rise > span { transform: none; opacity: 1; }
+  .line-rise[data-entered] .rise:nth-child(2) > span { transition-delay: .055s; }
+  .line-rise[data-line-rise-delay][data-entered] .rise > span { transition-delay: .11s; }
+
+  @media (prefers-reduced-motion: reduce) {
+    .rise > span { transform: none; opacity: 1; transition: none; }
+  }
+
+  @media (max-width: 768px) {
+    .stair-lab__toggle { top: auto; bottom: 1rem; right: 1rem; }
+    .stair-panel__reading { max-width: none; right: var(--gutter); }
+  }
+</style>
+
+<style is:global>
+  /*
+   * The journey's floor band is a fixed rectangle over the bottom 38 % of every
+   * viewport and it is a view of the same canvas. On this route it would paint a
+   * pearl plane across the bottom of both panels. Hiding the element drops its
+   * rect to 0x0, so `surfaceStore.visibleViews()` skips that view — the canvas
+   * itself still mounts (SurfaceCanvas only needs the element to exist), which is
+   * what the depth plate's view needs. No component is modified to achieve this.
+   */
+  body:has(.stair-lab) .surface-band { display: none; }
+
+  .depth-plate { position: absolute; inset: 0; }
+  .depth-plate__still {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+    transform-origin: 50% 62%;
+    will-change: transform;
+  }
+
+  /* Capture instrumentation for the Step 20 gates; never set on a real route. */
+  html[data-stair-probe] .stair-panel__reading,
+  html[data-stair-probe] .stair-panel__scrim,
+  html[data-stair-probe] .stair-lab__toggle,
+  html[data-stair-probe] .site-header,
+  html[data-stair-probe] .stair-lab__note,
+  html[data-stair-probe] .journey-motion-control { display: none !important; }
+  html[data-stair-probe] .stair-panel__overlay { display: none !important; }
+  html[data-stair-probe='holes'] .stair-panel__media { background: #ff00ff; }
+  html[data-stair-probe='holes'] .stair-panel__plate > .depth-plate__still,
+  html[data-stair-probe='holes'] .depth-plate__still { visibility: hidden; }
+</style>
+
+<script>
+  const root = document.documentElement;
+  const params = new URLSearchParams(window.location.search);
+  const probe = params.get('probe');
+  if (probe === 'plain' || probe === 'holes') root.dataset.stairProbe = probe;
+
+  const reveal = new IntersectionObserver((entries) => {
+    entries.forEach((entry) => {
+      if (entry.isIntersecting) {
+        (entry.target as HTMLElement).dataset.entered = '';
+        reveal.unobserve(entry.target);
+      }
+    });
+  }, { threshold: 0.25 });
+  document.querySelectorAll('[data-line-rise]').forEach((node) => reveal.observe(node));
+
+  const jumps = [...document.querySelectorAll<HTMLAnchorElement>('[data-stair-jump]')];
+  const active = new IntersectionObserver((entries) => {
+    entries.forEach((entry) => {
+      if (!entry.isIntersecting) return;
+      const id = (entry.target as HTMLElement).dataset.stairPanel;
+      jumps.forEach((jump) => jump.setAttribute('aria-current', String(jump.dataset.stairJump === id)));
+    });
+  }, { threshold: 0.4 });
+  document.querySelectorAll('[data-stair-panel]').forEach((node) => active.observe(node));
+</script>
