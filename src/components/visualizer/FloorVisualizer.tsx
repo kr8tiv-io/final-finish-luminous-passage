@@ -37,6 +37,8 @@ import { adaptMaskResponse, type MaskDetectionResult } from '../../lib/visualize
 import { createPhotoRevisionGate, type PhotoRevisionGate } from '../../lib/visualizer/photo-revision';
 import { validateQuad, type Quad } from '../../lib/visualizer/homography';
 import VisualizerMotion, { captureFinishFlip } from './VisualizerMotion';
+import { captureFloorPng, downloadBlob, drawStageRegion } from './visualizer-capture';
+import { SHORTLIST_LIMIT, readShortlist, toggleShortlist, writeShortlist } from './visualizer-shortlist';
 import './floor-visualizer.css';
 
 const FinishPreview = lazy(() => import('./FinishPreview'));
@@ -46,6 +48,10 @@ type NormalizedPoints = readonly [NormalizedPoint, NormalizedPoint, NormalizedPo
 
 const DEFAULT_POINTS: NormalizedPoints = [[0.17, 0.48], [0.83, 0.48], [0.99, 0.99], [0.01, 0.99]];
 const FEATURED_IDS = new Set(['alabaster-stone', 'salt-pepper', 'blue-hour']);
+/** Lens box in CSS pixels, and the magnification it shows. */
+const LENS_SIZE = 168;
+const LENS_ZOOM = 2;
+const LENS_HOLD_MS = 220;
 
 class PreviewErrorBoundary extends Component<{
   children: ReactNode;
@@ -96,9 +102,18 @@ export default function FloorVisualizer({ detectionEnabled = false }: { detectio
   const objectUrl = useRef<string | null>(null);
   const revisionGate = useRef<PhotoRevisionGate | null>(null);
   const activeBrushPointer = useRef<number | null>(null);
+  const lensCanvas = useRef<HTMLCanvasElement | null>(null);
+  const holdTimer = useRef<number | null>(null);
+  const holdStart = useRef<{ x: number; y: number; pointerId: number } | null>(null);
+  const shortlistHydrated = useRef(false);
   if (!revisionGate.current) revisionGate.current = createPhotoRevisionGate();
 
   const [hydrated, setHydrated] = useState(false);
+  const [entryFromFinishHall, setEntryFromFinishHall] = useState(false);
+  const [shortlist, setShortlist] = useState<string[]>([]);
+  const [lensMode, setLensMode] = useState<'off' | 'hold' | 'pinned'>('off');
+  const [lensPoint, setLensPoint] = useState<{ x: number; y: number } | null>(null);
+  const [saving, setSaving] = useState(false);
   const [enhanced, setEnhanced] = useState(false);
   const [rendererReady, setRendererReady] = useState(false);
   const [selectedId, setSelectedId] = useState('alabaster-stone');
@@ -127,9 +142,19 @@ export default function FloorVisualizer({ detectionEnabled = false }: { detectio
     setHydrated(true);
     setRendererReady(false);
     setEnhanced(supportsLivePreview());
-    const finish = new URLSearchParams(window.location.search).get('finish');
+    const params = new URLSearchParams(window.location.search);
+    const finish = params.get('finish');
     if (finish && finishPresets.some((item) => item.id === finish)) setSelectedId(finish);
+    // Act 7 hands the floor over in its metallic state; the alcove settles out of it.
+    setEntryFromFinishHall(params.get('from') === 'finish-hall');
+    setShortlist(readShortlist((id) => finishPresets.some((item) => item.id === id)));
+    shortlistHydrated.current = true;
   }, []);
+
+  useEffect(() => {
+    if (!shortlistHydrated.current) return;
+    writeShortlist(shortlist);
+  }, [shortlist]);
 
   const handlePreviewReady = useCallback(() => setRendererReady(true), []);
   const handlePreviewUnavailable = useCallback(() => {
@@ -161,6 +186,130 @@ export default function FloorVisualizer({ detectionEnabled = false }: { detectio
     captureFinishFlip(shell.current);
     setSelectedId(id);
   };
+
+  const pinned = shortlist.includes(selected.id);
+
+  const togglePin = () => {
+    const next = toggleShortlist(shortlist, selected.id);
+    if (!pinned && next.length === shortlist.length) {
+      setNotice(`Your shortlist holds ${SHORTLIST_LIMIT} finishes. Remove one to pin another.`);
+      return;
+    }
+    setShortlist(next);
+    setNotice(pinned
+      ? `${selected.name} removed from your shortlist.`
+      : `${selected.name} pinned. The shortlist stays in this browser.`);
+  };
+
+  const removeFromShortlist = (id: string) => {
+    const finish = finishPresets.find((item) => item.id === id);
+    setShortlist((current) => current.filter((entry) => entry !== id));
+    if (finish) setNotice(`${finish.name} removed from your shortlist.`);
+  };
+
+  const cancelHold = () => {
+    if (holdTimer.current !== null) window.clearTimeout(holdTimer.current);
+    holdTimer.current = null;
+    holdStart.current = null;
+  };
+
+  // `image-lens`: press and hold to magnify, or use the toggle for keyboard. The native
+  // cursor is never replaced and no hit target moves.
+  const stagePointerDown = (event: PointerEvent<HTMLDivElement>) => {
+    if (lensMode === 'pinned' || brushMode) return;
+    const target = event.target as HTMLElement;
+    if (target.closest('button, label, input')) return;
+    const { clientX, clientY, pointerId } = event;
+    cancelHold();
+    holdStart.current = { x: clientX, y: clientY, pointerId };
+    holdTimer.current = window.setTimeout(() => {
+      const bounds = stage.current?.getBoundingClientRect();
+      if (!bounds) return;
+      setLensPoint({ x: clientX - bounds.left, y: clientY - bounds.top });
+      setLensMode('hold');
+      holdTimer.current = null;
+    }, LENS_HOLD_MS);
+  };
+
+  const stagePointerMove = (event: PointerEvent<HTMLDivElement>) => {
+    const bounds = stage.current?.getBoundingClientRect();
+    if (!bounds) return;
+    if (lensMode !== 'off') {
+      setLensPoint({ x: event.clientX - bounds.left, y: event.clientY - bounds.top });
+      return;
+    }
+    const start = holdStart.current;
+    if (start && start.pointerId === event.pointerId && Math.hypot(event.clientX - start.x, event.clientY - start.y) > 8) {
+      cancelHold();
+    }
+  };
+
+  const stagePointerEnd = () => {
+    cancelHold();
+    if (lensMode === 'hold') {
+      setLensMode('off');
+      setLensPoint(null);
+    }
+  };
+
+  const toggleLens = () => {
+    cancelHold();
+    setLensPoint(null);
+    setLensMode((current) => {
+      const next = current === 'pinned' ? 'off' : 'pinned';
+      setNotice(next === 'pinned'
+        ? 'Magnifier on. It shows the finish at 2× under the pointer, or at the centre of the preview.'
+        : 'Magnifier off.');
+      return next;
+    });
+  };
+
+  const saveFloor = async () => {
+    const host = stage.current;
+    if (!host) return;
+    setSaving(true);
+    try {
+      const blob = await captureFloorPng(host, {
+        finishName: selected.name,
+        family: selected.family,
+        colors: selected.colors,
+      });
+      if (!blob) {
+        setNotice('This browser could not render the image. A screenshot works as a fallback.');
+        return;
+      }
+      downloadBlob(blob, `final-finish-${selected.id}.png`);
+      setNotice(`Saved ${selected.name} to your downloads. The image was rendered on this device and never uploaded.`);
+    } catch {
+      setNotice('This browser could not render the image. A screenshot works as a fallback.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  useEffect(() => () => cancelHold(), []);
+
+  useEffect(() => {
+    if (lensMode === 'off') return;
+    const host = stage.current;
+    const canvas = lensCanvas.current;
+    if (!host || !canvas) return;
+    const bounds = host.getBoundingClientRect();
+    const point = lensPoint ?? { x: bounds.width / 2, y: bounds.height / 2 };
+    const dpr = Math.min(2, window.devicePixelRatio || 1);
+    const region = LENS_SIZE / LENS_ZOOM;
+    const size = Math.round(LENS_SIZE * dpr);
+    if (canvas.width !== size) canvas.width = size;
+    if (canvas.height !== size) canvas.height = size;
+    const context = canvas.getContext('2d');
+    if (!context) return;
+    drawStageRegion(
+      context,
+      host,
+      { sx: point.x - region / 2, sy: point.y - region / 2, sw: region, sh: region, dw: size, dh: size },
+      selected.colors,
+    );
+  }, [compare, lensMode, lensPoint, photoUrl, rendererReady, selected]);
 
   const handlePhoto = async (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -354,9 +503,20 @@ export default function FloorVisualizer({ detectionEnabled = false }: { detectio
 
   return (
     <section ref={shell} className="visualizer-shell" aria-label="Floor finish visualizer">
-      <VisualizerMotion selectedId={selectedId} />
+      <VisualizerMotion selectedId={selectedId} hoverRevision={shortlist.join(',')} />
       <div className="visualizer-workspace">
-        <div ref={stage} className={`photo-stage ${photoUrl ? 'has-photo' : ''} ${rendererReady ? 'is-live' : ''}`} data-finish-stage data-preview={rendererReady ? 'live' : 'still'}>
+        <div
+          ref={stage}
+          className={`photo-stage ${photoUrl ? 'has-photo' : ''} ${rendererReady ? 'is-live' : ''}`}
+          data-finish-stage
+          data-preview={rendererReady ? 'live' : 'still'}
+          data-lens={lensMode === 'off' ? 'off' : 'on'}
+          onPointerDown={stagePointerDown}
+          onPointerMove={stagePointerMove}
+          onPointerUp={stagePointerEnd}
+          onPointerCancel={stagePointerEnd}
+          onPointerLeave={stagePointerEnd}
+        >
           {enhanced ? (
             <div
               className={`preview-viewport preview-viewport--live${photoUrl ? '' : ' preview-viewport--alcove'}`}
@@ -374,6 +534,7 @@ export default function FloorVisualizer({ detectionEnabled = false }: { detectio
                     photoRevision={photoRevision}
                     maskUrl={mask?.dataUrl ?? null}
                     exclusionMask={exclusionMask}
+                    entryFromFinishHall={entryFromFinishHall}
                     onReady={handlePreviewReady}
                     onUnavailable={handlePreviewUnavailable}
                   />
@@ -455,6 +616,20 @@ export default function FloorVisualizer({ detectionEnabled = false }: { detectio
               </div>
             </>
           )}
+          {lensMode !== 'off' ? (
+            <div
+              className="finish-lens"
+              aria-hidden="true"
+              style={{
+                width: LENS_SIZE,
+                height: LENS_SIZE,
+                left: lensPoint ? lensPoint.x : '50%',
+                top: lensPoint ? lensPoint.y : '50%',
+              }}
+            >
+              <canvas ref={lensCanvas} data-capture-skip width={LENS_SIZE} height={LENS_SIZE} />
+            </div>
+          ) : null}
         </div>
 
         <div className="workspace-controls">
@@ -506,6 +681,28 @@ export default function FloorVisualizer({ detectionEnabled = false }: { detectio
               )}
             </>
           )}
+          <div className="studio-tools" aria-label="Preview tools">
+            <button
+              type="button"
+              className="studio-tool"
+              data-lens-toggle
+              aria-pressed={lensMode === 'pinned'}
+              disabled={!hydrated}
+              onClick={toggleLens}
+            >
+              Magnifier <span aria-hidden="true">2×</span>
+            </button>
+            <button
+              type="button"
+              className="studio-tool"
+              data-save-floor
+              disabled={!hydrated || saving}
+              onClick={() => { void saveFloor(); }}
+            >
+              {saving ? 'Saving…' : 'Save this floor'}
+            </button>
+            <span className="studio-tools-note">Hold on the preview to magnify. The image is rendered and saved on this device.</span>
+          </div>
           <p className="privacy-note"><strong>Private by default.</strong> Manual mode keeps the photo on this device. Automatic detection only sends a downscaled copy after explicit permission.</p>
           <p className="status-note" role="status">{notice}</p>
         </div>
@@ -517,6 +714,43 @@ export default function FloorVisualizer({ detectionEnabled = false }: { detectio
           <div className="selected-finish-row"><span className="finish-live-swatch" data-flip-id={`finish-${selected.id}`} style={{ background: finishCssBackground(selected) }} aria-hidden="true" /><h2>{selected.name}</h2></div>
           <span>{selected.description}</span>
         </div>
+        <div className="finish-shortlist" data-shortlist>
+          <div className="shortlist-head">
+            <p>Shortlist · up to {SHORTLIST_LIMIT}</p>
+            <button
+              type="button"
+              data-pin-finish
+              aria-pressed={pinned}
+              disabled={!hydrated}
+              onClick={togglePin}
+            >{pinned ? 'Unpin this finish' : 'Pin this finish'}</button>
+          </div>
+          {shortlist.length ? (
+            <ul className="shortlist-row">
+              {shortlist.map((id) => {
+                const finish = finishPresets.find((item) => item.id === id);
+                if (!finish) return null;
+                return (
+                  <li key={id} data-shortlist-item={id}>
+                    <button type="button" className="shortlist-entry" onClick={() => selectFinish(id)}>
+                      <span className="chip-glint" aria-hidden="true" />
+                      <span className="shortlist-swatch" style={{ background: finishCssBackground(finish) }} aria-hidden="true" />
+                      <small>{finish.name}</small>
+                    </button>
+                    <button
+                      type="button"
+                      className="shortlist-remove"
+                      aria-label={`Remove ${finish.name} from shortlist`}
+                      onClick={() => removeFromShortlist(id)}
+                    >Remove</button>
+                  </li>
+                );
+              })}
+            </ul>
+          ) : (
+            <p className="shortlist-empty">Pin up to three finishes to compare them side by side. The shortlist stays in this browser.</p>
+          )}
+        </div>
         <p className="featured-finish-note">Featured · Full-Flake Porcelain · Salt &amp; Pepper · Cobalt Terrazzo</p>
         <div className="finish-grid" tabIndex={0} aria-label="Scroll through 30 finish inspirations">
           {families.map((family) => (
@@ -524,7 +758,8 @@ export default function FloorVisualizer({ detectionEnabled = false }: { detectio
               <p>{family}</p>
               {finishPresets.filter((finish) => finish.family === family).map((finish) => (
                 <button type="button" key={finish.id} disabled={!hydrated} data-featured={FEATURED_IDS.has(finish.id) ? 'true' : undefined} aria-label={`Finish: ${finish.name}`} aria-pressed={finish.id === selected.id} className={finish.id === selected.id ? 'is-selected' : ''} onClick={() => selectFinish(finish.id)}>
-                  <span data-flip-id={`finish-${finish.id}`} style={{ background: finishCssBackground(finish) }} aria-hidden="true" />
+                  <span className="chip-glint" aria-hidden="true" />
+                  <span className="chip-swatch" data-flip-id={`finish-${finish.id}`} style={{ background: finishCssBackground(finish) }} aria-hidden="true" />
                   <small>{finish.name}</small>
                 </button>
               ))}
@@ -532,7 +767,7 @@ export default function FloorVisualizer({ detectionEnabled = false }: { detectio
           ))}
         </div>
         <div className="share-row">
-          <a className="upload-button" href={`/contact?finish=${selected.id}#quote`}>Ask Denis about this finish</a>
+          <a className="upload-button" data-underline-travel href={`/contact?finish=${selected.id}#quote`}>Ask Denis about this finish<span className="link-rule" aria-hidden="true" /></a>
           <button type="button" disabled={!hydrated} onClick={copyShareLink}>Copy share link</button>
         </div>
         <p className="visualizer-disclaimer">Visualization for design inspiration. Lighting, screen colour, texture scale, and available systems vary. Confirm the final selection with Final Finish.</p>

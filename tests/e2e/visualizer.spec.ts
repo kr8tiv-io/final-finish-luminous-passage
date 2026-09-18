@@ -30,7 +30,10 @@ test.describe('floor visualizer', () => {
     const upload = page.getByLabel('Upload a room or garage photo');
     await expect(upload).toBeEnabled({ timeout: 20_000 });
     await upload.setInputFiles(roomPhoto);
-    await expect(page.getByRole('img', { name: 'Your uploaded room preview' })).toBeVisible();
+    // The first photo frame swaps the alcove for the photo world and compiles that
+    // shader. On a real GPU that is tens of milliseconds; under the headless software
+    // rasteriser it is seconds, so this one assertion gets its own budget.
+    await expect(page.getByRole('img', { name: 'Your uploaded room preview' })).toBeVisible({ timeout: 30_000 });
     await expect(page.getByRole('slider', { name: /Floor corner/ })).toHaveCount(4);
     const corner = page.getByRole('slider', { name: 'Floor corner 1' });
     const before = await page.locator('.finish-plane').getAttribute('style');

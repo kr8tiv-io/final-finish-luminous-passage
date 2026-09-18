@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef } from 'react';
-import { Canvas, useThree } from '@react-three/fiber';
+import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { OrthographicCamera, PerspectiveCamera } from '@react-three/drei';
 import * as THREE from 'three';
 import gsap from 'gsap';
@@ -9,10 +9,35 @@ import type { Quad } from '../../lib/visualizer/homography';
 import { ensureVisualizerGsap } from '../../lib/visualizer/motion';
 import type { ExclusionMaskDraft } from '../../lib/visualizer/exclusion-mask';
 import type { Size } from '../../lib/visualizer/image-geometry';
+import {
+  ALCOVE_FINISH_CHUNK,
+  ENTRY_METALLIC,
+  ENTRY_SETTLE_DURATION,
+  ENTRY_SETTLE_EASE,
+  PILLAR_HEIGHT,
+  createArchGeometry,
+  createContactTexture,
+  createPillarGeometry,
+  createRoomEnvironment,
+  createSparkleTexture,
+  createWallGeometry,
+  finishSurfaceTraits,
+} from './alcove-world';
 
 type Point = readonly [number, number];
 
-function patchFinishMaterial(material: THREE.MeshPhysicalMaterial, uniforms: {
+/** Where the alcove camera rests, and what it looks at, once the entrance has played. */
+const ALCOVE_HOME = new THREE.Vector3(0.1, 3.55, 10.6);
+const ALCOVE_TARGET = new THREE.Vector3(0, 0.5, -0.9);
+const ALCOVE_START = new THREE.Vector3(0, 5.1, 14.4);
+const PILLAR_X_FRONT = 3.2;
+const PILLAR_Z_FRONT = 2;
+const PILLAR_X_BACK = 2.5;
+const PILLAR_Z_BACK = -3.1;
+/** Flake density is tuned against the slab's own size; both move together. */
+const FLOOR_DENSITY = 157;
+
+type FinishUniforms = {
   uA: { value: THREE.Color };
   uB: { value: THREE.Color };
   uC: { value: THREE.Color };
@@ -20,7 +45,17 @@ function patchFinishMaterial(material: THREE.MeshPhysicalMaterial, uniforms: {
   uPattern: { value: number };
   uReveal: { value: number };
   uLight: { value: THREE.Vector2 };
-}) {
+  uSparkleTex: { value: THREE.Texture };
+  uSparkleShift: { value: THREE.Vector2 };
+  uSparkleAmount: { value: number };
+  uSwirlAmount: { value: number };
+  uEntry: { value: number };
+  uEntryA: { value: THREE.Color };
+  uEntryB: { value: THREE.Color };
+  uEntryC: { value: THREE.Color };
+};
+
+function patchFinishMaterial(material: THREE.MeshPhysicalMaterial, uniforms: FinishUniforms) {
   material.onBeforeCompile = (shader) => {
     Object.assign(shader.uniforms, uniforms);
     shader.vertexShader = shader.vertexShader.replace(
@@ -32,46 +67,70 @@ function patchFinishMaterial(material: THREE.MeshPhysicalMaterial, uniforms: {
     );
     shader.fragmentShader = shader.fragmentShader.replace(
       '#include <common>',
-      `#include <common>\n${FINISH_SHADER_CHUNK}\nvarying vec2 vFinishUv;`,
+      `#include <common>\n${FINISH_SHADER_CHUNK}\n${ALCOVE_FINISH_CHUNK}\nvarying vec2 vFinishUv;`,
     ).replace(
       '#include <color_fragment>',
       `#include <color_fragment>
       vec3 finishCol = finishSample(vFinishUv);
+      if (uEntry > 0.0005) finishCol = mix(finishCol, ffeEntrySample(vFinishUv), uEntry);
       float sheenDot = pow(max(0.0, 1.0 - distance(vFinishUv, uLight)), 8.0);
       diffuseColor.rgb = mix(diffuseColor.rgb, finishCol, uReveal);
       diffuseColor.rgb += finishCol * sheenDot * 0.38 * uReveal;
       `,
+    ).replace(
+      '#include <opaque_fragment>',
+      `
+      float ffeFacing = pow(1.0 - saturate(dot(normalize(vViewPosition), normal)), 2.0);
+      outgoingLight += vec3(ffeSparkle(gl_FragCoord.xy)) * mix(vec3(1.0), finishCol, 0.3) * (0.4 + 0.75 * ffeFacing) * uReveal;
+      outgoingLight += ffeSwirl(vFinishUv, finishCol) * uReveal;
+      #include <opaque_fragment>`,
     );
   };
   material.customProgramCacheKey = () => 'ffe-finish-preview';
 }
 
-function useFinishMaterial(finish: FinishPreset) {
+function useFinishMaterial(finish: FinishPreset, sparkleShift: THREE.Vector2) {
   const { invalidate } = useThree();
-  const uniforms = useMemo(() => ({
-    uA: { value: new THREE.Color(finish.colors[0]) },
-    uB: { value: new THREE.Color(finish.colors[1]) },
-    uC: { value: new THREE.Color(finish.colors[2]) },
-    uDensity: { value: 72 / Math.max(0.4, finish.scale) },
-    uPattern: { value: PATTERN_CODE[finish.pattern] },
-    uReveal: { value: 1 },
-    uLight: { value: new THREE.Vector2(0.32, 0.28) },
-  }), []);
+  const sparkleTexture = useMemo(() => createSparkleTexture(), []);
+  const uniforms = useMemo<FinishUniforms>(() => {
+    const traits = finishSurfaceTraits(finish);
+    return {
+      uA: { value: new THREE.Color(finish.colors[0]) },
+      uB: { value: new THREE.Color(finish.colors[1]) },
+      uC: { value: new THREE.Color(finish.colors[2]) },
+      uDensity: { value: FLOOR_DENSITY / Math.max(0.4, finish.scale) },
+      uPattern: { value: PATTERN_CODE[finish.pattern] },
+      uReveal: { value: 1 },
+      uLight: { value: new THREE.Vector2(0.32, 0.28) },
+      uSparkleTex: { value: sparkleTexture as THREE.Texture },
+      uSparkleShift: { value: sparkleShift },
+      uSparkleAmount: { value: traits.sparkle },
+      uSwirlAmount: { value: traits.swirl },
+      uEntry: { value: 0 },
+      uEntryA: { value: new THREE.Color(ENTRY_METALLIC[0]) },
+      uEntryB: { value: new THREE.Color(ENTRY_METALLIC[1]) },
+      uEntryC: { value: new THREE.Color(ENTRY_METALLIC[2]) },
+    };
+  }, [sparkleShift, sparkleTexture]);
 
   const material = useMemo(() => {
+    const traits = finishSurfaceTraits(finish);
     const next = new THREE.MeshPhysicalMaterial({
       color: '#d8d1c3',
       roughness: finish.roughness,
-      metalness: finish.family === 'metallic' ? 0.72 : 0.04,
-      clearcoat: 1,
-      clearcoatRoughness: finish.family === 'metallic' ? 0.06 : 0.1,
-      envMapIntensity: finish.family === 'metallic' ? 2.1 : 1.2,
+      metalness: traits.metalness,
+      clearcoat: traits.clearcoat,
+      clearcoatRoughness: traits.clearcoatRoughness,
+      envMapIntensity: traits.envMapIntensity,
     });
     patchFinishMaterial(next, uniforms);
     return next;
   }, [uniforms]);
 
-  useEffect(() => () => material.dispose(), [material]);
+  useEffect(() => () => {
+    material.dispose();
+    sparkleTexture.dispose();
+  }, [material, sparkleTexture]);
 
   useEffect(() => {
     const host = document.querySelector<HTMLElement>('[data-finish-stage]');
@@ -91,33 +150,89 @@ function useFinishMaterial(finish: FinishPreset) {
   return { material, uniforms };
 }
 
-function FloorSlab({ finish, compare }: { finish: FinishPreset; compare: number }) {
-  const { material, uniforms } = useFinishMaterial(finish);
+/**
+ * Holds a paused timeline until the renderer actually draws a frame. Mounting can be
+ * seconds ahead of the first pixel on a slow device, and an entrance started at mount
+ * is simply gone by then — GSAP catches up to wall-clock time in one tick.
+ */
+function useFirstFrameTimeline() {
+  const pending = useRef<gsap.core.Timeline | null>(null);
+  useFrame(() => {
+    const timeline = pending.current;
+    if (!timeline) return;
+    pending.current = null;
+    timeline.play(0);
+  });
+  return pending;
+}
+
+function FloorSlab({
+  finish,
+  compare,
+  sparkleShift,
+  entryFromFinishHall,
+  staggered,
+}: {
+  finish: FinishPreset;
+  compare: number;
+  sparkleShift: THREE.Vector2;
+  entryFromFinishHall: boolean;
+  staggered: boolean;
+}) {
+  const { material, uniforms } = useFinishMaterial(finish, sparkleShift);
   const { invalidate } = useThree();
+  const firstPaint = useRef(true);
+  const pending = useFirstFrameTimeline();
 
   useEffect(() => {
     ensureVisualizerGsap();
+    const traits = finishSurfaceTraits(finish);
     const a = new THREE.Color(finish.colors[0]);
     const b = new THREE.Color(finish.colors[1]);
     const c = new THREE.Color(finish.colors[2]);
+    const opening = firstPaint.current;
+    const entering = opening && entryFromFinishHall;
+    const delay = opening && staggered ? 0.34 : 0;
+    firstPaint.current = false;
     uniforms.uPattern.value = PATTERN_CODE[finish.pattern];
-    const tl = gsap.timeline({ onUpdate: invalidate });
-    tl.fromTo(uniforms.uReveal, { value: 0.12 }, { value: 1, duration: 0.9, ease: 'alcove' }, 0);
-    tl.to(uniforms.uDensity, { value: 72 / Math.max(0.4, finish.scale), duration: 0.8, ease: 'power2.out' }, 0);
+    uniforms.uSparkleAmount.value = traits.sparkle;
+    uniforms.uSwirlAmount.value = traits.swirl;
+    const tl = gsap.timeline({ delay, paused: opening, onUpdate: invalidate });
+    // Arriving from Act 7 the floor is already on screen, so it does not fade up: it is
+    // handed over at full strength and only its material changes. Fading in over the
+    // entry crossfade would cancel it out, leaving the base colour showing through.
+    if (entering) uniforms.uReveal.value = 1;
+    else tl.fromTo(uniforms.uReveal, { value: 0.12 }, { value: 1, duration: 0.9, ease: 'alcove' }, 0);
+    tl.to(uniforms.uDensity, { value: FLOOR_DENSITY / Math.max(0.4, finish.scale), duration: 0.8, ease: 'power2.out' }, 0);
     tl.to(material, {
       roughness: finish.roughness,
-      metalness: finish.family === 'metallic' ? 0.72 : 0.04,
-      clearcoat: 1,
+      metalness: traits.metalness,
+      clearcoat: traits.clearcoat,
+      clearcoatRoughness: traits.clearcoatRoughness,
+      envMapIntensity: traits.envMapIntensity,
       duration: 0.85,
       ease: 'power3.inOut',
     }, 0);
     tl.to(uniforms.uA.value, { r: a.r, g: a.g, b: a.b, duration: 0.8 }, 0);
     tl.to(uniforms.uB.value, { r: b.r, g: b.g, b: b.b, duration: 0.8 }, 0);
     tl.to(uniforms.uC.value, { r: c.r, g: c.g, b: c.b, duration: 0.8 }, 0);
+    if (entering) {
+      // Arriving from Act 7: the floor is still the homepage's metallic state and
+      // settles into the chosen finish. `settle` — 0.9 s, power2.out.
+      uniforms.uEntry.value = 1;
+      material.metalness = 0.55;
+      material.roughness = 0.18;
+      tl.to(uniforms.uEntry, { value: 0, duration: ENTRY_SETTLE_DURATION, ease: ENTRY_SETTLE_EASE }, 0);
+    }
+    if (opening) {
+      pending.current = tl;
+      invalidate();
+    }
     return () => {
       tl.kill();
+      if (pending.current === tl) pending.current = null;
     };
-  }, [finish, invalidate, material, uniforms]);
+  }, [entryFromFinishHall, finish, invalidate, material, pending, staggered, uniforms]);
 
   useEffect(() => {
     material.opacity = compare / 100;
@@ -126,8 +241,8 @@ function FloorSlab({ finish, compare }: { finish: FinishPreset; compare: number 
   }, [compare, invalidate, material]);
 
   return (
-    <mesh rotation={[-Math.PI / 2.08, 0, 0]} position={[0, 0, 0]} receiveShadow>
-      <planeGeometry args={[6.4, 6.4, 1, 1]} />
+    <mesh rotation={[-Math.PI / 2.04, 0, 0]} position={[0, 0.26, -0.4]} receiveShadow>
+      <planeGeometry args={[14, 12.6, 1, 1]} />
       <primitive object={material} attach="material" />
     </mesh>
   );
@@ -416,34 +531,259 @@ function Lights({ finish }: { finish: FinishPreset }) {
 
   return (
     <>
-      <hemisphereLight args={['#fff7ea', '#5b6a73', 1.4]} />
+      {/* The procedural environment now carries the ambient term, so the hemisphere fill is lower than it was. */}
+      <hemisphereLight args={['#fff7ea', '#5b6a73', 0.45]} />
       <directionalLight ref={key} position={[3.4, 6.2, 4]} intensity={3.2} color="#fff3dc" />
       <directionalLight ref={fill} position={[-4, 2.5, -3]} intensity={1.1} color="#9ec7e0" />
     </>
   );
 }
 
-function AlcoveWorld({ finish, compare }: { finish: FinishPreset; compare: number }) {
-  const { camera, invalidate } = useThree();
+/** A code-built room environment through PMREM: reflections without a downloaded HDR. */
+function AlcoveEnvironment() {
+  const { gl, scene, invalidate } = useThree();
+  useEffect(() => {
+    let environment: { texture: THREE.Texture; dispose: () => void } | null = null;
+    try {
+      environment = createRoomEnvironment(gl);
+      scene.environment = environment.texture;
+      invalidate();
+    } catch {
+      // A renderer that cannot build a PMREM simply keeps the light rig.
+      environment = null;
+    }
+    return () => {
+      scene.environment = null;
+      environment?.dispose();
+    };
+  }, [gl, invalidate, scene]);
+  return null;
+}
+
+/**
+ * The ornate shell: four fluted columns, three wall panels, an arch over the mouth, and
+ * a contact gradient at every base. Vertex AO is baked into the geometry — no extra pass.
+ */
+function AlcoveArchitecture({ staggered }: { staggered: boolean }) {
+  const { invalidate } = useThree();
+  const group = useRef<THREE.Group>(null);
+  const pending = useFirstFrameTimeline();
+  const pillarGeometry = useMemo(() => createPillarGeometry(), []);
+  const archGeometry = useMemo(() => createArchGeometry(PILLAR_X_BACK + 0.12), []);
+  const backWall = useMemo(() => createWallGeometry(13, 6.4), []);
+  const sideWall = useMemo(() => createWallGeometry(13.5, 6.4), []);
+  const contact = useMemo(() => createContactTexture(), []);
+  const stone = useMemo(() => new THREE.MeshStandardMaterial({
+    color: '#a8a190', roughness: 0.82, metalness: 0.03, vertexColors: true, envMapIntensity: 0.5,
+  }), []);
+  const plaster = useMemo(() => new THREE.MeshStandardMaterial({
+    color: '#968f7f', roughness: 0.96, metalness: 0, vertexColors: true, side: THREE.FrontSide, envMapIntensity: 0.38,
+  }), []);
+
+  useEffect(() => () => {
+    pillarGeometry.dispose();
+    archGeometry.dispose();
+    backWall.dispose();
+    sideWall.dispose();
+    contact?.dispose();
+    stone.dispose();
+    plaster.dispose();
+  }, [archGeometry, backWall, contact, pillarGeometry, plaster, sideWall, stone]);
 
   useEffect(() => {
-    const tween = gsap.fromTo(camera.position, { x: 0, y: 3.6, z: 7.2 }, { x: 0.15, y: 2.35, z: 4.6, duration: 1.6, ease: 'alcove', onUpdate: () => {
-      camera.lookAt(0, 0, 0);
+    if (!staggered || !group.current) return;
+    ensureVisualizerGsap();
+    stone.transparent = true;
+    plaster.transparent = true;
+    const tl = gsap.timeline({
+      paused: true,
+      onUpdate: invalidate,
+      onComplete: () => {
+        stone.transparent = false;
+        plaster.transparent = false;
+        invalidate();
+      },
+    });
+    tl.fromTo(group.current.position, { y: -0.55 }, { y: 0, duration: 0.8, ease: 'power3.out' }, 0);
+    tl.fromTo([plaster, stone], { opacity: 0 }, { opacity: 1, duration: 0.7, stagger: 0.12, ease: 'power2.out' }, 0);
+    pending.current = tl;
+    invalidate();
+    return () => {
+      tl.kill();
+      if (pending.current === tl) pending.current = null;
+      stone.transparent = false;
+      plaster.transparent = false;
+    };
+  }, [invalidate, pending, plaster, staggered, stone]);
+
+  const pillars: Array<[number, number]> = [
+    [-PILLAR_X_FRONT, PILLAR_Z_FRONT], [PILLAR_X_FRONT, PILLAR_Z_FRONT],
+    [-PILLAR_X_BACK, PILLAR_Z_BACK], [PILLAR_X_BACK, PILLAR_Z_BACK],
+  ];
+
+  return (
+    <group ref={group}>
+      <mesh geometry={backWall} material={plaster} position={[0, 3.3, -5.9]} />
+      <mesh geometry={sideWall} material={plaster} position={[-5.4, 3.3, -0.4]} rotation={[0, Math.PI / 2, 0]} />
+      <mesh geometry={sideWall} material={plaster} position={[5.4, 3.3, -0.4]} rotation={[0, -Math.PI / 2, 0]} />
+      {/* A flattened arch over the back pair: the alcove's mouth, not a half-round hoop. */}
+      <mesh
+        geometry={archGeometry}
+        material={stone}
+        position={[0, PILLAR_HEIGHT - 0.38, PILLAR_Z_BACK]}
+      />
+      {pillars.map(([x, z]) => (
+        <group key={`${x}:${z}`} position={[x, 0, z]}>
+          <mesh geometry={pillarGeometry} material={stone} />
+          {contact ? (
+            <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.014, 0]}>
+              <planeGeometry args={[2.4, 2.4]} />
+              <meshBasicMaterial map={contact} transparent depthWrite={false} opacity={0.92} />
+            </mesh>
+          ) : null}
+        </group>
+      ))}
+    </group>
+  );
+}
+
+/**
+ * Drag to orbit the alcove. The sparkle field is offset from the camera angle and from
+ * nothing else, so a still camera leaves a still floor.
+ */
+function AlcoveOrbit({ sparkleShift }: { sparkleShift: THREE.Vector2 }) {
+  const { camera, gl, invalidate } = useThree();
+
+  useEffect(() => {
+    const element = gl.domElement;
+    const stage = element.closest<HTMLElement>('[data-finish-stage]');
+    const baseOffset = ALCOVE_HOME.clone().sub(ALCOVE_TARGET);
+    const offset = new THREE.Vector3();
+    let azimuth = 0;
+    let elevation = 0;
+    let pointerId: number | null = null;
+    let startX = 0;
+    let startY = 0;
+    let startAzimuth = 0;
+    let startElevation = 0;
+    let dragging = false;
+
+    const apply = () => {
+      offset.copy(baseOffset).applyAxisAngle(new THREE.Vector3(0, 1, 0), azimuth);
+      offset.y = baseOffset.y + elevation * 2.4;
+      camera.position.copy(ALCOVE_TARGET).add(offset);
+      camera.lookAt(ALCOVE_TARGET);
+      sparkleShift.set(azimuth * 0.85, elevation * 1.15);
       invalidate();
-    } });
+    };
+
+    const down = (event: PointerEvent) => {
+      if (event.button !== 0 && event.pointerType === 'mouse') return;
+      pointerId = event.pointerId;
+      startX = event.clientX;
+      startY = event.clientY;
+      startAzimuth = azimuth;
+      startElevation = elevation;
+      dragging = false;
+    };
+    const move = (event: PointerEvent) => {
+      if (pointerId !== event.pointerId) return;
+      if (stage?.dataset.lens === 'on') return;
+      const dx = event.clientX - startX;
+      const dy = event.clientY - startY;
+      if (!dragging && Math.hypot(dx, dy) < 8) return;
+      if (!dragging) {
+        dragging = true;
+        gsap.killTweensOf(camera.position);
+        element.setPointerCapture(event.pointerId);
+      }
+      azimuth = Math.min(0.34, Math.max(-0.34, startAzimuth - dx * 0.0022));
+      elevation = Math.min(0.12, Math.max(-0.1, startElevation + dy * 0.0011));
+      apply();
+    };
+    const up = (event: PointerEvent) => {
+      if (pointerId !== event.pointerId) return;
+      if (dragging && element.hasPointerCapture(event.pointerId)) element.releasePointerCapture(event.pointerId);
+      pointerId = null;
+      dragging = false;
+    };
+
+    element.addEventListener('pointerdown', down);
+    element.addEventListener('pointermove', move);
+    element.addEventListener('pointerup', up);
+    element.addEventListener('pointercancel', up);
+    return () => {
+      element.removeEventListener('pointerdown', down);
+      element.removeEventListener('pointermove', move);
+      element.removeEventListener('pointerup', up);
+      element.removeEventListener('pointercancel', up);
+      sparkleShift.set(0, 0);
+    };
+  }, [camera, gl, invalidate, sparkleShift]);
+
+  return null;
+}
+
+function AlcoveWorld({
+  finish,
+  compare,
+  entryFromFinishHall,
+}: {
+  finish: FinishPreset;
+  compare: number;
+  entryFromFinishHall: boolean;
+}) {
+  const { camera, invalidate } = useThree();
+  const sparkleShift = useMemo(() => new THREE.Vector2(), []);
+  const staggered = useMemo(
+    () => typeof window !== 'undefined' && !window.matchMedia('(prefers-reduced-motion: reduce)').matches,
+    [],
+  );
+
+  useEffect(() => {
+    if (!staggered) {
+      camera.position.copy(ALCOVE_HOME);
+      camera.lookAt(ALCOVE_TARGET);
+      invalidate();
+      return;
+    }
+    const tween = gsap.fromTo(
+      camera.position,
+      { x: ALCOVE_START.x, y: ALCOVE_START.y, z: ALCOVE_START.z },
+      {
+        x: ALCOVE_HOME.x,
+        y: ALCOVE_HOME.y,
+        z: ALCOVE_HOME.z,
+        duration: 1.6,
+        ease: 'alcove',
+        onUpdate: () => {
+          camera.lookAt(ALCOVE_TARGET);
+          invalidate();
+        },
+      },
+    );
     return () => { tween.kill(); };
-  }, [camera, invalidate]);
+  }, [camera, invalidate, staggered]);
 
   return (
     <>
       <color attach="background" args={['#d9d3c7']} />
-      <fog attach="fog" args={['#d9d3c7', 8, 16]} />
+      <fog attach="fog" args={['#d9d3c7', 20, 38]} />
+      <AlcoveEnvironment />
       <Lights finish={finish} />
+      <AlcoveArchitecture staggered={staggered} />
+      <AlcoveOrbit sparkleShift={sparkleShift} />
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.02, 0]}>
-        <planeGeometry args={[18, 18]} />
-        <meshStandardMaterial color="#c9c2b6" roughness={1} />
+        <planeGeometry args={[26, 26]} />
+        <meshStandardMaterial color="#a39b8d" roughness={1} envMapIntensity={0.4} />
       </mesh>
-      <FloorSlab finish={finish} compare={compare} />
+      <FloorSlab
+        finish={finish}
+        compare={compare}
+        sparkleShift={sparkleShift}
+        entryFromFinishHall={entryFromFinishHall}
+        staggered={staggered}
+      />
     </>
   );
 }
@@ -477,7 +817,14 @@ function CameraMode({ photo }: { photo: boolean }) {
   }, [invalidate, photo]);
   return (
     <>
-      <PerspectiveCamera makeDefault={!photo} position={[0.15, 2.35, 4.6]} fov={32} near={0.1} far={40} onUpdate={(camera) => camera.lookAt(0, 0, 0)} />
+      <PerspectiveCamera
+        makeDefault={!photo}
+        position={[ALCOVE_HOME.x, ALCOVE_HOME.y, ALCOVE_HOME.z]}
+        fov={32}
+        near={0.1}
+        far={48}
+        onUpdate={(camera) => camera.lookAt(ALCOVE_TARGET)}
+      />
       <OrthographicCamera manual makeDefault={photo} position={[0.5, 0.5, 1]} left={-0.5} right={0.5} top={0.5} bottom={-0.5} near={0.1} far={10} onUpdate={(camera) => camera.lookAt(0.5, 0.5, 0)} />
     </>
   );
@@ -510,6 +857,7 @@ export default function FinishPreview({
   photoSize,
   photoRevision,
   exclusionMask,
+  entryFromFinishHall = false,
   onReady,
   onUnavailable,
 }: {
@@ -522,6 +870,7 @@ export default function FinishPreview({
   photoSize: Size;
   photoRevision: string | null;
   exclusionMask: ExclusionMaskDraft | null;
+  entryFromFinishHall?: boolean;
   onReady: () => void;
   onUnavailable: () => void;
 }) {
@@ -531,20 +880,21 @@ export default function FinishPreview({
       className="finish-preview-canvas"
       frameloop="demand"
       dpr={[1, 1.35]}
-      camera={{ position: [0.15, 2.35, 4.6], fov: 32, near: 0.1, far: 40 }}
-      gl={{ alpha: true, antialias: true, powerPreference: 'high-performance' }}
+      camera={{ position: [ALCOVE_HOME.x, ALCOVE_HOME.y, ALCOVE_HOME.z], fov: 32, near: 0.1, far: 48 }}
+      // The lens and "Save this floor" read this canvas back on demand.
+      gl={{ alpha: true, antialias: true, powerPreference: 'high-performance', preserveDrawingBuffer: true }}
       onCreated={({ camera, gl }) => {
         gl.toneMapping = THREE.ACESFilmicToneMapping;
         gl.toneMappingExposure = 1.05;
         gl.outputColorSpace = THREE.SRGBColorSpace;
-        camera.lookAt(0, 0, 0);
+        camera.lookAt(ALCOVE_TARGET);
       }}
     >
       <RendererLifecycle onReady={onReady} onUnavailable={onUnavailable} />
       <CameraMode photo={photo} />
       {photo && photoUrl && photoRevision
         ? <PhotoWorld finish={finish} points={points} compare={compare} maskUrl={maskUrl} photoUrl={photoUrl} photoSize={photoSize} photoRevision={photoRevision} exclusionMask={exclusionMask} />
-        : <AlcoveWorld finish={finish} compare={compare} />}
+        : <AlcoveWorld finish={finish} compare={compare} entryFromFinishHall={entryFromFinishHall} />}
     </Canvas>
   );
 }
