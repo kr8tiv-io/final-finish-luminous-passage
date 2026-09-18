@@ -31,7 +31,7 @@ flowchart TD
   subgraph phase-3["phase-3"]
     step-17["step-17: Opening: keep pearl pour scrub, add 1080 source,"]:::stDoing
     step-18["step-18: 3D navigation: full-screen menu, Flip transition"]:::stDoing
-    step-19["step-19: Social proof after the pour: scroll-linked revie"]:::stDoing
+    step-19["step-19: Social proof after the pour: scroll-linked revie"]:::stDone
     step-20["step-20: Stair chapter: pearl-grade walkway film (A) vs 2"]:::stDoing
     step-21["step-21: Preparation cutaway: layered illustrative diagra"]:::stDoing
     step-22["step-22: Reclaim your garage or basement: garage, basemen"]:::stDoing
@@ -391,7 +391,7 @@ flowchart TD
 - **Phase:** phase-3
 - **Tier:** O motion, S data
 - **Owner(s):** motion-c, ui
-- **Status:** doing
+- **Status:** done
 - **Files:** SocialProof.astro, EditorialMotion.tsx, customer-proof.json
 - **Inputs (informs):** S7
 - **Constraints (locks):** none recorded
