@@ -1,12 +1,12 @@
 # Pearl pour derivative asset manifest
 
-This bounded derivative set is generated from `public/videos/epoxy-pour.mp4` by
+This bounded derivative set is generated from `assets/films/source/epoxy-pour.mp4` by
 `scripts/grade-pearl-pour.mjs`. Originals, route code, and the existing
 `public/videos/follow-floor/manifest.json` are unchanged.
 
 ## Source contract
 
-- Source: `/videos/epoxy-pour.mp4`
+- Source: `assets/films/source/epoxy-pour.mp4`
 - 1920×1080 H.264, yuv420p, 24/1 fps
 - 241 video frames; 10.041667 seconds; no audio
 - Camera motion and frame order are inherited directly from the source.
