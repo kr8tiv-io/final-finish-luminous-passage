@@ -1,24 +1,31 @@
 import { devices, expect, test, type Page } from '@playwright/test';
 
 /**
- * Step 15 — the layout-level surface plane.
+ * Step 15 — the layout-level surface plane. Step 18a — everything else drawing
+ * through it.
  *
- * CANVAS COUNT, DOCUMENTED. The plane is one `<canvas>` with a view registry, and it
- * is the only canvas on every route except `/`, where `FilmVeil` still owns a second
- * WebGL context of its own. `FilmVeil.tsx` belongs to another owner and is untouched
- * by this step; the migration that folds its `MixMesh` into this canvas (and takes `/`
- * to a single context, satisfying the CLAUDE.md lock) is written up at the top of
- * `src/lib/motion/surface-store.ts`. These assertions pin the counts as they are now,
- * so that migration shows up here as a failure rather than passing silently.
+ * CANVAS COUNT, DOCUMENTED. One `<canvas>` with a view registry, and after Step 18a
+ * it is the only canvas the site mounts: the boundary compositor (`film-veil`) and
+ * the full-screen menu's floor (`nav-floor`) are views of it rather than contexts of
+ * their own. `/floor-visualizer` is the one documented exception and it is measured,
+ * not assumed: `FinishPreview` mounts its own three.js canvas at rest on that route,
+ * before any photo is uploaded, and it is deliberately left alone — it is an
+ * interactive tool with its own lifecycle, not a layer of the page's composition.
+ * The test below proves the surface plane does not disturb it.
  */
 const EXPECTED_TOTAL_CANVASES: ReadonlyArray<readonly [string, number, string]> = [
-  ['/', 2, 'SurfaceCanvas + FilmVeil (pending the MixMesh migration)'],
+  ['/', 1, 'SurfaceCanvas alone — the compositor is one of its views'],
   ['/services', 1, 'SurfaceCanvas only'],
   ['/projects', 1, 'SurfaceCanvas only'],
-  // Measured, not assumed: FinishPreview mounts its own three.js canvas at rest on
-  // this route, before any photo is uploaded. The surface plane is additive there and
-  // the visualizer keeps its own context untouched (see the test below).
-  ['/floor-visualizer', 2, 'SurfaceCanvas + the visualizer FinishPreview canvas'],
+  ['/floor-visualizer', 2, 'SurfaceCanvas + the visualizer FinishPreview canvas, by design'],
+];
+
+/** Which views each route is expected to have registered with the menu closed. */
+const EXPECTED_VIEWS: ReadonlyArray<readonly [string, readonly string[]]> = [
+  ['/', ['film-veil', 'surface-floor']],
+  ['/services', ['surface-floor']],
+  ['/projects', ['surface-floor']],
+  ['/floor-visualizer', ['surface-floor']],
 ];
 
 const SURFACE_CANVAS = 'canvas[data-surface-canvas]';
@@ -82,11 +89,17 @@ test.describe('surface plane', () => {
 
   test('mounts exactly one surface canvas per route, with the total documented', async ({ page }) => {
     test.slow();
+    const expectedViews = new Map(EXPECTED_VIEWS.map(([route, views]) => [route, views]));
     for (const [route, total, note] of EXPECTED_TOTAL_CANVASES) {
       await page.goto(route, { waitUntil: 'domcontentloaded' });
       await waitForSurface(page);
       expect(page.locator(SURFACE_CANVAS), `${route}: one surface canvas`).toHaveCount(1);
       expect(await page.locator('canvas').count(), `${route}: ${note}`).toBe(total);
+      // Falsifiable: the count alone would also pass if a view had silently stopped
+      // registering, so name what that one canvas is actually drawing.
+      await expect
+        .poll(async () => (await page.evaluate(() => window.__ffeSurface!.views())).slice().sort(), { timeout: 15_000 })
+        .toEqual([...expectedViews.get(route)!].sort());
       // The plane never intercepts a pointer, on any route — the host, the wrapper
       // react-three-fiber inserts, and the canvas itself.
       await expect(page.locator('.surface-canvas-host')).toHaveCSS('pointer-events', 'none');
@@ -113,10 +126,39 @@ test.describe('surface plane', () => {
     await expect(choice).toHaveAttribute('aria-pressed', 'true');
   });
 
-  test('registers the band as its only view and renders nothing outside it', async ({ page }) => {
+  test('keeps one canvas while the full-screen menu is open, and gives it back on close', async ({ page }) => {
     await page.goto('/', { waitUntil: 'domcontentloaded' });
     await waitForSurface(page);
-    expect(await page.evaluate(() => window.__ffeSurface!.views())).toEqual(['surface-floor']);
+    const toggle = page.getByRole('button', { name: /primary menu/i });
+    expect(await page.locator('canvas').count(), 'menu closed').toBe(1);
+
+    await toggle.click();
+    await expect.poll(async () => page.evaluate(() => window.__ffeSurface!.views()), { timeout: 10_000 })
+      .toContain('nav-floor');
+    expect(await page.locator('canvas').count(), 'menu open: still one canvas').toBe(1);
+    // The menu's floor is the one canvas, so the overlay's own paper plate gets out of
+    // its way; the view paints opaque paper itself (SurfaceFloor's nav-floor clear).
+    await expect(page.locator('.nav-menu__floor')).toHaveAttribute('data-nav-floor-view', 'live');
+    await expect(page.locator('.nav-menu__veil')).toHaveCSS('opacity', '0');
+
+    await page.keyboard.press('Escape');
+    await expect.poll(async () => page.evaluate(() => window.__ffeSurface!.views()), { timeout: 10_000 })
+      .not.toContain('nav-floor');
+    expect(await page.locator('canvas').count(), 'menu closed again').toBe(1);
+    // The rule that let the overlay's plate step aside is keyed on this attribute, so
+    // releasing it is what hands the CSS fallback back. (Its opacity is not asserted
+    // here: a closed menu has faded that plate out on its own. The case that matters
+    // — the plate returning while the menu is still open — is nav.spec's context-loss
+    // and reduced-motion tests.)
+    await expect(page.locator('.nav-menu__floor')).not.toHaveAttribute('data-nav-floor-view', 'live');
+  });
+
+  test('registers the journey band and the compositor, and renders nothing outside them', async ({ page }) => {
+    await page.goto('/', { waitUntil: 'domcontentloaded' });
+    await waitForSurface(page);
+    await expect
+      .poll(async () => (await page.evaluate(() => window.__ffeSurface!.views())).slice().sort(), { timeout: 15_000 })
+      .toEqual(['film-veil', 'surface-floor']);
     const geometry = await page.evaluate(() => {
       const rect = document.querySelector('[data-surface-fallback]')!.getBoundingClientRect();
       return { ratio: rect.top / window.innerHeight, bottom: rect.bottom, height: window.innerHeight };
@@ -230,10 +272,12 @@ test.describe('surface plane', () => {
     });
     await expect(page.locator('html')).toHaveAttribute('data-surface', 'webgl', { timeout: 10_000 });
     await expect(page.locator(SURFACE_CANVAS)).toBeVisible();
-    // The floor view re-registered itself after the re-mount.
+    // Both views re-registered themselves after the re-mount: the floor because its
+    // scene remounts on `restoreKey`, the compositor because it watches the store's
+    // renderer state from its own island and never held the context to begin with.
     await expect
-      .poll(async () => page.evaluate(() => window.__ffeSurface!.views()), { timeout: 10_000 })
-      .toEqual(['surface-floor']);
+      .poll(async () => (await page.evaluate(() => window.__ffeSurface!.views())).slice().sort(), { timeout: 10_000 })
+      .toEqual(['film-veil', 'surface-floor']);
   });
 
   test('swaps the fallback band colour per material state', async ({ page }) => {

@@ -88,6 +88,39 @@ html[data-surface='webgl'] .surface-band { opacity: 0; }
 }
 
 /*
+ * THE MENU'S FLOOR, DRAWN BY THE SAME CANVAS (Step 18a).
+ *
+ * `.nav-menu` is a fixed overlay, so it opens its own stacking context and every
+ * child of it — veil, floor, panel — paints above this host at z-index 1. That is
+ * the right way round for the panel (menu type must stay over the canvas) and the
+ * wrong way round for the veil, whose 96 % paper plate would bury the floor it is
+ * there to sit behind.
+ *
+ * So while the `nav-floor` view is live the canvas takes the veil's job as well as
+ * the floor's: the view clears its own scissor box to opaque #FAF9F6 before drawing
+ * the plane (SurfaceFloor.tsx), which hides the journey underneath exactly as the
+ * veil did, and the veil element steps aside. No z-index is touched and no element
+ * moves, which is why the menu's focus order and Flip geometry are unaffected.
+ *
+ * Both conditions are required. `[data-nav-floor-view]` is written by the effect
+ * that registers the view, and `html[data-surface='webgl']` is the store's renderer
+ * state — a context lost while the menu is open flips it to `fallback`, the CSS veil
+ * and the CSS gradient floor come straight back, and the menu is never see-through.
+ *
+ * Both rules hang off the same `:has()` on purpose. A browser old enough to have
+ * WebGL2 but not `:has()` drops the pair together and keeps the CSS menu it has
+ * always had; splitting them would clear the gradient floor while leaving the plate
+ * over the canvas, which is the one combination that shows nothing at all.
+ */
+html[data-surface='webgl'] .nav-menu:has(.nav-menu__floor[data-nav-floor-view='live']) .nav-menu__floor {
+  background: none;
+}
+
+html[data-surface='webgl'] .nav-menu:has(.nav-menu__floor[data-nav-floor-view='live']) .nav-menu__veil {
+  opacity: 0;
+}
+
+/*
  * Context lost. The element stays in the DOM — a removed <canvas> can never receive
  * `webglcontextrestored` — but nothing of it is painted, and the store has already
  * switched the band back on underneath.

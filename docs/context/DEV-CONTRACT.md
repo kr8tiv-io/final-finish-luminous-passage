@@ -199,3 +199,74 @@ a host that terminates and validates the real client IP is a prerequisite
 before production traffic**, not an optional hardening pass. Turnstile (or
 an equivalent challenge) remains optional on top of that, not a replacement
 for it.
+
+## One canvas, three views (Step 18a)
+
+The site mounts exactly one WebGL context. `SurfaceCanvas` (`BaseLayout.astro`)
+owns it; everything else that wants to draw registers a **view** with
+`surfaceStore.registerView(id, element, { render, priority })`. Each rendered frame
+the canvas clears once, walks the registry, skips views whose element does not
+intersect the viewport, scissors to the element's rect and calls that view's
+`render` with the shared renderer.
+
+| priority | view | element | registered by |
+|---|---|---|---|
+| 0 | `film-veil` | `.film-veil` | `FilmVeil.tsx` on the `full` tier |
+| 10 | `surface-floor` | `[data-surface-fallback]` | `SurfaceFloor.tsx` |
+| 20 | `nav-floor` | `[data-nav-menu-floor]` | `SurfaceFloor.tsx` while the menu is open |
+
+`priority` is not a free choice. It reproduces the z-order these layers had as
+separate canvases: `.journey` is `isolation: isolate` at `z-index: auto` and
+`.surface-canvas-host` is `z-index: 1`, so the floor band has always painted
+**over** `.film-veil`. Giving the veil the higher priority was measured as a 16.9%
+luminance step in the bottom third of the frame every time a boundary handed the
+picture back to the DOM.
+
+**Canvas opacity has no JS writer any more.** The previous rule — "canvas opacity is
+written only from `onAfterRender`" — assumed the compositor owned its own canvas.
+It does not, and a view that hid the shared element would hide every other view with
+it. The rule that replaces it:
+
+> A view that wants to disappear writes transparent pixels or unregisters. It never
+> touches `canvas.style`. `.film-veil` sets `uVisible` to 0 (the shader emits
+> `vec4(0)` and the DOM plates below show through untouched); `nav-floor`
+> unregisters on close. The `<canvas>` element's opacity belongs to CSS alone.
+
+`onAfterRender` keeps its other job unchanged: it is still the single owner of the
+two-pass paint confirmation and of `journeyDirector.reportVeil(...)`, and it still
+confirms without a framebuffer read. The compositor's frame state moved with it, off
+the shared canvas and onto the element it does own — `.film-veil[data-rendered-boundary]`,
+`[data-rendered-progress]`, `[data-rendered-revision]`. Anything asking what the
+veil painted reads those, not a canvas.
+
+**Registering from another React root.** `FilmVeil` is an island inside `.journey`
+and `SurfaceCanvas` is an island in `BaseLayout`; they share no react-three-fiber
+context. That is why the renderer is handed to `render` in the view context instead
+of being captured from `useThree` — a view needs no R3F context of its own, only a
+DOM rectangle and a draw call.
+
+**Which plate the compositor samples.** `veilPlateChoice` mirrors
+`video[data-video-ready]`, which `JourneyMotion.tsx` is the only writer of. The
+veil never decides a second time from scroll direction or `currentTime`: it samples
+whatever the document is presenting, so it cannot render a room's poster while the
+page has already promoted that room's film. It also re-reads this every frame rather
+than freezing a texture when the boundary locks — the lock holds which rooms take
+part and which way the visitor entered, not which plate each one shows.
+
+**The menu's floor is the same material.** `FloorMenuScene.tsx` no longer owns a
+scene, a `MeshPhysicalMaterial`, a shader chunk or an environment map. It maps a
+hovered destination's finish onto a `SURFACE_MATERIALS` id and calls
+`surfaceStore.morphTo`; `SurfaceFloor` renders the same plane through a closer
+lens into the menu's rectangle. While that view is live the overlay's own
+`.nav-menu__veil` steps aside (`surface.css`) because the view clears its scissor
+box to opaque paper itself. Both the CSS gradient floor and that paper plate return
+the moment the view unregisters or `html[data-surface]` leaves `webgl`, which is
+what keeps a lost context, a `balanced` phone and a reduced-motion visitor looking
+at an intact menu.
+
+**Retired here, on purpose:** `ThresholdTravel` is no longer mounted. It is an R3F
+component and `FilmVeil` no longer has an R3F context to mount it into. It was
+reachable only under `import.meta.env.DEV` with `?study=threshold`
+(`index.astro:26`), never on a built page; the opt-in is still recorded as
+`.film-veil[data-threshold-study-requested]` and the component is untouched on
+disk. Step 20 decides whether that study survives at all.

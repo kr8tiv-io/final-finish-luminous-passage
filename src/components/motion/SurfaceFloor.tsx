@@ -1,11 +1,12 @@
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import gsap from 'gsap';
-import { useCallback, useEffect, useMemo, useRef } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useSyncExternalStore } from 'react';
 import * as THREE from 'three';
 import {
   SURFACE_FRAGMENT_CLEARCOAT,
   SURFACE_FRAGMENT_COLOR,
   SURFACE_FRAGMENT_COMMON,
+  SURFACE_FEET_FADE,
   SURFACE_FRAGMENT_METALNESS,
   SURFACE_FRAGMENT_ROUGHNESS,
   SURFACE_HORIZON_COLOR,
@@ -34,6 +35,12 @@ const CAMERA_RIG: Readonly<Record<SurfaceCameraMode, { readonly height: number; 
   });
 
 const CAMERA_FOV = 38;
+/**
+ * The menu's lens. Wider and closer than the journey rig (storyboard §8: the menu
+ * is a room you step into, not a band you glance at), carried over unchanged from
+ * the standalone `FloorMenuScene` canvas this view replaced.
+ */
+const MENU_RIG = Object.freeze({ height: 1.55, pitchDeg: 28, fov: 58 });
 const PLANE_SIZE = 60;
 /** uv repeats across the 60 m plane: one repeat ≈ 2.5 m of real floor. */
 const SURFACE_TILING = 24;
@@ -49,14 +56,74 @@ const HORIZON_LINE_CSS_PX = 1;
  */
 const HORIZON_FLOOR_OPACITY = 0.1;
 
-function rigFades(mode: SurfaceCameraMode): { near: number; far: number } {
-  const { height, pitchDeg } = CAMERA_RIG[mode];
-  const halfFov = (CAMERA_FOV / 2) * (Math.PI / 180);
+function lensFades(height: number, pitchDeg: number, fov: number): { near: number; far: number } {
+  const halfFov = (fov / 2) * (Math.PI / 180);
   const pitch = pitchDeg * (Math.PI / 180);
   // View depth of the floor at the bottom and top edges of the frustum.
   const near = height / Math.tan(pitch + halfFov);
   const far = height / Math.tan(Math.max(0.04, pitch - halfFov));
   return { near, far };
+}
+
+/** View depth of the floor at a fraction up the view's rect. 0 = bottom edge. */
+function lensDepthAtScreen(height: number, pitchDeg: number, fov: number, screen01: number): number {
+  const halfFov = (fov / 2) * (Math.PI / 180);
+  const pitch = pitchDeg * (Math.PI / 180);
+  const depression = pitch - Math.atan((screen01 * 2 - 1) * Math.tan(halfFov));
+  return height / Math.tan(Math.max(0.04, depression));
+}
+
+/**
+ * The menu's alpha profile, and why it is not the journey's.
+ *
+ * `SURFACE_FRAGMENT_COLOR` fades the plane in over the first `SURFACE_FEET_FADE`
+ * (0.6) of the depth range `uNearFade`..`uFarFade`. For the journey's 38-degree lens
+ * looking 31 degrees down into a band, 60 % of that range is a metre or so of floor
+ * at the viewer's feet. For the menu's 58-degree lens the same range reaches the
+ * mathematical horizon 38 m away, so 60 % of it is 23 m out — which projects to 90 %
+ * up the frame, where the horizon fade has already taken the plane to nothing.
+ * Measured: a flat 249 luminance from 40 % of the frame down, i.e. no floor at all,
+ * against 213 for the CSS gradient it was replacing.
+ *
+ * So the menu hands the shader a depth range chosen for its own lens: full alpha by
+ * this fraction up the frame, computed from the rig rather than tuned by eye.
+ */
+const MENU_FULL_ALPHA_SCREEN = 0.45;
+
+/**
+ * The menu's plane opacity, and the guarantee it restores.
+ *
+ * `FloorMenuScene`'s retired shader ended every finish with
+ * `ffeKeepLegible(colour, 0.46)`, which lifted the floor toward white until its
+ * luminance reached 46 % of paper's — a hard legibility floor for the display type
+ * and 11 px station labels that sit on it. The shared material has no such rule and
+ * only the shader knows the finish colour, so the same guarantee is reproduced here
+ * with the one lever this view owns: alpha.
+ *
+ * Paper is #FAF9F6 (linear 0.955), so 0.46 of it is 172 in 8-bit. Sized from the
+ * worst case rather than the comfortable one: on the cobalt-metallic hover — the
+ * darkest finish — at 1280x720, where the list occupies more of the frame than it
+ * does at 1440x900 and therefore sits deeper in the plane, the uncapped floor took a
+ * label's background to 151. Backgrounds move about linearly with this factor, so
+ * (250-178)/(250-151) = 0.727 of the alpha that produced 151 is what clears 172 with
+ * margin. nav.spec measures it on the real frame at that viewport.
+ *
+ * This is a clamp, not a design decision: the menu's floor wants to be stronger than
+ * a WCAG-safe wash allows behind 11 px labels, and the proper fix is the nav's own
+ * (darker label colour, or the storyboard's "text and floor never share pixels"
+ * geometry). Step 18a preserves what the retired shader guaranteed and hands that on.
+ */
+const MENU_PLANE_OPACITY = 0.63;
+
+function menuFades(): { near: number; far: number } {
+  const near = lensDepthAtScreen(MENU_RIG.height, MENU_RIG.pitchDeg, MENU_RIG.fov, 0);
+  const full = lensDepthAtScreen(MENU_RIG.height, MENU_RIG.pitchDeg, MENU_RIG.fov, MENU_FULL_ALPHA_SCREEN);
+  return { near, far: near + (full - near) / SURFACE_FEET_FADE };
+}
+
+function rigFades(mode: SurfaceCameraMode): { near: number; far: number } {
+  const { height, pitchDeg } = CAMERA_RIG[mode];
+  return lensFades(height, pitchDeg, CAMERA_FOV);
 }
 
 /**
@@ -135,7 +202,7 @@ function SurfaceViewRenderer() {
       gl.setViewport(box.x, box.y, box.width, box.height);
       gl.setScissor(box.x, box.y, box.width, box.height);
       gl.setScissorTest(true);
-      view.render({ rect, box, frame: frame.current });
+      view.render({ rect, box, frame: frame.current, gl });
     }
     gl.setScissorTest(false);
     surfaceStore.noteFrame();
@@ -149,8 +216,28 @@ function SurfaceFloorScene({ viewElement }: { readonly viewElement: HTMLElement 
   const scene = useThree((state) => state.scene);
   const invalidate = useThree((state) => state.invalidate);
   const floorRef = useRef<THREE.Mesh>(null);
+  const horizonRef = useRef<THREE.Mesh>(null);
+  const surface = useSyncExternalStore(
+    surfaceStore.subscribe,
+    surfaceStore.getSnapshot,
+    surfaceStore.getServerSnapshot,
+  );
+  const menuOpen = surface.menuOpen;
+  const live = surface.renderer === 'webgl';
+  const menuElement = menuOpen ? surfaceStore.getMenuFloor() : null;
 
   const flakePalette = SURFACE_MATERIALS[3].colors;
+  /** State 7 is the palette's own paper, so the menu's ground has one source. */
+  const paperColour = useMemo(() => new THREE.Color(SURFACE_MATERIALS[7].colors[0]), []);
+  const clearScratch = useMemo(() => new THREE.Color(), []);
+  const menuCamera = useMemo(() => {
+    const next = new THREE.PerspectiveCamera(MENU_RIG.fov, 1, 0.1, 160);
+    next.rotation.order = 'YXZ';
+    next.position.set(0, MENU_RIG.height, 3.1);
+    next.rotation.set(-MENU_RIG.pitchDeg * (Math.PI / 180), 0, 0);
+    next.updateMatrixWorld();
+    return next;
+  }, []);
 
   const uniforms = useMemo(() => ({
     uMaterialA: { value: 0 },
@@ -352,7 +439,7 @@ function SurfaceFloorScene({ viewElement }: { readonly viewElement: HTMLElement 
 
   /* ---- view registration: this floor owns the band's rectangle ---- */
   useEffect(() => {
-    const render = ({ rect, box }: SurfaceViewRenderContext) => {
+    const render = ({ rect, box, gl: renderer }: SurfaceViewRenderContext) => {
       const aspect = rect.width / Math.max(1, rect.height);
       if (camera.aspect !== aspect) {
         camera.aspect = aspect;
@@ -361,12 +448,66 @@ function SurfaceFloorScene({ viewElement }: { readonly viewElement: HTMLElement 
       horizonUniforms.uHorizonWidth.value = HORIZON_LINE_CSS_PX / Math.max(1, rect.height);
       // gl_FragCoord is framebuffer-relative, so the shader needs the band's own
       // device-pixel rectangle to know how far up the band a fragment sits.
-      const dpr = gl.getPixelRatio();
+      const dpr = renderer.getPixelRatio();
       uniforms.uViewport.value.set(box.y * dpr, Math.max(1, box.height * dpr));
-      gl.render(scene, camera);
+      renderer.render(scene, camera);
     };
-    return surfaceStore.registerView('surface-floor', viewElement, { render, priority: 0 });
-  }, [camera, gl, horizonUniforms, scene, uniforms, viewElement]);
+    return surfaceStore.registerView('surface-floor', viewElement, { render, priority: 10 });
+  }, [camera, horizonUniforms, scene, uniforms, viewElement]);
+
+  /* ---- second view: the same plane, the same material, the menu's lens ---- */
+  useEffect(() => {
+    // `live` matters as much as `menuOpen`: this scene stays mounted through a context
+    // loss so the <canvas> survives to receive `webglcontextrestored`, and a view
+    // registered in that window would claim the menu's floor while drawing nothing.
+    // `data-nav-floor-view` has to mean "the canvas really is painting this".
+    if (!menuOpen || !menuElement || !live) return undefined;
+    const fades = menuFades();
+
+    const render = ({ rect, box, gl: renderer }: SurfaceViewRenderContext) => {
+      const aspect = rect.width / Math.max(1, rect.height);
+      if (menuCamera.aspect !== aspect) {
+        menuCamera.aspect = aspect;
+        menuCamera.updateProjectionMatrix();
+      }
+      // The menu's paper. The overlay's own `.nav-menu__veil` steps aside while this
+      // view is live (see surface.css), because a 96%-opaque plate above the canvas
+      // would hide the very floor it exists to sit behind. So this view owns the whole
+      // field: an opaque paper clear inside its scissor box, then the plane over it.
+      const previousClear = renderer.getClearColor(clearScratch).clone();
+      const previousAlpha = renderer.getClearAlpha();
+      renderer.setClearColor(paperColour, 1);
+      renderer.clear(true, true, false);
+      renderer.setClearColor(previousClear, previousAlpha);
+
+      // The journey's depth cue belongs to the journey's lens; this one is wider and
+      // closer, so it borrows the uniforms for one draw and hands them straight back.
+      const nearFade = uniforms.uNearFade.value;
+      const farFade = uniforms.uFarFade.value;
+      const planeOpacity = uniforms.uPlaneOpacity.value;
+      const horizonVisible = horizonRef.current?.visible ?? false;
+      const dpr = renderer.getPixelRatio();
+      uniforms.uNearFade.value = fades.near;
+      uniforms.uFarFade.value = fades.far;
+      uniforms.uPlaneOpacity.value = planeOpacity * MENU_PLANE_OPACITY;
+      uniforms.uViewport.value.set(box.y * dpr, Math.max(1, box.height * dpr));
+      // The 1 px horizon rule is the journey's punctuation, not the menu's.
+      if (horizonRef.current) horizonRef.current.visible = false;
+      renderer.render(scene, menuCamera);
+      if (horizonRef.current) horizonRef.current.visible = horizonVisible;
+      uniforms.uNearFade.value = nearFade;
+      uniforms.uFarFade.value = farFade;
+      uniforms.uPlaneOpacity.value = planeOpacity;
+    };
+
+    menuElement.dataset.navFloorView = 'live';
+    const unregister = surfaceStore.registerView('nav-floor', menuElement, { render, priority: 20 });
+    return () => {
+      delete menuElement.dataset.navFloorView;
+      unregister();
+      surfaceStore.invalidate();
+    };
+  }, [clearScratch, live, menuCamera, menuElement, menuOpen, paperColour, scene, uniforms]);
 
   return (
     <>
@@ -384,7 +525,7 @@ function SurfaceFloorScene({ viewElement }: { readonly viewElement: HTMLElement 
         <planeGeometry args={[PLANE_SIZE, PLANE_SIZE, 1, 1]} />
         <primitive object={material} attach="material" />
       </mesh>
-      <mesh renderOrder={10} frustumCulled={false}>
+      <mesh ref={horizonRef} renderOrder={10} frustumCulled={false}>
         <planeGeometry args={[2, 2]} />
         <primitive object={horizonMaterial} attach="material" />
       </mesh>

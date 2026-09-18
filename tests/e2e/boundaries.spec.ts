@@ -178,9 +178,13 @@ async function settle(page: Page, expected: number): Promise<void> {
   // 11.34% this spec once reported for foundation:garage, which measures 1.01%
   // once settled — and 0.84-1.43% at equal steps either side of the seam.
   await page.waitForFunction(() => {
-    const canvas = document.querySelector<HTMLCanvasElement>('.film-veil canvas');
-    if (!canvas) return true;
-    const frame = `${canvas.dataset.renderedBoundary}:${canvas.dataset.renderedProgress}`;
+    // Step 18a: the compositor is a view of the one layout canvas, so its frame state
+    // lives on `.film-veil` — the element it owns — instead of on a `<canvas>` it now
+    // shares with the floor band and the menu. Absent dataset = no compositor (the
+    // `balanced` tier never downloads it), which is the old "no canvas" branch.
+    const host = document.querySelector<HTMLElement>('.film-veil');
+    if (!host?.dataset.renderedBoundary) return true;
+    const frame = `${host.dataset.renderedBoundary}:${host.dataset.renderedProgress}`;
     const store = window as unknown as { __veilSettle?: { frame: string; hits: number } };
     if (store.__veilSettle?.frame === frame) store.__veilSettle.hits += 1;
     else store.__veilSettle = { frame, hits: 1 };
@@ -206,14 +210,14 @@ function awaitStagedPlates(page: Page): Promise<unknown> {
 function readState(page: Page): Promise<BoundaryState> {
   return page.evaluate(() => {
     const journey = document.querySelector<HTMLElement>('.journey');
-    const canvas = document.querySelector<HTMLCanvasElement>('.film-veil canvas');
+    const veilHost = document.querySelector<HTMLElement>('.film-veil');
     return {
       owner: journey?.dataset.mediaOwner ?? '',
       handoff: Number.parseFloat(getComputedStyle(journey as HTMLElement).getPropertyValue('--handoff')),
       stage: journey?.dataset.mediaStage ?? null,
       staged: [...document.querySelectorAll<HTMLElement>('.journey [data-media-active]')]
         .map((node) => `${node.dataset.journeyChapter}/${node.dataset.mediaRole ?? '-'}`),
-      renderedBoundary: canvas?.dataset.renderedBoundary ?? null,
+      renderedBoundary: veilHost?.dataset.renderedBoundary ?? null,
     };
   });
 }
@@ -378,13 +382,13 @@ function scoreFlashes(luminance: readonly number[]): FlashReport {
 /** Longest run of consecutive frames the compositor spent unconfirmed. */
 function longestPendingRun(page: Page, frames: number): Promise<{ longest: number; samples: string[] }> {
   return page.evaluate((count) => new Promise<{ longest: number; samples: string[] }>((resolve) => {
-    const canvas = document.querySelector<HTMLCanvasElement>('.film-veil canvas');
+    const veilHost = document.querySelector<HTMLElement>('.film-veil');
     const samples: string[] = [];
     let longest = 0;
     let run = 0;
     let remaining = Number(count);
     const tick = () => {
-      const value = canvas?.dataset.renderedBoundary ?? 'no-canvas';
+      const value = veilHost?.dataset.renderedBoundary ?? 'no-compositor';
       samples.push(value);
       run = value === 'pending' ? run + 1 : 0;
       if (run > longest) longest = run;
@@ -573,7 +577,7 @@ for (const key of BOUNDARY_KEYS) {
       await nextFrames(page);
       luminance.push(await meanLuminance(page, await mediaShot(page)));
       pending.push(await page.evaluate(
-        () => document.querySelector<HTMLCanvasElement>('.film-veil canvas')?.dataset.renderedBoundary ?? 'no-canvas',
+        () => document.querySelector<HTMLElement>('.film-veil')?.dataset.renderedBoundary ?? 'no-compositor',
       ));
     }
 
@@ -612,14 +616,24 @@ test('the capability tier matches what this browser can actually do', async ({ p
     return { webgl2, floatBuffers, coarsePointer: window.matchMedia('(pointer: coarse)').matches };
   });
 
+  // Step 18a: the compositor is a registered view of the one layout canvas, not a
+  // canvas of its own, so "is there a compositor" is a question for the view registry.
+  const veilRegistered = () => page.evaluate(
+    () => (window.__ffeSurface?.views() ?? []).includes('film-veil'),
+  );
+
   if (capabilities.coarsePointer || !capabilities.webgl2 || !capabilities.floatBuffers) {
     expect(tier, 'touch or a missing float buffer must cap the journey at balanced').toBe('balanced');
-    // `balanced` must not pay for a compositor it will never run.
-    await expect(page.locator('.film-veil canvas')).toHaveCount(0, { timeout: 15_000 });
+    // `balanced` must not pay for a compositor it will never run — and with the
+    // canvas gone with it, not for a WebGL context either.
+    await expect.poll(veilRegistered, { timeout: 15_000 }).toBe(false);
     expect(await page.getAttribute('.film-veil', 'data-film-veil')).toBe('still');
+    expect(await page.locator('canvas').count(), 'balanced holds no WebGL context at all').toBe(0);
   } else {
     expect(tier).toBe('full');
-    await expect(page.locator('.film-veil canvas')).toHaveCount(1, { timeout: 15_000 });
+    await expect.poll(veilRegistered, { timeout: 15_000 }).toBe(true);
+    // The lock: one canvas for the whole page, compositor and floor band together.
+    expect(await page.locator('canvas').count(), 'the journey draws through one canvas').toBe(1);
   }
 
   // The narrative keeps its film in `balanced`: the pour still scrubs with scroll.
@@ -656,7 +670,11 @@ test('the compositor confirms its paint without reading the framebuffer back', a
 
   const tier = await openJourney(page);
   test.skip(tier !== 'full', 'no compositor below the full tier');
-  await page.waitForSelector('.film-veil canvas', { timeout: 30_000 });
+  await page.waitForFunction(
+    () => (window.__ffeSurface?.views() ?? []).includes('film-veil'),
+    null,
+    { timeout: 30_000 },
+  );
   await page.evaluate(() => window.scrollTo(0, Math.round(window.innerHeight * 1.6)));
   await page.waitForTimeout(2_000);
 

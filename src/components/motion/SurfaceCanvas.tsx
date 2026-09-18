@@ -35,6 +35,13 @@ declare global {
       readonly setHorizon: (horizon: boolean) => void;
       readonly resetFrames: () => void;
       readonly views: () => readonly string[];
+      /**
+       * Ask for one more frame. The gates need this because a view can now be
+       * suppressed from outside (hiding `.film-veil` drops its rectangle to zero,
+       * so the registry skips it) and a demand-rendered canvas would otherwise
+       * keep showing the frame it drew before the change.
+       */
+      readonly invalidate: () => void;
     };
   }
 }
@@ -133,6 +140,7 @@ export default function SurfaceCanvas({ probe = false }: { readonly probe?: bool
       setHorizon: (horizon) => surfaceStore.setHorizon(horizon),
       resetFrames: () => surfaceStore.resetFrames(),
       views: () => surfaceStore.listViews().map((view) => view.id),
+      invalidate: () => surfaceStore.invalidate(),
     };
     return () => {
       delete window.__ffeSurface;

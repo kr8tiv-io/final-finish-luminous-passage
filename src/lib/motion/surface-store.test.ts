@@ -231,6 +231,60 @@ describe('view registry', () => {
     expect(store.visibleViews(1440, 900).map((entry) => entry.view.id)).toEqual(['onscreen']);
   });
 
+  it('lends the plane to the menu and hands the horizon back on close', () => {
+    const store = createSurfaceStore();
+    const driver = fakeDriver();
+    store.bindDriver(driver);
+    // A white stage is on screen: the journey has folded the plane down to its line.
+    store.applyTarget({ a: 5, b: 5, mix: 0, horizon: true });
+    const floor = fakeElement({ left: 0, top: 0, width: 1440, height: 900 });
+    driver.setHorizon.mockClear();
+
+    store.setMenuFloor(floor);
+    expect(store.getSnapshot().menuOpen).toBe(true);
+    expect(store.getMenuFloor()).toBe(floor);
+    // The plane comes back up for the menu...
+    expect(driver.setHorizon).toHaveBeenLastCalledWith(false, 0.6);
+
+    // ...and the menu is the only writer while it holds it. A director publish here
+    // is recorded, not applied, so a hovered finish survives a scroll nudge.
+    driver.setStates.mockClear();
+    driver.setMix.mockClear();
+    driver.setHorizon.mockClear();
+    store.morphTo(3);
+    expect(store.getSnapshot().b).toBe(3);
+    store.applyTarget({ a: 1, b: 2, mix: 0.25, horizon: false });
+    expect(driver.setStates).not.toHaveBeenCalledWith(1, 2);
+    expect(store.getSnapshot().b, 'the hovered finish outranks a director publish').toBe(3);
+    expect(driver.setHorizon).not.toHaveBeenCalled();
+
+    // Closing hands the plane back to the last thing the journey published, not to
+    // whatever the last hover left on it.
+    store.setMenuFloor(null);
+    expect(store.getSnapshot().menuOpen).toBe(false);
+    expect(store.getMenuFloor()).toBeNull();
+    expect(store.getSnapshot().a).toBe(1);
+    expect(store.getSnapshot().b).toBe(2);
+    expect(store.getSnapshot().mix).toBe(0.25);
+    expect(driver.setHorizon).toHaveBeenLastCalledWith(false, 0.6);
+  });
+
+  it('gives the plane back to what it was showing when no director publishes', () => {
+    // A route with no `.journey`: nothing re-publishes a target after the menu
+    // closes, so the store's own parked target is the only thing that can restore it.
+    const store = createSurfaceStore();
+    const driver = fakeDriver();
+    store.bindDriver(driver);
+    store.applyTarget({ a: 2, b: 2, mix: 0, horizon: true });
+
+    store.setMenuFloor(fakeElement({ left: 0, top: 0, width: 1440, height: 900 }));
+    store.morphTo(5);
+    expect(store.getSnapshot().b).toBe(5);
+
+    store.setMenuFloor(null);
+    expect(store.getSnapshot()).toMatchObject({ a: 2, b: 2, mix: 0, horizon: true });
+  });
+
   it('counts frames only when the canvas says so', () => {
     const store = createSurfaceStore();
     expect(store.getFrames()).toBe(0);
