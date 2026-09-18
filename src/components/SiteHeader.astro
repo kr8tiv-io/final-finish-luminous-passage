@@ -8,7 +8,12 @@ const links = NAV_DESTINATIONS;
 const currentHref = links.filter(link => currentPath === link.href || currentPath.startsWith(`${link.href}/`)).sort((a,b)=>b.href.length-a.href.length)[0]?.href;
 ---
 
-<header class="site-header" data-site-header>
+{/* Persisted across route swaps (BaseLayout's <ClientRouter />), so the header the
+    visitor is looking at is never rebuilt — the nav's highlight, the menu's warm-up
+    and the progress rule all carry over. What does NOT carry over is anything the
+    server rendered *for the outgoing route*: `aria-current` and the route hook are
+    re-derived by `syncHeaderRoute` on `astro:after-swap`, before the new page paints. */}
+<header class="site-header" data-site-header data-route={currentPath === '/' ? 'home' : (currentPath.split('/').filter(Boolean)[0] ?? 'home')} transition:persist="site-header">
   <a class="brand" href="/" aria-label="Final Finish Epoxy home">
     <img class="brand-mark" src="/images/brand/final-finish-epoxy-mark.png" alt="" width="67" height="52" />
   </a>
@@ -20,6 +25,7 @@ const currentHref = links.filter(link => currentPath === link.href || currentPat
         <li style={`--nav-depth:${(0.4 + index * 0.14).toFixed(2)}`}>
           <a
             href={link.href}
+            data-astro-prefetch="hover"
             data-nav-finish={link.finish}
             aria-current={currentHref === link.href ? 'page' : undefined}
           >
@@ -65,18 +71,30 @@ const currentHref = links.filter(link => currentPath === link.href || currentPat
 </noscript>
 
 <script>
-  import { initializeHeaderRibbon } from '../scripts/header-ribbon';
+  import { bindRouteScoped, onRouteSwap } from '../lib/motion/route-lifecycle';
+  import { initializeHeaderRibbon, syncHeaderRoute } from '../scripts/header-ribbon';
   import { initializeIntentMotion } from '../scripts/intent-motion';
   import { initializeNavMenu } from './nav/nav-menu-controller';
-  const disposeIntent = initializeIntentMotion();
-  document.addEventListener('astro:before-swap', disposeIntent, {once:true});
-  const header = document.querySelector<HTMLElement>('[data-site-header]');
-  const toggle = header?.querySelector<HTMLButtonElement>('[data-menu-toggle]');
-  const navigation = header?.querySelector<HTMLElement>('[data-primary-navigation]');
 
-  if (header && toggle && navigation) {
+  /**
+   * This is a bundled module script, so it runs once per session and never again
+   * after a swap. Everything it builds is therefore route-scoped through
+   * `route-lifecycle.ts` rather than built inline: the ribbon measures `#portico`
+   * and the page's own scroll height, the glint attaches itself to the page's
+   * links, and the menu controller holds the overlay — none of which belong to the
+   * document the visitor is on a moment later.
+   */
+  onRouteSwap(() => syncHeaderRoute());
+  syncHeaderRoute();
+
+  bindRouteScoped(() => {
+    const disposeIntent = initializeIntentMotion();
+    const header = document.querySelector<HTMLElement>('[data-site-header]');
+    const toggle = header?.querySelector<HTMLButtonElement>('[data-menu-toggle]');
+    const navigation = header?.querySelector<HTMLElement>('[data-primary-navigation]');
+    if (!header || !toggle || !navigation) return disposeIntent;
     const disposeRibbon = initializeHeaderRibbon(header, navigation);
     const disposeMenu = initializeNavMenu(header, toggle, navigation);
-    document.addEventListener('astro:before-swap', () => { disposeMenu(); disposeRibbon(); }, {once:true});
-  }
+    return () => { disposeMenu(); disposeRibbon(); disposeIntent(); };
+  });
 </script>

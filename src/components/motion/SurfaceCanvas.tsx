@@ -1,4 +1,4 @@
-import { Suspense, lazy, useEffect, useMemo, useState, useSyncExternalStore } from 'react';
+import { Suspense, lazy, useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { journeyControls } from '../../lib/motion/journey-controls';
 import { journeyDirector } from '../../lib/motion/journey-director';
 import type { SurfaceStateId } from '../../lib/motion/surface-materials';
@@ -19,8 +19,22 @@ import MotionErrorBoundary from './MotionErrorBoundary';
  * to every visitor — including the phones and reduced-motion visitors this gate exists
  * to refuse. The renderer lives behind `lazy()` in `SurfaceFloor.tsx`, so the 224 KB gz
  * three/R3F chunk is fetched only once a client has actually been admitted.
+ *
+ * Step 12: this island carries `transition:persist`, so it is mounted once per
+ * *session* rather than once per page. Everything below that reads the document — the
+ * band it hands the renderer, and whether this route has a `.journey` for the director
+ * to drive — is therefore keyed on `astro:page-load` instead of on mount. Nothing
+ * about rendering changed; what changed is that the two DOM questions are asked again
+ * every time the document under the canvas is replaced.
  */
 const SurfaceStage = lazy(() => import('./SurfaceFloor'));
+
+/**
+ * Stamped once on the `<canvas>` so continuity across a swap is falsifiable: a
+ * navigation that silently tore the context down and built a new one reads as a
+ * changed stamp instead of passing as "there is still exactly one canvas".
+ */
+let surfaceInstances = 0;
 
 declare global {
   interface Window {
@@ -60,15 +74,33 @@ export default function SurfaceCanvas({ probe = false }: { readonly probe?: bool
   const [contextLost, setContextLost] = useState(false);
   const [restoreKey, setRestoreKey] = useState(0);
   const [canvasElement, setCanvasElement] = useState<HTMLCanvasElement | null>(null);
-  const coupled = useMemo(
+  const instanceId = useRef<string>('');
+  if (instanceId.current === '') {
+    surfaceInstances += 1;
+    instanceId.current = `surface-${surfaceInstances}`;
+  }
+  /**
+   * How many documents this island has outlived. Bumping it on `astro:page-load` is
+   * what re-asks the two questions below for the page that has just arrived; the
+   * persisted island itself never re-mounts, so a mount-time answer would be the
+   * first route's answer forever.
+   */
+  const [routeRevision, setRouteRevision] = useState(0);
+  const [coupled, setCoupled] = useState(
     () => typeof document !== 'undefined' && document.querySelector('.journey') !== null,
-    [],
   );
+
+  useEffect(() => {
+    const onPageLoad = () => setRouteRevision((revision) => revision + 1);
+    document.addEventListener('astro:page-load', onPageLoad);
+    return () => document.removeEventListener('astro:page-load', onPageLoad);
+  }, []);
 
   useEffect(() => {
     journeyControls.hydrate();
     setBand(document.querySelector<HTMLElement>('[data-surface-fallback]'));
-  }, []);
+    setCoupled(document.querySelector('.journey') !== null);
+  }, [routeRevision]);
 
   /* ---- admission: tier attribute first, capability probe while it is absent ---- */
   useEffect(() => {
@@ -111,6 +143,7 @@ export default function SurfaceCanvas({ probe = false }: { readonly probe?: bool
   /* ---- context loss: hide the canvas, show the band, re-mount the views on restore ---- */
   useEffect(() => {
     if (!canvasElement) return undefined;
+    canvasElement.dataset.surfaceInstance = instanceId.current;
     const onLost = (event: Event) => {
       event.preventDefault();
       setContextLost(true);
@@ -154,6 +187,8 @@ export default function SurfaceCanvas({ probe = false }: { readonly probe?: bool
       className="surface-canvas-host"
       aria-hidden="true"
       data-surface-host=""
+      data-surface-instance={instanceId.current}
+      data-surface-route={routeRevision}
       data-surface-lost={contextLost ? '' : undefined}
     >
       <MotionErrorBoundary>

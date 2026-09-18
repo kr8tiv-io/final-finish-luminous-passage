@@ -1,4 +1,7 @@
+import { useEffect } from 'react';
 import FloorMenuScene from './FloorMenuScene';
+import { onRouteTeardown } from '../../lib/motion/route-lifecycle';
+import { surfaceStore } from '../../lib/motion/surface-store';
 
 /**
  * The menu's floor island.
@@ -19,5 +22,14 @@ import FloorMenuScene from './FloorMenuScene';
  * nav-menu.css is the floor, unchanged.
  */
 export default function NavMenuFloor() {
+  /*
+   * Step 12 — the route boundary. The overlay sits outside the `transition:persist`ed
+   * `<header>`, so a client-side navigation replaces this island while the plane it
+   * was pointing at survives. Astro unmounts it on `astro:after-swap`, which is a
+   * frame too late: `FloorMenuScene`'s own `setMenuFloor(null)` would then land in
+   * the page the visitor has already arrived at. Releasing the plane at
+   * `astro:before-swap` keeps the handover inside the outgoing document.
+   */
+  useEffect(() => onRouteTeardown(() => surfaceStore.setMenuFloor(null)), []);
   return <FloorMenuScene />;
 }

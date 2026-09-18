@@ -18,6 +18,23 @@ for (const [route, heading] of publicRoutes) {
   });
 }
 
+/**
+ * Step 12. A route that does not opt into the router is a route that reloads the
+ * document, which is the white frame the paper wipe exists to remove — and a route
+ * whose header or canvas is not persisted hands the swap two elements to rebuild
+ * instead of re-point. Both are properties of `BaseLayout`, so they are asserted per
+ * route rather than once: a page that stops using the layout stops having them.
+ */
+for (const [route] of publicRoutes) {
+  test(`${route} opts into the client router with the header and canvas persisted`, async ({ page }) => {
+    await page.goto(route, { waitUntil: 'domcontentloaded' });
+    await expect(page.locator('meta[name="astro-view-transitions-enabled"]')).toHaveAttribute('content', 'true');
+    await expect(page.locator('[data-site-header]')).toHaveAttribute('data-astro-transition-persist', 'site-header');
+    await expect(page.locator('[data-surface-fallback]')).toHaveAttribute('data-astro-transition-persist', 'surface-band');
+    await expect(page.locator('astro-island[data-astro-transition-persist="site-surface"]')).toHaveCount(1);
+  });
+}
+
 test('quote form starts with project location and preserves direct calling', async ({ page }) => {
   await page.goto('/contact#quote', { waitUntil: 'domcontentloaded' });
   await expect(page.getByRole('heading', { level: 1, name: 'Let’s talk about your space.' })).toBeVisible();

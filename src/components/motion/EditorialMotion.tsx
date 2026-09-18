@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import gsap from 'gsap';
 import { SplitText, ensureGsapKit } from '../../lib/motion/gsap-kit';
 import { journeyControls } from '../../lib/motion/journey-controls';
+import { onRouteTeardown } from '../../lib/motion/route-lifecycle';
 import { reviewPosition, reviewTarget } from '../../lib/content/review-navigation';
 
 ensureGsapKit();
@@ -195,12 +196,15 @@ export default function EditorialMotion() {
     };
     const unsubscribe = journeyControls.subscribe(applyMotion);
     applyMotion();
-    return () => {
+    // `media.revert()` is the only thing that undoes this island's gsap.matchMedia
+    // context, and a route swap has to see it happen *before* the body is replaced —
+    // Astro's own unmount lands a beat later, on `astro:after-swap`.
+    return onRouteTeardown(() => {
       media?.revert(); unsubscribe(); resize.disconnect();
       gallery?.removeEventListener('scroll', scheduleGallery);
       buttons.forEach(button => button.removeEventListener('click', moveGallery));
       if (scrollFrame) cancelAnimationFrame(scrollFrame);
-    };
+    });
   }, []);
   return null;
 }

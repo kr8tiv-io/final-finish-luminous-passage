@@ -25,6 +25,7 @@ import {
   videoSeekTarget,
   videoVisualReady,
 } from '../../lib/motion/journey-media';
+import { onRouteTeardown } from '../../lib/motion/route-lifecycle';
 import { currentJourneyTier, type JourneyTier } from '../../lib/motion/journey-tier';
 
 gsap.registerPlugin(SplitText);
@@ -45,7 +46,12 @@ export default function JourneyMotion() {
   useEffect(() => {
     journeyControls.hydrate();
     journeyDirector.start();
-    return () => journeyDirector.stop();
+    // Registered rather than returned bare: Astro unmounts an outgoing island on
+    // `astro:after-swap`, by which point the incoming page's JourneyMotion may
+    // already have called `start()` — and this `stop()` would then stop a director
+    // nothing restarts. `onRouteTeardown` runs it at `astro:before-swap` and hands
+    // back a guarded handle, so React's later unmount call is a no-op.
+    return onRouteTeardown(() => journeyDirector.stop());
   }, []);
 
   useEffect(() => {
@@ -347,7 +353,9 @@ export default function JourneyMotion() {
     window.addEventListener(JOURNEY_COMPOSITOR_READY_EVENT, renderSnapshot);
     applyMotionPreference();
 
-    return () => {
+    // Same reason as the director above: this whole teardown has to land before the
+    // swap, not after it, or the outgoing page's splits and tweens outlive it.
+    return onRouteTeardown(() => {
       unsubscribe();
       unsubscribeControls();
       reducedQuery.removeEventListener('change', applyMotionPreference);
@@ -376,7 +384,7 @@ export default function JourneyMotion() {
       delete journey.dataset.journeyRevision;
       delete root.dataset.journeyMotion;
       delete root.dataset.journeyTier;
-    };
+    });
   }, []);
 
   return null;
