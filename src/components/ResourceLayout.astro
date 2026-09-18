@@ -1,10 +1,13 @@
 ---
+import { resolve } from 'node:path';
 import type { CollectionEntry } from 'astro:content';
 import BaseLayout from '../layouts/BaseLayout.astro';
 import SiteHeader from './SiteHeader.astro';
 import SiteFooter from './SiteFooter.astro';
 import { resourcePath } from '../lib/publishing.js';
 import { deploymentSettings } from '../lib/deployment.js';
+import { buildArticleSchema } from '../lib/seo/schema';
+import { getGitContentDates, reconcileArticleDates } from '../lib/seo/git-dates';
 
 type Resource = CollectionEntry<'resources'>;
 interface Props { entry: Resource; Content: any; related: Resource[]; }
@@ -21,24 +24,31 @@ const serviceTurn = {
   'concrete-polishing': { href: '/services/concrete-solutions', label: 'Concrete preparation' },
   'neutral-material-education': { href: '/finishes', label: 'Finish families we actually install' },
 }[data.primaryService];
-const schema = {
-  '@context': 'https://schema.org', '@type': 'BlogPosting', headline: data.title,
-  description: data.description, dateModified: data.updatedAt.toISOString(), mainEntityOfPage: canonical,
-  author: { '@type': 'Organization', name: 'Final Finish Epoxy' },
-  publisher: { '@type': 'Organization', name: 'Final Finish Epoxy' }, isAccessibleForFree: true,
-};
-const breadcrumb = {
-  '@context': 'https://schema.org', '@type': 'BreadcrumbList', itemListElement: [
-    { '@type': 'ListItem', position: 1, name: 'Home', item: new URL('/', deployment.canonicalOrigin).toString() },
-    { '@type': 'ListItem', position: 2, name: 'Resources', item: new URL('/resources/', deployment.canonicalOrigin).toString() },
-    { '@type': 'ListItem', position: 3, name: data.title, item: canonical },
-  ],
-};
+
+// `resources` frontmatter (src/content.config.ts) only has `updatedAt` — no created date — so
+// `datePublished` is derived from this file's own git history instead of invented (see
+// src/lib/seo/git-dates.ts). `entry.filePath`, set by the glob content loader, is
+// project-root-relative, and Astro always builds/dev-serves with the project root as
+// `process.cwd()`. If a draft is ever rendered before being committed, git has no history for it
+// yet, so this falls back to the same `updatedAt` the frontmatter already carries — a real,
+// human-set date, never a made-up one.
+const absoluteSourcePath = entry.filePath ? resolve(process.cwd(), entry.filePath) : null;
+const gitDates = absoluteSourcePath ? getGitContentDates(absoluteSourcePath) : null;
+const frontmatterUpdatedAt = data.updatedAt.toISOString();
+const datePublished = gitDates?.datePublished ?? frontmatterUpdatedAt;
+// See reconcileArticleDates: this repo's frontmatter `updatedAt` can predate the file's actual
+// first commit, which would otherwise publish a dateModified earlier than datePublished.
+const { dateModified } = reconcileArticleDates(datePublished, frontmatterUpdatedAt);
+const articleSchema = buildArticleSchema({
+  headline: data.title,
+  description: data.description,
+  canonicalUrl: canonical,
+  datePublished,
+  dateModified,
+});
 ---
 
-<BaseLayout title={`${data.title} | Final Finish Epoxy`} description={data.description} canonicalPath={path}>
-  <script slot="head" is:inline type="application/ld+json" set:html={JSON.stringify(schema)} />
-  <script slot="head" is:inline type="application/ld+json" set:html={JSON.stringify(breadcrumb)} />
+<BaseLayout title={`${data.title} | Final Finish Epoxy`} description={data.description} canonicalPath={path} jsonLd={articleSchema}>
   <SiteHeader />
   <main id="main-content">
     <header class="article-hero">

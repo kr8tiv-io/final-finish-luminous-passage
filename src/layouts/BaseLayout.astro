@@ -6,6 +6,9 @@ import '../styles/surface.css';
 import '../styles/route-transitions.css';
 import SurfaceCanvas from '../components/motion/SurfaceCanvas';
 import { deploymentSettings } from '../lib/deployment.js';
+import { buildSiteGraph } from '../lib/seo/schema';
+import { buildBreadcrumbList } from '../lib/seo/breadcrumbs';
+import { resolveSocialImage } from '../lib/seo/meta';
 
 /**
  * The route transition, and why it lives in the layout.
@@ -54,6 +57,13 @@ interface Props {
   canonicalPath?: string;
   noindex?: boolean;
   imagePath?: string;
+  /**
+   * Extra JSON-LD node(s) for this specific page (e.g. a `Service` block on a services page).
+   * Rendered as-is, each in its own <script type="application/ld+json">, alongside the
+   * site-wide business/website graph and the auto-derived BreadcrumbList this layout already
+   * emits — a page should never need to hand-roll those two itself.
+   */
+  jsonLd?: Record<string, unknown> | Array<Record<string, unknown>>;
 }
 
 const {
@@ -61,51 +71,21 @@ const {
   description,
   canonicalPath = Astro.url.pathname,
   noindex,
-  imagePath = '/images/brand/final-finish-epoxy-og.jpg',
+  imagePath,
+  jsonLd,
 } = Astro.props;
 
 const deployment = deploymentSettings(import.meta.env.SITE_ENV, Astro.site);
 const shouldNoindex = deployment.noindex || noindex === true;
 const siteUrl = deployment.site;
 const canonical = new URL(canonicalPath, deployment.canonicalOrigin);
-const socialImage = new URL(imagePath, siteUrl);
 const businessId = new URL('/#business', deployment.canonicalOrigin).toString();
-const siteSchema = {
-  '@context': 'https://schema.org',
-  '@graph': [
-    {
-      '@type': 'HomeAndConstructionBusiness',
-      '@id': businessId,
-      name: 'Final Finish Epoxy',
-      url: siteUrl.toString(),
-      logo: new URL('/favicon.svg', siteUrl).toString(),
-      image: socialImage.toString(),
-      telephone: '+1-780-991-1651',
-      email: 'finalfinishepoxy@gmail.com',
-      areaServed: [
-        { '@type': 'City', name: 'Edmonton' },
-        { '@type': 'City', name: 'Sherwood Park' },
-        { '@type': 'City', name: 'St. Albert' },
-        { '@type': 'City', name: 'Leduc' },
-        { '@type': 'City', name: 'Fort Saskatchewan' },
-        { '@type': 'City', name: 'Spruce Grove' },
-        { '@type': 'City', name: 'Beaumont' },
-      ],
-      sameAs: [
-        'https://www.facebook.com/profile.php?id=61573826827114',
-        'https://www.instagram.com/final_finish_epoxy/',
-      ],
-    },
-    {
-      '@type': 'WebSite',
-      '@id': new URL('/#website', siteUrl).toString(),
-      url: siteUrl.toString(),
-      name: 'Final Finish Epoxy',
-      inLanguage: 'en-CA',
-      publisher: { '@id': businessId },
-    },
-  ],
-};
+const websiteId = new URL('/#website', siteUrl).toString();
+const logoUrl = new URL('/icons/icon-512.png', siteUrl).toString();
+const socialImage = await resolveSocialImage(canonicalPath, siteUrl, imagePath);
+const siteSchema = buildSiteGraph({ businessId, websiteId, siteUrl: siteUrl.toString(), logoUrl, imageUrl: socialImage.url.toString() });
+const breadcrumbSchema = buildBreadcrumbList(deployment.canonicalOrigin, canonicalPath, title);
+const extraJsonLd = jsonLd == null ? [] : Array.isArray(jsonLd) ? jsonLd : [jsonLd];
 ---
 
 <!doctype html>
@@ -132,19 +112,25 @@ const siteSchema = {
     <link rel="canonical" href={canonical} />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="icon" href="/favicon.ico" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/icons/favicon-32.png" />
+    <link rel="icon" type="image/png" sizes="16x16" href="/icons/favicon-16.png" />
+    <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
+    <link rel="manifest" href="/manifest.webmanifest" />
     <meta property="og:type" content="website" />
     <meta property="og:locale" content="en_CA" />
     <meta property="og:site_name" content="Final Finish Epoxy" />
     <meta property="og:title" content={title} />
     <meta property="og:description" content={description} />
     <meta property="og:url" content={canonical} />
-    <meta property="og:image" content={socialImage} />
-    <meta property="og:image:width" content="1200" />
-    <meta property="og:image:height" content="630" />
+    <meta property="og:image" content={socialImage.url} />
+    <meta property="og:image:width" content={String(socialImage.width)} />
+    <meta property="og:image:height" content={String(socialImage.height)} />
     <meta property="og:image:alt" content="Final Finish Epoxy — a luminous architectural floor concept" />
     <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:image" content={socialImage} />
+    <meta name="twitter:image" content={socialImage.url} />
     <script is:inline type="application/ld+json" data-site-schema set:html={JSON.stringify(siteSchema)} />
+    {breadcrumbSchema && <script is:inline type="application/ld+json" data-breadcrumb-schema set:html={JSON.stringify(breadcrumbSchema)} />}
+    {extraJsonLd.map((node) => <script is:inline type="application/ld+json" data-page-schema set:html={JSON.stringify(node)} />)}
     <title>{title}</title>
     <ClientRouter />
     <slot name="head" />

@@ -21,6 +21,8 @@ test.describe('published resource library', () => {
       const data = JSON.parse(node.textContent ?? '{}');
       return data['@graph']?.map((item: { '@type'?: string }) => item['@type']) ?? [data['@type']];
     }));
-    expect(schemaTypes).toEqual(expect.arrayContaining(['BlogPosting', 'BreadcrumbList']));
+    // Step 32: guides now emit `Article` (with a real datePublished/dateModified pair) rather
+    // than `BlogPosting` — see src/lib/seo/schema.ts buildArticleSchema.
+    expect(schemaTypes).toEqual(expect.arrayContaining(['Article', 'BreadcrumbList']));
   });
 });

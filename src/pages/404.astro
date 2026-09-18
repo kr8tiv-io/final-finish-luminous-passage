@@ -1,0 +1,38 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import SiteHeader from '../components/SiteHeader.astro';
+import SiteFooter from '../components/SiteFooter.astro';
+import InteriorHero from '../components/InteriorHero.astro';
+import SectionShell from '../components/SectionShell.astro';
+
+// Astro (and @astrojs/node's standalone server — see node_modules/@astrojs/node/dist/serve-app.js)
+// serves this file's prerendered output for any unmatched route with an HTTP 404 status
+// automatically; no custom Response or `prerender = false` is needed here.
+---
+
+<BaseLayout
+  title="Page Not Found | Final Finish Epoxy"
+  description="This page does not exist on the Final Finish Epoxy site. Find services, projects, or contact Denis instead."
+  canonicalPath="/404"
+  noindex
+>
+  <SiteHeader />
+  <main id="main-content">
+    <InteriorHero
+      eyebrow="404"
+      title="That page is not here."
+      lead="Try services, projects, or call Denis."
+    />
+    <SectionShell>
+      <p class="section-kicker">Find your way back</p>
+      <h2 class="section-title">A few places to start instead.</h2>
+      <div class="button-row">
+        <a class="button button-primary" href="/">Home</a>
+        <a class="button button-secondary" href="/services">Services</a>
+        <a class="button button-secondary" href="/projects">Projects</a>
+        <a class="button button-secondary" href="/contact">Contact</a>
+      </div>
+    </SectionShell>
+  </main>
+  <SiteFooter />
+</BaseLayout>
