@@ -457,6 +457,12 @@
         "docs/context/*",
         "CLAUDE.md",
         "AGENTS.md"
+      ],
+      "vocab": [
+        "line-rise",
+        "lateral-curtain",
+        "depth-settle",
+        "epoxy-mask"
       ]
     },
     {
@@ -476,6 +482,11 @@
       "files": [
         "scripts/",
         ".mcp.json"
+      ],
+      "vocab": [
+        "film-scrub",
+        "handoff-crossfade",
+        "frame-zero-hold"
       ]
     },
     {
@@ -535,6 +546,11 @@
         "public/videos",
         "package.json",
         "scripts/grade-pearl-pour.mjs"
+      ],
+      "vocab": [
+        "line-rise",
+        "label-curtain",
+        "word-converge"
       ]
     },
     {
@@ -560,6 +576,16 @@
         "FilmVeilLoader.tsx",
         "journey.css",
         "readable-experience.css"
+      ],
+      "vocab": [
+        "handoff-crossfade",
+        "frame-zero-hold",
+        "film-scrub",
+        "white-dissolve",
+        "aperture",
+        "fold",
+        "resin-wipe",
+        "preparation-curl"
       ]
     },
     {
@@ -643,6 +669,9 @@
         "BaseLayout.astro",
         "SiteHeader.astro",
         "motion loaders"
+      ],
+      "vocab": [
+        "page-wipe"
       ]
     },
     {
@@ -680,6 +709,14 @@
       "owner": "orchestrator",
       "files": [
         "docs/context/MOTION-VOCABULARY.md"
+      ],
+      "vocab": [
+        "resin-layer-mask",
+        "glint",
+        "nav-echo",
+        "underline-travel",
+        "image-lens",
+        "ribbon-underline"
       ]
     },
     {
@@ -702,6 +739,12 @@
         "SurfaceCanvas.tsx",
         "FilmVeil.tsx",
         "BaseLayout.astro"
+      ],
+      "vocab": [
+        "material-morph",
+        "settle",
+        "sweep",
+        "horizon"
       ]
     },
     {
@@ -722,6 +765,12 @@
         "journey-manifest.ts",
         "scripts/measure-contrast.mjs",
         "css"
+      ],
+      "vocab": [
+        "film-scrub",
+        "handoff-crossfade",
+        "material-morph",
+        "hold-window"
       ]
     },
     {
@@ -742,6 +791,16 @@
         "index.astro",
         "FilmVeil.tsx mode 3",
         "journey-transitions.ts"
+      ],
+      "vocab": [
+        "word-converge",
+        "char-float",
+        "line-rise",
+        "resin-wipe",
+        "film-scrub",
+        "frame-zero-hold",
+        "handoff-crossfade",
+        "hold-window"
       ]
     },
     {
@@ -763,6 +822,16 @@
         "SiteHeader.astro",
         "header-ribbon.ts",
         "SurfaceCanvas.tsx"
+      ],
+      "vocab": [
+        "flip-menu",
+        "nav-parallax",
+        "floor-blend",
+        "floor-sweep",
+        "nav-material",
+        "nav-echo",
+        "header-progress",
+        "ribbon-progress"
       ]
     },
     {
@@ -783,6 +852,17 @@
         "SocialProof.astro",
         "EditorialMotion.tsx",
         "customer-proof.json"
+      ],
+      "vocab": [
+        "line-rise",
+        "char-fold",
+        "char-float",
+        "rating-clip",
+        "lateral-card-arrival",
+        "editorial-reveal",
+        "story-photo-arrival",
+        "underline-travel",
+        "card-ring"
       ]
     },
     {
@@ -805,6 +885,13 @@
         "DepthPlate.tsx",
         "journey-film-timing.ts",
         "assets/stair/"
+      ],
+      "vocab": [
+        "stair-dolly",
+        "layer-explode",
+        "depth-settle",
+        "film-scrub",
+        "material-lens"
       ]
     },
     {
@@ -823,6 +910,18 @@
       "owner": "ui",
       "files": [
         "src/components/home/PreparationLayers.astro"
+      ],
+      "vocab": [
+        "layered-scrub",
+        "layer-drift",
+        "grind-swirl",
+        "crack-repair",
+        "flake-fall",
+        "topcoat-edge",
+        "gloss-sweep",
+        "caption-wipe",
+        "statement-words",
+        "caption-drift"
       ]
     },
     {
@@ -845,6 +944,15 @@
         "FilmVeil.tsx (after 17)",
         "public/videos/follow-floor/*/epoxy-mancave.mp4",
         "copy"
+      ],
+      "vocab": [
+        "swallow",
+        "fold-and-shoot-left",
+        "resin-swirl-plate",
+        "fold",
+        "epoxy-mask",
+        "char-fold",
+        "handoff-crossfade"
       ]
     },
     {
@@ -865,6 +973,13 @@
         "TransformationGallery.tsx",
         "css",
         "transformation-gallery.ts"
+      ],
+      "vocab": [
+        "perspective-cylinder",
+        "word-swap",
+        "shrink-to-card",
+        "horizontal-pull",
+        "lateral-curtain"
       ]
     },
     {
@@ -885,6 +1000,13 @@
         "headline-motion.ts",
         "src/components/motion/ResinMask.astro",
         "JourneyMotion.tsx (after 8)"
+      ],
+      "vocab": [
+        "resin-layer-mask",
+        "specular-window",
+        "meniscus-filter",
+        "epoxy-mask",
+        "aperture"
       ]
     },
     {
@@ -922,6 +1044,11 @@
       "files": [
         "index.astro",
         "DepthPlate.tsx"
+      ],
+      "vocab": [
+        "depth-settle",
+        "white-dissolve",
+        "material-morph"
       ]
     },
     {
@@ -942,6 +1069,11 @@
         "index.astro",
         "QuoteForm.tsx",
         "src/pages/privacy.astro"
+      ],
+      "vocab": [
+        "word-converge",
+        "fold",
+        "settle"
       ]
     },
     {
@@ -963,6 +1095,16 @@
         "header-ribbon.ts (after 18)",
         "FilmVeil.tsx (after 22)",
         "src/components/Preloader.astro"
+      ],
+      "vocab": [
+        "glint",
+        "nav-echo",
+        "image-lens",
+        "underline-travel",
+        "ribbon-underline",
+        "card-ring",
+        "nav-material",
+        "header-progress"
       ]
     },
     {
@@ -1101,6 +1243,13 @@
       "files": [
         "readable-experience.css",
         "journey-manifest.ts"
+      ],
+      "vocab": [
+        "hold-window",
+        "line-rise",
+        "lateral-card-arrival",
+        "film-scrub",
+        "perspective-cylinder"
       ]
     },
     {
@@ -1119,6 +1268,15 @@
       "owner": "ui",
       "files": [
         "tests/e2e/accessibility.spec.ts"
+      ],
+      "vocab": [
+        "line-rise",
+        "char-float",
+        "glint",
+        "nav-echo",
+        "material-morph",
+        "handoff-crossfade",
+        "resin-layer-mask"
       ]
     },
     {
@@ -1218,7 +1376,9 @@
       "vocab": [
         "unwrap-to-lattice",
         "lattice-flyover",
-        "tile-resolve"
+        "tile-resolve",
+        "white-dissolve",
+        "caption-drift"
       ],
       "refs": [
         "EXPERIENCE-STORYBOARD.md#act-6",
@@ -2341,8 +2501,8 @@
       "type": "verifies"
     },
     {
-      "from": "step-23b",
-      "to": "gate-23b",
+      "from": "gate-23b",
+      "to": "step-23b",
       "type": "verifies"
     },
     {

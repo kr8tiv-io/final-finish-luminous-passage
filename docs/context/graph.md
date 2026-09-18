@@ -188,7 +188,7 @@ flowchart TD
 - **Inputs (informs):** none recorded
 - **Constraints (locks):** none recorded
 - **Depends on:** step-02
-- **Vocabulary ids cited:** none yet
+- **Vocabulary ids cited:** line-rise, lateral-curtain, depth-settle, epoxy-mask
 - **Gate:** Files present; CLAUDE.md < 200 lines; every "do not" from continue.md carried over.
 
 ### step-04 — Tooling + harness: GSAP skills, Astro docs MCP, Context7, capture-journey.mjs + measure-delivery.mjs baseline
@@ -201,7 +201,7 @@ flowchart TD
 - **Inputs (informs):** none recorded
 - **Constraints (locks):** none recorded
 - **Depends on:** step-03
-- **Vocabulary ids cited:** none yet
+- **Vocabulary ids cited:** film-scrub, handoff-crossfade, frame-zero-hold
 - **Gate:** output/baseline/ holds captures + JSON for all chapters at three widths.
 
 ### step-05 — Dev contract: port 4333, SITE_ENV=staging, serial Playwright, built app on 4334
@@ -240,7 +240,7 @@ flowchart TD
 - **Inputs (informs):** none recorded
 - **Constraints (locks):** none recorded
 - **Depends on:** step-06
-- **Vocabulary ids cited:** none yet
+- **Vocabulary ids cited:** line-rise, label-curtain, word-converge
 - **Gate:** Tests green; 0 console errors; poster/frame-0 pixel diff < 1%; every HARVEST keeper ported or assigned to a later step.
 
 ### step-08 — Handoff + tiers (one owner): mediaOwner via reportVeil, single canvas-opacity writer, tier resolver, retire .journey-rail
@@ -253,7 +253,7 @@ flowchart TD
 - **Inputs (informs):** none recorded
 - **Constraints (locks):** L1, L2, L3, L4
 - **Depends on:** step-07
-- **Vocabulary ids cited:** none yet
+- **Vocabulary ids cited:** handoff-crossfade, frame-zero-hold, film-scrub, white-dissolve, aperture, fold, resin-wipe, preparation-curl
 - **Gate:** boundaries.spec: all seven boundaries at p in {.05,.25,.5,.75,.95} forward+reverse, pixelmatch < 2%, no all-paper frame; iPhone shows balanced tier.
 
 ### step-09 — Gallery owner + production fallback: restore deleted desktop assertions, rejected admission state, never-empty fallback
@@ -305,7 +305,7 @@ flowchart TD
 - **Inputs (informs):** none recorded
 - **Constraints (locks):** none recorded
 - **Depends on:** step-11
-- **Vocabulary ids cited:** none yet
+- **Vocabulary ids cited:** page-wipe
 - **Gate:** e2e: navigate home -> services -> back twice, 0 console errors, 0 duplicate ScrollTriggers, no white flash frame.
 
 ### step-13 — Manrope refinement: tokens, scale, leading, tracking, preload variable woff2, subset to Latin
@@ -331,7 +331,7 @@ flowchart TD
 - **Inputs (informs):** none recorded
 - **Constraints (locks):** none recorded
 - **Depends on:** step-13
-- **Vocabulary ids cited:** none yet
+- **Vocabulary ids cited:** resin-layer-mask, glint, nav-echo, underline-travel, image-lens, ribbon-underline
 - **Gate:** context-graph.mjs validates every id has duration, ease, reduced-motion equivalent, reference; later motion steps cite ids.
 
 ### step-15 — GSAP consolidation + layout canvas: one plugin registration, useGSAP, matchMedia, layout-level SurfaceCanvas with <View>s — pulled forward 2026-09-18: SurfaceCanvas + SurfaceFloor (material states 0–7) are the storyboard's backbone
@@ -344,7 +344,7 @@ flowchart TD
 - **Inputs (informs):** S7
 - **Constraints (locks):** none recorded
 - **Depends on:** step-14
-- **Vocabulary ids cited:** none yet
+- **Vocabulary ids cited:** material-morph, settle, sweep, horizon
 - **Gate:** document.querySelectorAll("canvas").length === 1 on every route; Step 8 boundary spec still green.
 
 ### step-16 — Surfaces: paper/ink/cobalt/bronze tokens, per-chapter reading zones, measure-contrast.mjs
@@ -357,7 +357,7 @@ flowchart TD
 - **Inputs (informs):** none recorded
 - **Constraints (locks):** none recorded
 - **Depends on:** step-15
-- **Vocabulary ids cited:** none yet
+- **Vocabulary ids cited:** film-scrub, handoff-crossfade, material-morph, hold-window
 - **Gate:** Body >= 4.5:1 and headings >= 3:1 for every chapter at 390/768/1440, or paper wash present.
 
 ### step-17 — Opening: keep pearl pour scrub, add 1080 source, refine resin-wipe, hero type per vocabulary, poster is LCP
@@ -370,7 +370,7 @@ flowchart TD
 - **Inputs (informs):** S7
 - **Constraints (locks):** L1, L2, L3, L4
 - **Depends on:** step-08, step-16
-- **Vocabulary ids cited:** none yet
+- **Vocabulary ids cited:** word-converge, char-float, line-rise, resin-wipe, film-scrub, frame-zero-hold, handoff-crossfade, hold-window
 - **Gate:** video.currentTime monotonic over 20 samples; LCP element = .pour-poster; CLS sum < .02; boundary spec green.
 
 ### step-18 — 3D navigation: full-screen menu, Flip transitions over a live floor plane, harvested chapter-station rail
@@ -383,7 +383,7 @@ flowchart TD
 - **Inputs (informs):** S7
 - **Constraints (locks):** L1, L2, L3, L4
 - **Depends on:** step-17, step-15, step-16
-- **Vocabulary ids cited:** none yet
+- **Vocabulary ids cited:** flip-menu, nav-parallax, floor-blend, floor-sweep, nav-material, nav-echo, header-progress, ribbon-progress
 - **Gate:** p95 click->menu-open->next rAF <= 300ms over five opens at CPU x4; one canvas per route; axe clean; works after context loss.
 
 ### step-19 — Social proof after the pour: scroll-linked review gallery, alternating-direction arrivals, freshness check
@@ -396,7 +396,7 @@ flowchart TD
 - **Inputs (informs):** S7
 - **Constraints (locks):** none recorded
 - **Depends on:** step-18, step-20, step-22, step-24
-- **Vocabulary ids cited:** none yet
+- **Vocabulary ids cited:** line-rise, char-fold, char-float, rating-clip, lateral-card-arrival, editorial-reveal, story-photo-arrival, underline-travel, card-ring
 - **Gate:** max(h)-min(h) <= 1px across .review-card at 320/768/1440; e2e; freshness check.
 
 ### step-20 — Stair chapter: pearl-grade walkway film (A) vs 2.5D depth-parallax (B), Matt picks from side-by-side
@@ -409,7 +409,7 @@ flowchart TD
 - **Inputs (informs):** S7
 - **Constraints (locks):** M2
 - **Depends on:** step-19, step-08
-- **Vocabulary ids cited:** none yet
+- **Vocabulary ids cited:** stair-dolly, layer-explode, depth-settle, film-scrub, material-lens
 - **Gate:** A: speckle luminance variance reduced >= 50%; B: riser-crop SSIM >= .85, holes < .01%; side-by-side reviewed by Matt.
 
 ### step-21 — Preparation cutaway: layered illustrative diagram with staggered scrub lags (isladjan)
@@ -422,7 +422,7 @@ flowchart TD
 - **Inputs (informs):** S7
 - **Constraints (locks):** none recorded
 - **Depends on:** step-20
-- **Vocabulary ids cited:** none yet
+- **Vocabulary ids cited:** layered-scrub, layer-drift, grind-swirl, crack-repair, flake-fall, topcoat-edge, gloss-sweep, caption-wipe, statement-words, caption-drift
 - **Gate:** Reduced-motion static version; axe clean; capture; no invented thicknesses.
 
 ### step-22 — Reclaim your garage or basement: garage, basement, harvested glass-mancave film, fold-and-shoot-left
@@ -435,7 +435,7 @@ flowchart TD
 - **Inputs (informs):** S7
 - **Constraints (locks):** L1, L2, L3, L4
 - **Depends on:** step-21, step-17
-- **Vocabulary ids cited:** none yet
+- **Vocabulary ids cited:** swallow, fold-and-shoot-left, resin-swirl-plate, fold, epoxy-mask, char-fold, handoff-crossfade
 - **Gate:** Boundary spec green for garage:vault and vault:mancave; copy passes the ledger; capture.
 
 ### step-23 — See the difference: pin the inner passage, jh3y CSS cylinder, front-card slider, native snap ribbon fallback
@@ -448,7 +448,7 @@ flowchart TD
 - **Inputs (informs):** S7
 - **Constraints (locks):** D1
 - **Depends on:** step-22, step-09, step-11, step-14, step-15, step-16
-- **Vocabulary ids cited:** none yet
+- **Vocabulary ids cited:** perspective-cylinder, word-swap, shrink-to-card, horizontal-pull, lateral-curtain
 - **Gate:** Step 9 assertions green; exactly one ScrollTrigger inside #proof; layout-shift sum < .02; drag never rotates cylinder.
 
 ### step-23b — Archive lattice (Act 6): cylinder cards unwrap into a 96-photo lattice, camera flyover, tile-resolve into one approved job
@@ -461,8 +461,8 @@ flowchart TD
 - **Inputs (informs):** S7
 - **Constraints (locks):** none recorded
 - **Depends on:** step-23, step-15
-- **Vocabulary ids cited:** unwrap-to-lattice, lattice-flyover, tile-resolve
-- **Gate:** MISSING — see validation errors
+- **Vocabulary ids cited:** unwrap-to-lattice, lattice-flyover, tile-resolve, white-dissolve, caption-drift
+- **Gate:** Lattice: atlas ≤ 4096 (2048 phone), 96 tiles present (unapproved at 60% opacity, no captions), flyover p95 frame ≤ 20 ms at 1440, resolve lands on an approved after-photo, still tier = CSS grid stagger; captures at 390/768/1440
 
 ### step-24 — Epoxy layer-mask headline (Creative Ocean): resin alpha plate as layer + mask
 
@@ -474,7 +474,7 @@ flowchart TD
 - **Inputs (informs):** S7
 - **Constraints (locks):** none recorded
 - **Depends on:** step-23, step-08
-- **Vocabulary ids cited:** none yet
+- **Vocabulary ids cited:** resin-layer-mask, specular-window, meniscus-filter, epoxy-mask, aperture
 - **Gate:** aria-safe; 60fps in capture trace; reduced-motion shows the settled heading.
 
 ### step-25 — Finish alcove and visualizer: entrance from finish chapter, env map + flake sparkle, mobile editor gaps closed
@@ -500,7 +500,7 @@ flowchart TD
 - **Inputs (informs):** S7
 - **Constraints (locks):** none recorded
 - **Depends on:** step-25, step-20, step-22, step-24
-- **Vocabulary ids cited:** none yet
+- **Vocabulary ids cited:** depth-settle, white-dissolve, material-morph
 - **Gate:** Capture; ledger.
 
 ### step-27 — Consultation: single poster, wash only behind words, three-stage form
@@ -513,7 +513,7 @@ flowchart TD
 - **Inputs (informs):** S7
 - **Constraints (locks):** none recorded
 - **Depends on:** step-26, step-20, step-22, step-24
-- **Vocabulary ids cited:** none yet
+- **Vocabulary ids cited:** word-converge, fold, settle
 - **Gate:** routes.spec quote flow green; capture.
 
 ### step-28 — Micro-interactions and grade: hover vocabulary site-wide, disappearing chrome, logo-trace preloader, filmic grade
@@ -526,7 +526,7 @@ flowchart TD
 - **Inputs (informs):** S7
 - **Constraints (locks):** L1, L2, L3, L4
 - **Depends on:** step-27, step-19, step-21, step-25, step-26, step-27
-- **Vocabulary ids cited:** none yet
+- **Vocabulary ids cited:** glint, nav-echo, image-lens, underline-travel, ribbon-underline, card-ring, nav-material, header-progress
 - **Gate:** No hover moves a hit target; preloader absent on repeat visits and never delays LCP; auditor review.
 
 ### step-29 — Copy pass in Denis voice; complete CLAIMS-LEDGER.md; resolve "Tadic"; use two-day/photo-estimate facts
@@ -617,7 +617,7 @@ flowchart TD
 - **Inputs (informs):** none recorded
 - **Constraints (locks):** none recorded
 - **Depends on:** step-34, step-34
-- **Vocabulary ids cited:** none yet
+- **Vocabulary ids cited:** hold-window, line-rise, lateral-card-arrival, film-scrub, perspective-cylinder
 - **Gate:** Captures on iPhone 15 Pro, Pixel 7, iPad emulation; Matt real-iPhone check recorded.
 
 ### step-36 — Accessibility: axe on every route, keyboard journey, reduced-motion parity, sampled-frame contrast
@@ -630,7 +630,7 @@ flowchart TD
 - **Inputs (informs):** none recorded
 - **Constraints (locks):** none recorded
 - **Depends on:** step-35, step-35
-- **Vocabulary ids cited:** none yet
+- **Vocabulary ids cited:** line-rise, char-float, glint, nav-echo, material-morph, handoff-crossfade, resin-layer-mask
 - **Gate:** 0 violations; keyboard video.
 
 ### step-37 — Auditor loop: blind pairwise review by three Opus reviewers, contested-finding refute pass, verifier re-run

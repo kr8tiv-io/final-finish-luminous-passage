@@ -36,13 +36,89 @@ function loadGraph() {
   return graph;
 }
 
-function isMotionVocabComplete() {
-  if (!existsSync(VOCAB_PATH)) return false;
-  const text = readFileSync(VOCAB_PATH, 'utf8');
-  // "complete" = no TODO cell remains in the table body.
-  const tableLines = text.split('\n').filter((l) => l.trim().startsWith('|') && !l.includes('---'));
-  const rows = tableLines.filter((l) => !/\| id \| kind \| status \|/.test(l));
-  return rows.length > 0 && !rows.some((l) => /TODO/.test(l));
+// The vocabulary tables are the contract; this is their schema. A table is only read
+// as a vocabulary table when its header is exactly these columns in this order, so the
+// schema table, the tagging table and any future prose table are ignored rather than
+// mis-parsed into empty rows that would pass every check.
+const VOCAB_COLUMNS = ['id', 'kind', 'status', 'duration', 'ease', 'property', 'trigger', 'reduced-motion', 'reference', 'owner'];
+const VOCAB_KINDS = new Set(['text', 'scene', 'hover', 'layout']);
+const VOCAB_STATUSES = new Set(['implemented', 'planned']);
+/** Columns that must carry a real, specific value on an `implemented` row. */
+const VOCAB_MEASURED = ['duration', 'ease', 'reduced-motion', 'reference', 'owner'];
+
+/** Markdown cells may contain an escaped pipe (`\|`), which is not a cell boundary. */
+function splitTableRow(line) {
+  return line
+    .trim()
+    .replace(/^\|/, '')
+    .replace(/\|$/, '')
+    .split(/(?<!\\)\|/)
+    .map((cell) => cell.trim());
+}
+
+const isSeparatorRow = (line) => /^\|[\s:|-]+\|$/.test(line.trim());
+
+/**
+ * Parse every vocabulary table in MOTION-VOCABULARY.md into rows keyed by id.
+ * Returns { rows: Map<id, row>, problems: string[] }.
+ */
+function parseMotionVocabulary() {
+  if (!existsSync(VOCAB_PATH)) {
+    return { rows: new Map(), problems: [`MOTION-VOCABULARY.md not found at ${VOCAB_PATH}`] };
+  }
+  const lines = readFileSync(VOCAB_PATH, 'utf8').split('\n');
+  const rows = new Map();
+  const problems = [];
+  let inTable = false;
+
+  for (let index = 0; index < lines.length; index += 1) {
+    const line = lines[index];
+    if (!line.trim().startsWith('|')) { inTable = false; continue; }
+    if (isSeparatorRow(line)) continue;
+    const cells = splitTableRow(line);
+
+    if (!inTable) {
+      // A header row for a vocabulary table opens one; any other table is skipped.
+      inTable = cells.length === VOCAB_COLUMNS.length
+        && cells.every((cell, i) => cell.toLowerCase() === VOCAB_COLUMNS[i]);
+      continue;
+    }
+
+    const where = `MOTION-VOCABULARY.md:${index + 1}`;
+    if (cells.length !== VOCAB_COLUMNS.length) {
+      problems.push(`${where}: row has ${cells.length} cells, expected ${VOCAB_COLUMNS.length}`);
+      continue;
+    }
+    const row = Object.fromEntries(VOCAB_COLUMNS.map((column, i) => [column, cells[i]]));
+    const id = row.id.replace(/`/g, '').trim();
+    if (!id) { problems.push(`${where}: row has no id`); continue; }
+    if (rows.has(id)) { problems.push(`${where}: duplicate vocabulary id "${id}"`); continue; }
+
+    for (const column of VOCAB_COLUMNS) {
+      if (!row[column] || /^-+$/.test(row[column])) problems.push(`${where}: "${id}" has an empty "${column}" cell`);
+      if (/TODO/i.test(row[column])) problems.push(`${where}: "${id}" still has a TODO in "${column}"`);
+    }
+    const kind = row.kind.replace(/`/g, '').trim();
+    const status = row.status.replace(/`/g, '').trim();
+    if (!VOCAB_KINDS.has(kind)) problems.push(`${where}: "${id}" has invalid kind "${kind}"`);
+    if (!VOCAB_STATUSES.has(status)) problems.push(`${where}: "${id}" has invalid status "${status}"`);
+    if (status === 'implemented') {
+      for (const column of VOCAB_MEASURED) {
+        // An implemented row is a measurement, so it must cite where it was measured
+        // and must not hide behind a placeholder in the columns that carry the numbers.
+        if (/^(n\/a|tbd|\?+)$/i.test(row[column])) {
+          problems.push(`${where}: implemented id "${id}" has placeholder "${row[column]}" in "${column}"`);
+        }
+      }
+      if (!/:\d+/.test(row.owner)) {
+        problems.push(`${where}: implemented id "${id}" has no file:line in "owner" (got "${row.owner}")`);
+      }
+    }
+    rows.set(id, { ...row, id, kind, status });
+  }
+
+  if (rows.size === 0) problems.push('MOTION-VOCABULARY.md contains no vocabulary table rows');
+  return { rows, problems };
 }
 
 function motionTouching(node) {
@@ -83,8 +159,14 @@ function validate(graph) {
     if (!hasGate) errors.push(`Step ${step.id} has no gate via a verifies edge`);
   }
 
-  // Rule 2: every motion-touching step cites >= 1 vocab id, once MOTION-VOCABULARY.md is complete; warn until then.
-  const vocabComplete = isMotionVocabComplete();
+  // Rule 2: MOTION-VOCABULARY.md is itself valid — every row complete, every implemented
+  // row carrying a measured duration/ease/reduced-motion/reference and a file:line owner.
+  const vocabulary = parseMotionVocabulary();
+  for (const problem of vocabulary.problems) errors.push(`MOTION-VOCABULARY: ${problem}`);
+  const vocabComplete = vocabulary.problems.length === 0;
+
+  // Rule 3: every motion-touching step cites >= 1 vocab id. An error once the
+  // vocabulary is complete (Step 14); a warning only while it is still a stub.
   for (const step of steps) {
     if (!motionTouching(step)) continue;
     const cites = Array.isArray(step.vocab) && step.vocab.length > 0;
@@ -95,21 +177,31 @@ function validate(graph) {
     }
   }
 
-  // Rule 3: every copy step (29, 30, 31) has an edge from CLAIMS-LEDGER.
+  // Rule 4: a cited id must exist. A typo in a `vocab` array is otherwise invisible,
+  // and a step built against an id nobody defined is a step built against nothing.
+  for (const step of steps) {
+    for (const id of step.vocab ?? []) {
+      if (!vocabulary.rows.has(id)) {
+        errors.push(`Step ${step.id} cites vocab id "${id}", which is not defined in MOTION-VOCABULARY.md`);
+      }
+    }
+  }
+
+  // Rule 5: every copy step (29, 30, 31) has an edge from CLAIMS-LEDGER.
   for (const id of ['step-29', 'step-30', 'step-31']) {
     if (!nodesById.has(id)) { warnings.push(`Copy step ${id} not found in graph`); continue; }
     const hasLedgerEdge = graph.edges.some((e) => e.to === id && nodesById.get(e.from)?.id === 'artifact-claims-ledger');
     if (!hasLedgerEdge) errors.push(`Copy step ${id} has no edge from artifact-claims-ledger`);
   }
 
-  // Rule 4: no step depends_on a blocked node.
+  // Rule 6: no step depends_on a blocked node.
   for (const edge of graph.edges) {
     if (edge.type !== 'depends_on') continue;
     const target = nodesById.get(edge.to);
     if (target?.status === 'blocked') errors.push(`${edge.from} depends_on blocked node ${edge.to}`);
   }
 
-  // Rule 5: no two steps in the same parallel set share an owned file.
+  // Rule 7: no two steps in the same parallel set share an owned file.
   // A "parallel set" = steps with the same phase that do not depend_on one another (directly or transitively).
   const dependsOn = new Map();
   for (const s of steps) dependsOn.set(s.id, new Set());
@@ -151,7 +243,7 @@ function validate(graph) {
     }
   }
 
-  return { errors, warnings, nodesById, steps, gates };
+  return { errors, warnings, nodesById, steps, gates, vocabulary };
 }
 
 function summarize(graph, result) {
@@ -166,6 +258,14 @@ function summarize(graph, result) {
   lines.push(`Nodes: ${graph.nodes.length} (${Object.entries(byType).map(([t, c]) => `${t}:${c}`).join(', ')})`);
   lines.push(`Edges: ${graph.edges.length}`);
   lines.push(`Steps by status: ${Object.entries(byStatus).map(([s, c]) => `${s}:${c}`).join(', ') || 'none'}`);
+  if (result.vocabulary) {
+    const rows = [...result.vocabulary.rows.values()];
+    const implemented = rows.filter((r) => r.status === 'implemented').length;
+    const cited = new Set(graph.nodes.flatMap((n) => n.vocab ?? []));
+    const uncited = rows.filter((r) => !cited.has(r.id)).map((r) => r.id);
+    lines.push(`Vocabulary: ${rows.length} ids (${implemented} implemented, ${rows.length - implemented} planned), ${cited.size} cited by steps`);
+    if (uncited.length) lines.push(`  (defined but not yet cited by any step: ${uncited.join(', ')})`);
+  }
   lines.push(`Errors: ${result.errors.length}`);
   for (const e of result.errors) lines.push(`  ERROR  ${e}`);
   lines.push(`Warnings: ${result.warnings.length}`);
