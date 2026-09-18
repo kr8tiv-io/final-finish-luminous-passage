@@ -1,0 +1,71 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import SiteHeader from '../components/SiteHeader.astro';
+import SiteFooter from '../components/SiteFooter.astro';
+import InteriorHero from '../components/InteriorHero.astro';
+import SectionShell from '../components/SectionShell.astro';
+
+/**
+ * Step 30 replaced seven `/areas/<town>` pages with this one.
+ *
+ * Those pages were the same paragraph with a different town dropped into it, and
+ * six of the towns were claims the business cannot support: `CONTEXT-SHEET.md`
+ * A8 lists "towns beyond Edmonton" as not claimable, and nothing on the live
+ * site, the Google listing, or a written note from Denis says Final Finish
+ * serves them. So this page names Edmonton, says plainly that the company
+ * travels, and asks the reader to check rather than pretending to a coverage map.
+ *
+ * `src/middleware.ts` 301s all seven old URLs here.
+ */
+---
+
+<BaseLayout
+  title="Service Area | Final Finish Epoxy Edmonton"
+  description="Final Finish Epoxy is based in Edmonton, Alberta, and works as a service-area business. Ask Denis whether he travels to your address."
+  canonicalPath="/service-area"
+>
+  <SiteHeader />
+  <main id="main-content">
+    <InteriorHero
+      eyebrow="Edmonton, Alberta"
+      title="Where we work."
+      lead="Final Finish is based in Edmonton. Denis runs it as a service-area business, which means the crew comes to your floor."
+    />
+
+    <SectionShell>
+      <p class="section-kicker">Edmonton first</p>
+      <h2 class="section-title">Edmonton is home, and most of the work is here.</h2>
+      <p class="section-lead">The company was founded by Denis, and it does quality floor makeovers in Edmonton, Alberta. There is no showroom to visit. We come to the concrete, look at it, and quote from what is actually there.</p>
+      <p>The photographs in the <a href="/projects">project archive</a> are Edmonton floors: garages, workshops, and shop floors, shot before preparation and after coating.</p>
+    </SectionShell>
+
+    <SectionShell tone="stone">
+      <p class="section-kicker">Outside the city</p>
+      <h2 class="section-title">Ask whether we travel to your area.</h2>
+      <p class="section-lead">We do go out of town for some jobs. Whether we come to you depends on the drive, the size of the floor, and what else is booked that week.</p>
+      <p>This page does not carry a list of towns. A list would suggest we already work in every one of them, and we would rather tell you the real answer on the phone. Call Denis at <a href="tel:+17809911651">(780) 991-1651</a>, give him the address, and he will say yes or no.</p>
+    </SectionShell>
+
+    <SectionShell>
+      <p class="section-kicker">What helps</p>
+      <h2 class="section-title">Tell us where it is and what it has to hold.</h2>
+      <p class="section-lead">A free estimate can start from photos or from a visit. Either way, the useful details are the same.</p>
+      <ul class="area-list">
+        <li>Where the space is, and whether there is a clear route in for equipment.</li>
+        <li>Roughly how big the floor is.</li>
+        <li>What is on it now: bare concrete, an old coating, or paint.</li>
+        <li>Anything you already know about cracks, oil, moisture, or damage.</li>
+      </ul>
+      <p>From there we can talk about <a href="/services/concrete-solutions">preparation</a>, the <a href="/finishes">finish</a>, and what the job looks like.</p>
+      <div class="button-row">
+        <a class="button button-primary" href="/contact#quote">Send photos for an estimate</a>
+        <a class="button button-secondary" href="/services">See the services</a>
+      </div>
+    </SectionShell>
+  </main>
+  <SiteFooter />
+</BaseLayout>
+
+<style>
+  .area-list { display: grid; gap: 0.7rem; max-width: 46rem; margin: 2rem 0; padding-left: 1.2rem; color: #3f4e57; line-height: 1.65; }
+</style>

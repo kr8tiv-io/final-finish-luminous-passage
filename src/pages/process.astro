@@ -5,19 +5,55 @@ import SiteFooter from '../components/SiteFooter.astro';
 import InteriorHero from '../components/InteriorHero.astro';
 import SectionShell from '../components/SectionShell.astro';
 
+/**
+ * Every step below comes from the one place process facts exist: the live blog
+ * post "Our Epoxy Flooring Process" (CONTEXT-SHEET A8). That post gives a free
+ * estimate from photos or a visit, two-day installation that varies, grinding,
+ * cosmetic crack filling, a flake broadcast, a scrape, a top coat, and an
+ * optional anti-slip top coat. Nothing else is here.
+ *
+ * Removed in Step 29, named so the deletion is not silent: the previous version
+ * claimed a primer coat, a cove detail, a "drive-on window", a promise to hand
+ * the room back "on the quoted timing", and it paraphrased Google reviews as
+ * evidence for the prep. None of those five is in A8 or in a written note from
+ * Denis, and the cove and primer are not mentioned anywhere on the live site.
+ */
 const steps = [
-  { title: 'Inspect the slab', copy: 'Condition, oil, old coating, cracks, moisture clues, and how the room is used. Google reviewers keep pointing at this step because it is the job.' },
-  { title: 'Grind and repair', copy: 'Diamond grinding opens the surface. Cracks and pits get patched before anything decorative goes down.' },
-  { title: 'Build the system', copy: 'Primer where the slab needs it, then flake, solid, or metallic—matched to the space, not a catalogue promise.' },
-  { title: 'Cove and topcoat', copy: 'Edges and a wear layer that can take tires, salt melt, and cleaning. The finish is the last coat, not the only coat.' },
-  { title: 'Hand it back', copy: 'Denis stays on the job. Timing is quoted up front. Drive-on windows depend on the system and the weather that week—confirmed in the quote, not guessed here.' },
+  {
+    title: 'A free estimate',
+    copy: 'Send photos of the floor, or book a visit. Either works, and both are free. Denis wants to see the concrete, what is on it now, and any cracks you already know about.',
+  },
+  {
+    title: 'Grinding',
+    copy: 'The slab is ground to open the surface so the coating can bond. It is loud, dusty work, and the room has to be empty before it starts.',
+  },
+  {
+    title: 'Cosmetic crack filling',
+    copy: 'Visible cracks are filled so they do not read through the finish. If something turns up that is structural rather than cosmetic, you hear about it then, not later.',
+  },
+  {
+    title: 'The flake broadcast',
+    copy: 'Flake is broadcast into the coat while it is still open. This is where the colour and the pattern of the floor are set.',
+  },
+  {
+    title: 'The scrape',
+    copy: 'Once it has set, the surface is scraped back. That is what turns a loose broadcast into a flat floor you can walk on and clean.',
+  },
+  {
+    title: 'The top coat',
+    copy: 'The last coat goes over everything. Where a room needs more grip, an anti-slip top coat goes on instead, and that is a decision we make with you.',
+  },
 ];
 ---
 
-<BaseLayout title="How an Epoxy Floor Gets Built | Final Finish Edmonton" description="Inspect, grind, repair, coat, cove, and topcoat. How Final Finish Epoxy actually builds a garage or shop floor in Edmonton." canonicalPath="/process" imagePath="/images/brand/foundation-chamber.jpg">
+<BaseLayout title="How an Epoxy Floor Gets Built | Final Finish Edmonton" description="Estimate, grind, fill, broadcast, scrape, and top coat. The order Final Finish Epoxy builds an Edmonton floor in, and what is decided at each step." canonicalPath="/process" imagePath="/images/brand/foundation-chamber.jpg">
   <SiteHeader />
   <main id="main-content">
-    <InteriorHero eyebrow="The sequence" title="How a floor actually goes." lead="Reviewers keep saying the same thing: Denis is on the job, the prep is real, and the floor shows it. This is the order of work." />
+    <InteriorHero
+      eyebrow="The sequence"
+      title="How a floor actually goes."
+      lead="Six steps, in this order. Installation usually runs two days, and it varies with the concrete underneath."
+    />
     <SectionShell>
       <ol class="process-steps">
         {steps.map((step, index) => (
@@ -28,6 +64,7 @@ const steps = [
           </li>
         ))}
       </ol>
+      <p class="process-note">Two things this page will not tell you: when you can park on it, and what it costs. Both depend on your slab and the conditions that week, so they are written into your quote instead of guessed at here.</p>
       <div class="button-row">
         <a class="button button-primary" href="/contact#quote">Tell Denis about the slab</a>
         <a class="button button-secondary" href="/projects">See the work</a>
@@ -43,4 +80,5 @@ const steps = [
   .process-steps span { color: var(--cobalt); font-size: 0.7rem; font-weight: 780; letter-spacing: 0.14em; }
   .process-steps h2 { margin: 0; font-family: var(--serif); font-size: clamp(2rem, 4vw, 3.4rem); font-weight: 400; }
   .process-steps p { margin: 0; max-width: 40rem; color: var(--muted); }
+  .process-note { max-width: 44rem; margin: 2.5rem 0 0; color: #3f4e57; line-height: 1.7; }
 </style>

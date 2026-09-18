@@ -1,7 +1,77 @@
 ---
-import BaseLayout from '../layouts/BaseLayout.astro'; import SiteHeader from '../components/SiteHeader.astro'; import SiteFooter from '../components/SiteFooter.astro'; import InteriorHero from '../components/InteriorHero.astro'; import SectionShell from '../components/SectionShell.astro'; import { finishCssBackground, finishPresets } from '../lib/visualizer/finishes';
+import BaseLayout from '../layouts/BaseLayout.astro';
+import SiteHeader from '../components/SiteHeader.astro';
+import SiteFooter from '../components/SiteFooter.astro';
+import InteriorHero from '../components/InteriorHero.astro';
+import SectionShell from '../components/SectionShell.astro';
 import FinishOrbit from '../components/motion/FinishOrbit.astro';
-const groups = ['flake', 'solid', 'metallic'] as const;
+import { finishCssBackground, finishPresets } from '../lib/visualizer/finishes';
+
+/**
+ * The family the data calls `solid` is labelled "Decorative" for readers.
+ * `COPY-DECK.md` retired "Solid" because A8's residential service list names
+ * decorative epoxy, flake, and metallic, and "solid" is not one of its words. The
+ * data key is untouched — it belongs to the visualizer — so only the label moves.
+ *
+ * Counts render from `finishPresets` rather than being typed in, so the page
+ * cannot drift into claiming a number of finishes that no longer exists.
+ */
+const groups = [
+  { key: 'flake', label: 'Flake', headline: 'Full-flake, quartz, and large-format terrazzo.' },
+  { key: 'solid', label: 'Decorative', headline: 'Even, quiet surfaces under a clear top coat.' },
+  { key: 'metallic', label: 'Metallic', headline: 'Poured metallics: marble, ocean, copper, and galaxy.' },
+] as const;
+
+const countFor = (key: string) => finishPresets.filter((finish) => finish.family === key).length;
 ---
-<BaseLayout title="Epoxy Floor Finish Inspiration | Final Finish Edmonton" description="Explore 30 flake, solid and metallic epoxy floor design inspirations." canonicalPath="/finishes" imagePath="/images/brand/luminous-finish-hall.jpg"><SiteHeader /><main id="main-content"><InteriorHero eyebrow="The inspiration library" title="Three finish families. Thirty ways to begin." lead="These are visual directions, not SKUs. Exact colour, lighting, scale and system availability are confirmed with Final Finish." /><FinishOrbit placed="page" />{groups.map((group) => <SectionShell tone={group === 'solid' ? 'stone' : 'paper'}><p class="section-kicker">{group}</p><h2 class="section-title">{group === 'flake' ? 'Full-flake, quartz and large-format terrazzo.' : group === 'solid' ? 'Wet-look solids with a glass topcoat.' : '3D metallic: marble, ocean, copper, galaxy.'}</h2><div class="finish-cards">{finishPresets.filter((finish) => finish.family === group).map((finish) => <article><div style={`background:${finishCssBackground(finish)}`}></div><h3>{finish.name}</h3><p>{finish.description}</p></article>)}</div></SectionShell>)}</main><SiteFooter /></BaseLayout>
-<style>.finish-cards{display:grid;grid-template-columns:repeat(4,1fr);gap:1.4rem;margin-top:3rem}.finish-cards article{padding:1rem;background:#fbfaf5;border:1px solid var(--line)}.finish-cards article>div{position:relative;aspect-ratio:1.15;overflow:hidden;box-shadow:inset 0 -2.5rem 3rem rgba(0,0,0,.18)}.finish-cards h3{margin:1rem 0 .4rem;font-family:var(--serif);font-size:1.6rem;font-weight:400}.finish-cards p{color:var(--muted);font-size:.75rem}@media(max-width:800px){.finish-cards{grid-template-columns:repeat(2,1fr)}}@media(max-width:480px){.finish-cards{grid-template-columns:1fr}}</style>
+<BaseLayout
+  title="Epoxy Floor Finish Inspiration | Final Finish Edmonton"
+  description={`Explore ${finishPresets.length} flake, decorative, and metallic epoxy floor inspirations from Final Finish Epoxy in Edmonton.`}
+  canonicalPath="/finishes"
+  imagePath="/images/brand/luminous-finish-hall.jpg"
+>
+  <SiteHeader />
+  <main id="main-content">
+    <InteriorHero
+      eyebrow="The inspiration library"
+      title={`Three finish families. ${finishPresets.length} ways to begin.`}
+      lead="These are visual directions, not products on a shelf. Colour, lighting, scale, and what we can actually get are confirmed with Denis before you choose."
+    />
+    <FinishOrbit placed="page" />
+    {groups.map((group) => (
+      <SectionShell tone={group.key === 'solid' ? 'stone' : 'paper'}>
+        <p class="section-kicker">{group.label} · {countFor(group.key)} finishes</p>
+        <h2 class="section-title">{group.headline}</h2>
+        <div class="finish-cards">
+          {finishPresets.filter((finish) => finish.family === group.key).map((finish) => (
+            <article>
+              <div style={`background:${finishCssBackground(finish)}`}></div>
+              <h3>{finish.name}</h3>
+              <p>{finish.description}</p>
+            </article>
+          ))}
+        </div>
+      </SectionShell>
+    ))}
+    <SectionShell>
+      <p class="section-kicker">Before you settle on one</p>
+      <h2 class="section-title">A screen is a starting point.</h2>
+      <p class="section-lead">What you see here is a rendering. The real thing depends on your lighting, the size of the room, and the concrete under it.</p>
+      <p>Put a shortlist on a photo of your own room in the <a href="/floor-visualizer">floor visualizer</a>, then bring it to the estimate. If the room is a garage, the <a href="/services/garage-floor-coating-edmonton">garage floor page</a> covers how use narrows the choice.</p>
+      <div class="button-row">
+        <a class="button button-primary" href="/floor-visualizer">Try your floor</a>
+        <a class="button button-secondary" href="/contact#quote">Send photos for an estimate</a>
+      </div>
+    </SectionShell>
+  </main>
+  <SiteFooter />
+</BaseLayout>
+<style>
+  .finish-cards { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1.4rem; margin-top: 3rem; }
+  .finish-cards article { padding: 1rem; background: #fbfaf5; border: 1px solid var(--line); }
+  .finish-cards article > div { position: relative; aspect-ratio: 1.15; overflow: hidden; box-shadow: inset 0 -2.5rem 3rem rgba(0,0,0,.18); }
+  .finish-cards h3 { margin: 1rem 0 .4rem; font-family: var(--serif); font-size: 1.6rem; font-weight: 400; }
+  .finish-cards p { color: var(--muted); font-size: .75rem; }
+  @media (max-width: 800px) { .finish-cards { grid-template-columns: repeat(2, 1fr); } }
+  @media (max-width: 480px) { .finish-cards { grid-template-columns: 1fr; } }
+</style>

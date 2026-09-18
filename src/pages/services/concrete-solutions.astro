@@ -4,37 +4,91 @@ import SiteHeader from '../../components/SiteHeader.astro';
 import SiteFooter from '../../components/SiteFooter.astro';
 import InteriorHero from '../../components/InteriorHero.astro';
 import SectionShell from '../../components/SectionShell.astro';
+
+/**
+ * A8 names the concrete service as repair, levelling/restoration, and diamond
+ * grinding. Those three are what this page sells; everything else on it is a
+ * question to ask, not a service being claimed.
+ */
+const jsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'Service',
+  name: 'Concrete repair, levelling, and diamond grinding',
+  serviceType: 'Concrete preparation and restoration',
+  provider: { '@type': 'HomeAndConstructionBusiness', name: 'Final Finish Epoxy', telephone: '+1-780-991-1651', email: 'finalfinishepoxy@gmail.com' },
+  areaServed: { '@type': 'City', name: 'Edmonton' },
+  description: 'Concrete repair, surface levelling and restoration, and diamond grinding in Edmonton, as preparation for a coating or as work on its own.',
+};
 ---
-<BaseLayout title="Concrete Preparation and Repair Edmonton | Final Finish" description="Plan concrete preparation, repair and levelling in Edmonton by assessing slab condition, moisture questions and the finish scope before coating." canonicalPath="/services/concrete-solutions">
+<BaseLayout title="Concrete Repair, Levelling and Diamond Grinding Edmonton | Final Finish" description="Concrete repair, levelling, restoration, and diamond grinding in Edmonton. What each one is for, when a coating is the wrong answer, and what goes in the quote." canonicalPath="/services/concrete-solutions">
+  <script slot="head" is:inline type="application/ld+json" set:html={JSON.stringify(jsonLd)} />
   <SiteHeader />
   <main id="main-content">
-    <InteriorHero eyebrow="Inspect · Prepare · Finish" title="A finished floor can only be as considered as the concrete beneath it." lead="Concrete repair, surface levelling and mechanical preparation are decisions about the slab in front of us, the proposed system and the room’s future use." />
+    <InteriorHero
+      eyebrow="Repair · Levelling · Diamond grinding"
+      title="The concrete decides what the floor can be."
+      lead="Repair, levelling and restoration, and diamond grinding. This is the work under every finish, and on some floors it is the whole job."
+    />
+
     <SectionShell>
-      <p class="section-kicker">Begin with evidence</p>
-      <h2 class="section-title">Condition comes before a coating recommendation</h2>
-      <p class="section-lead">Visible cracks, spalls, hollow-sounding areas, patches, joints, old coatings, oil, adhesive, low spots and water history should be recorded before a decorative finish is selected. Some conditions are cosmetic; others need a different repair or a qualified evaluation. A coating is not a substitute for identifying recurring water entry, movement or unsound concrete.</p>
-      <p>The <a href="/resources/concrete-cracks-spalling-floor-coating">concrete condition guide</a> and <a href="/resources/concrete-repair-mortars-floor-coatings">repair-mortar guide</a> explain the questions that separate a visible defect from a defined repair scope. Ask how discoveries after preparation will be photographed, priced and approved.</p>
-    </SectionShell>
-    <SectionShell tone="stone">
-      <p class="section-kicker">Preparation follows the condition</p>
+      <p class="section-kicker">What it is</p>
+      <h2 class="section-title">Three things, and they are not interchangeable.</h2>
       <div class="card-grid">
-        <article class="editorial-card"><h3>Mechanical preparation</h3><p>Grinding may be part of preparation where the planned system calls for a clean, profiled substrate. The <a href="/resources/diamond-grinding-concrete-preparation">diamond-grinding guide</a> describes the records and edges a scope should cover.</p></article>
-        <article class="editorial-card"><h3>Repair and levelling</h3><p>Cracks, damaged areas and elevation changes need their own sequence, material and acceptance questions. Do not assume a repair product also addresses active movement, drainage or every moisture condition.</p></article>
-        <article class="editorial-card"><h3>Traction planning</h3><p>Traction is considered against contamination, footwear, slope, cleaning and maintenance. The intended use should be written down before a texture is selected.</p></article>
+        <article class="editorial-card">
+          <h3>Diamond grinding</h3>
+          <p>Opening the surface of the slab with diamond tooling so a coating can bond, and taking off what is already there. The <a href="/resources/diamond-grinding-concrete-preparation">grinding guide</a> covers edges, dust, and what a scope should record.</p>
+        </article>
+        <article class="editorial-card">
+          <h3>Repair</h3>
+          <p>Filling and rebuilding cracks, spalls, and damaged areas. Cosmetic crack filling is part of a coating job. Larger repairs are their own line, with their own material and sequence.</p>
+        </article>
+        <article class="editorial-card">
+          <h3>Levelling and restoration</h3>
+          <p>Bringing a floor back toward flat. Elevation changes, low spots, and a worn-out old surface all make a room harder to use and harder to coat evenly.</p>
+        </article>
       </div>
     </SectionShell>
-    <SectionShell>
-      <p class="section-kicker">Keep moisture specific</p>
-      <h2 class="section-title">Moisture is a system question, not a promise</h2>
-      <p>Signs of dampness, efflorescence, leaks, flooding or recent washing are reasons to ask what investigation is appropriate; they do not identify a source or prove a coating outcome. If testing is proposed, request the method, locations, timing, results and the current product documentation that connects those results to the complete system. A broad “moisture barrier” label is not a substitute for that record.</p>
-      <p>Read the <a href="/resources/concrete-moisture-testing-floor-coatings">concrete moisture-testing guide</a> before treating a test as a pass/fail promise. For a comparison of finishing approaches, the <a href="/resources/concrete-polishing-vs-floor-coating">polishing versus coating guide</a> keeps the decision tied to substrate, maintenance and future use.</p>
-    </SectionShell>
+
     <SectionShell tone="stone">
-      <p class="section-kicker">Write down the decisions</p>
-      <h2 class="section-title">A clear scope makes room for legitimate discoveries</h2>
-      <p>A useful quote identifies the observed condition, preparation, repair assumptions, system layers, texture or finish direction, excluded areas, access needs and the change process for concealed damage. It should also state what must be confirmed before each return-to-use step. The <a href="/resources/how-to-compare-floor-coating-proposals">proposal comparison guide</a> can help you compare complete scopes rather than a single material name.</p>
-      <a class="button button-primary" href="/contact#quote">Discuss concrete preparation</a>
+      <p class="section-kicker">When it is the right choice</p>
+      <h2 class="section-title">Sometimes the honest answer is that a coating is not the answer.</h2>
+      <p class="section-lead">A coating sits on the concrete. It does not stop movement, it does not stop water, and it does not make unsound concrete sound.</p>
+      <ul class="plain-list">
+        <li>A crack that keeps opening is a movement question, not a filler question.</li>
+        <li>Damp that returns after every thaw is a water-entry question, and it needs finding first.</li>
+        <li>Hollow-sounding areas mean the slab has let go underneath, and grinding will not reattach it.</li>
+        <li>A floor that only looks tired is usually the easy case, and grinding plus a coating does exactly what you want.</li>
+      </ul>
+      <p>We will tell you which of those we think you have. Where it needs a different trade or a qualified evaluation, we will say that too.</p>
+    </SectionShell>
+
+    <SectionShell>
+      <p class="section-kicker">What preparation involves</p>
+      <h2 class="section-title">Record the floor before anyone chooses a finish.</h2>
+      <p class="section-lead">Cracks, spalls, hollow areas, patches, joints, old coatings, oil, adhesive, low spots, and water history. All of it before colour.</p>
+      <p>Some of that is cosmetic and some of it is not, and the two look similar from standing height. Ask how anything discovered after the grind gets photographed, priced, and approved. The <a href="/resources/concrete-cracks-spalling-floor-coating">concrete condition guide</a> and the <a href="/resources/concrete-repair-mortars-floor-coatings">repair-mortar guide</a> explain where the line sits.</p>
+    </SectionShell>
+
+    <SectionShell tone="stone">
+      <p class="section-kicker">What to expect</p>
+      <h2 class="section-title">Dust, noise, and an empty room.</h2>
+      <p class="section-lead">Grinding is mechanical work. The space has to be clear, and it stays out of use while the work is on.</p>
+      <p>Where preparation is part of a coating job, the whole installation usually runs two days, and it varies with the concrete. Where repair or levelling is the job, the schedule depends entirely on what the slab needs, and Denis will give you that after he has seen it.</p>
+    </SectionShell>
+
+    <SectionShell>
+      <p class="section-kicker">What we do not promise here</p>
+      <h2 class="section-title">Moisture is a question, not a guarantee.</h2>
+      <p class="section-lead">Efflorescence, damp patches, or a floor that was recently flooded are reasons to investigate. They do not identify a source, and no product label settles it.</p>
+      <p>If testing is proposed, ask for the method, the locations, the timing, and the results, plus the product documentation that ties those results to the system going down. A broad moisture-barrier label is not that record. Read the <a href="/resources/concrete-moisture-testing-floor-coatings">moisture-testing guide</a> before you treat any test as a pass. If you are weighing grinding and polishing against a coating, the <a href="/resources/concrete-polishing-vs-floor-coating">polishing comparison</a> keeps that decision on the substrate.</p>
+      <div class="button-row">
+        <a class="button button-primary" href="/contact#quote">Send photos of the slab</a>
+        <a class="button button-secondary" href="/services/garage-floor-coating-edmonton">Coat a garage floor</a>
+      </div>
     </SectionShell>
   </main>
   <SiteFooter />
 </BaseLayout>
+<style>
+  .plain-list { display: grid; gap: 0.75rem; max-width: 48rem; margin: 2rem 0; padding-left: 1.2rem; color: #3f4e57; line-height: 1.6; }
+</style>

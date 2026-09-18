@@ -4,37 +4,86 @@ import SiteHeader from '../../components/SiteHeader.astro';
 import SiteFooter from '../../components/SiteFooter.astro';
 import InteriorHero from '../../components/InteriorHero.astro';
 import SectionShell from '../../components/SectionShell.astro';
+
+/**
+ * Step 30 narrowed this page. Garages moved to
+ * `/services/garage-floor-coating-edmonton`, which now owns that topic outright;
+ * what is left here is every other residential room A8 names — barn, workshop,
+ * kitchen, bathroom — plus the basement rooms the homepage talks about. The two
+ * pages link to each other and do not repeat each other's arguments.
+ */
+const jsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'Service',
+  name: 'Residential epoxy flooring',
+  serviceType: 'Residential epoxy and decorative floor coating',
+  provider: { '@type': 'HomeAndConstructionBusiness', name: 'Final Finish Epoxy', telephone: '+1-780-991-1651', email: 'finalfinishepoxy@gmail.com' },
+  areaServed: { '@type': 'City', name: 'Edmonton' },
+  description: 'Decorative epoxy, flake, and metallic floor coatings for Edmonton barns, workshops, basements, kitchens, and bathrooms.',
+};
 ---
-<BaseLayout title="Residential Epoxy Flooring Edmonton | Final Finish" description="Plan a residential epoxy floor for Edmonton garages, barns and workshops with preparation, finish and care questions that belong in the quote." canonicalPath="/services/residential-epoxy-flooring">
+<BaseLayout title="Residential Epoxy Flooring Edmonton | Final Finish" description="Decorative epoxy, flake, and metallic floors for Edmonton barns, workshops, basements, kitchens, and bathrooms. How to choose, and what preparation involves." canonicalPath="/services/residential-epoxy-flooring">
+  <script slot="head" is:inline type="application/ld+json" set:html={JSON.stringify(jsonLd)} />
   <SiteHeader />
   <main id="main-content">
-    <InteriorHero eyebrow="Garages · Barns · Workshops" title="Residential epoxy flooring for the spaces you live with." lead="Turn worn concrete into a brighter, more considered part of the home with flake, solid or metallic finish options—after the slab and daily use have been discussed." />
+    <InteriorHero
+      eyebrow="Barns · Workshops · Basements · Kitchens"
+      title="The rooms in the house nobody finished."
+      lead="Decorative epoxy, flake, and metallic coatings for the concrete rooms you already own. Looking for a garage floor? That has its own page."
+    />
+
     <SectionShell>
-      <p class="section-kicker">Start with the actual floor</p>
-      <h2 class="section-title">What we assess before choosing a finish</h2>
-      <p class="section-lead">A site conversation starts with the concrete, not a colour chip. Bring up cracks, patches, low areas, old coatings, oil or de-icing residue, water history and the routes that cars, tools, pets or stored items use. Those observations help define what preparation and repairs belong in the scope.</p>
-      <p>Photos are a useful beginning, but the written quote should identify the planned preparation, visible repair allowance or change process, finish area, edges and access assumptions. If a condition cannot be confirmed until preparation begins, it is more useful to name that uncertainty than to turn it into a promise. The <a href="/resources/garage-floor-preparation-edmonton">garage preparation guide</a> and <a href="/resources/floor-coating-site-assessment-checklist">site-assessment checklist</a> show what to record before a visit.</p>
+      <p class="section-kicker">What it is</p>
+      <h2 class="section-title">A finish chosen around the room, not a catalogue.</h2>
+      <p class="section-lead">Residential work covers barns, workshops, basements, kitchens, and bathrooms. Three finish families are available: decorative epoxy, flake, and metallic.</p>
+      <p>What changes between rooms is not the chemistry. It is the light, the traffic, and what the space has to hold. A barn floor and a basement floor want different things from the same three materials.</p>
+      <p>For a garage, start at the <a href="/services/garage-floor-coating-edmonton">garage floor coating page</a> instead. It covers vehicles, salt, and storage in detail.</p>
     </SectionShell>
+
     <SectionShell tone="stone">
-      <p class="section-kicker">Finish is a use decision</p>
-      <h2 class="section-title">Choose the look around how the room is used</h2>
+      <p class="section-kicker">When each finish is the right choice</p>
+      <h2 class="section-title">Pick for the room, then look at colour.</h2>
       <div class="card-grid">
-        <article class="editorial-card"><h3>Flake</h3><p>Consider flake when you want a patterned field that can make everyday grit less visually prominent. Review a physical sample beside cabinets, trim and lighting; the <a href="/resources/floor-flake-colour-design-guide">flake and colour guide</a> gives a practical sample process.</p></article>
-        <article class="editorial-card"><h3>Solid colour</h3><p>A solid finish makes seams, repairs, texture and cleanability questions easier to discuss directly. Ask how the proposed texture suits footwear, water, slopes and the cleaning method—not whether it is universally “non-slip.”</p></article>
-        <article class="editorial-card"><h3>Metallic</h3><p>Metallic effects are visual compositions rather than a standard pattern. Use the <a href="/resources/metallic-epoxy-expectations">metallic expectations guide</a> to discuss samples, boundaries and the parts of the floor likely to be covered.</p></article>
+        <article class="editorial-card">
+          <h3>Flake</h3>
+          <p>A patterned field that hides everyday grit well. Good in a workshop or a barn, where the floor takes real use. See it against your own cabinets and lighting before you commit; the <a href="/resources/floor-flake-colour-design-guide">flake and colour guide</a> sets out a sample process.</p>
+        </article>
+        <article class="editorial-card">
+          <h3>Decorative epoxy</h3>
+          <p>A calmer, more even surface. It suits a kitchen, a bathroom, or a basement that reads as a room rather than a shop. Ask how the proposed texture handles wet feet and the cleaning method you actually use.</p>
+        </article>
+        <article class="editorial-card">
+          <h3>Metallic</h3>
+          <p>A poured composition rather than a repeating pattern. Every floor lands differently, so look at samples and agree where the effect stops. The <a href="/resources/metallic-epoxy-expectations">metallic expectations guide</a> covers what to ask.</p>
+        </article>
       </div>
+      <p>The <a href="/finishes">finish library</a> shows all three families, and the <a href="/floor-visualizer">floor visualizer</a> puts them on a photo of your own room.</p>
     </SectionShell>
+
     <SectionShell>
-      <p class="section-kicker">Winter and ordinary care</p>
-      <h2 class="section-title">Plan for salt, meltwater and cleaning before the first vehicle returns</h2>
-      <p>In an Edmonton garage, tracked grit, de-icing residue and meltwater deserve a routine, not an assumption that the finish removes every maintenance task. Ask which cleaner, dilution, tools, mats and drying method are permitted for the exact installed system, and keep those instructions with the project record. The <a href="/resources/winter-salt-concrete-floor-damage">winter-salt concrete guide</a> explains why residue and water history should be part of the conversation; the <a href="/resources/how-to-clean-coated-garage-floor">garage cleaning guide</a> helps frame the questions for handover.</p>
-      <p>If a tire leaves a mark or a coating appears to lift, pause before escalating cleaning or grinding. The <a href="/resources/hot-tire-pickup-epoxy">hot-tire pickup guide</a> distinguishes a symptom worth documenting from a diagnosis.</p>
+      <p class="section-kicker">What preparation involves</p>
+      <h2 class="section-title">The slab decides more than the colour does.</h2>
+      <p class="section-lead">Grinding comes first. It opens the concrete so the coating bonds, and it is the same step in every room we work in.</p>
+      <p>Cosmetic crack filling follows. Interior rooms bring their own questions: an old coating under the lino, a patch where a wall used to be, a low spot that pools when you mop. Mention water history early. A coating is not a fix for water coming through a slab, and finding that out after the grind helps nobody.</p>
+      <p>Photos are enough to start the conversation. The <a href="/resources/floor-coating-site-assessment-checklist">site-assessment checklist</a> lists what to record, and <a href="/services/concrete-solutions">concrete solutions</a> goes into repair and levelling.</p>
     </SectionShell>
+
     <SectionShell tone="stone">
-      <p class="section-kicker">Make quotes comparable</p>
-      <h2 class="section-title">A useful quote names the assumptions as well as the finish</h2>
-      <p>Ask what is included for preparation, crack or spall repair, moving stored items, perimeter details, moisture investigation when relevant, selected system layers, return-to-use restrictions and cleanup. Compare the same scope across proposals; chemistry labels alone do not describe a complete floor. Use the <a href="/resources/how-to-compare-floor-coating-proposals">proposal comparison guide</a> and <a href="/resources/questions-to-ask-floor-coating-contractor">contractor question list</a>, then confirm the final system and restrictions in writing.</p>
-      <div class="button-row"><a class="button button-primary" href="/floor-visualizer">Try a finish</a><a class="button button-secondary" href="/contact#quote">Request a residential quote</a></div>
+      <p class="section-kicker">What to expect</p>
+      <h2 class="section-title">Two days, give or take the concrete.</h2>
+      <p class="section-lead">Installation usually runs two days, and it varies with the slab. An interior room also has to be emptied, and grinding is loud and dusty.</p>
+      <p>Talk through access before the date is set. A basement means carrying equipment down stairs, and a kitchen means the room is out of use while the work is on. Both are easier to plan for than to find out on the day.</p>
+    </SectionShell>
+
+    <SectionShell>
+      <p class="section-kicker">What we do not promise here</p>
+      <h2 class="section-title">Ask for the specifics in writing.</h2>
+      <p class="section-lead">No price, no return-to-use time, and no coverage term appears on this page. Those belong to your floor, and they are written into your quote.</p>
+      <p>Two more things this page will not claim. A coating is not slip-proof, and the right texture depends on footwear, water, and how you clean. A coating also does not replace moisture work, ventilation, or heating; it is one part of a room. Bring the <a href="/resources/questions-to-ask-floor-coating-contractor">contractor question list</a> to any quote, including ours.</p>
+      <div class="button-row">
+        <a class="button button-primary" href="/contact#quote">Send photos for an estimate</a>
+        <a class="button button-secondary" href="/finishes">Look at the finishes</a>
+      </div>
     </SectionShell>
   </main>
   <SiteFooter />

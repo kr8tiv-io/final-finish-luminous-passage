@@ -2,12 +2,16 @@ import { expect, test } from '@playwright/test';
 
 const publicRoutes = [
   ['/services', 'Epoxy flooring services, built around the slab.'],
-  ['/services/residential-epoxy-flooring', 'Residential epoxy flooring for the spaces you live with.'],
-  ['/services/commercial-epoxy-flooring', 'Commercial floors that present the space clearly.'],
-  ['/services/concrete-solutions', 'A finished floor can only be as considered as the concrete beneath it.'],
-  ['/finishes', 'Three finish families. Thirty ways to begin.'],
+  ['/services/garage-floor-coating-edmonton', 'A garage floor you can wash off in March.'],
+  ['/services/residential-epoxy-flooring', 'The rooms in the house nobody finished.'],
+  ['/services/commercial-epoxy-flooring', 'Built around your working day.'],
+  ['/services/concrete-solutions', 'The concrete decides what the floor can be.'],
+  ['/service-area', 'Where we work.'],
+  ['/finishes', 'Three finish families. 30 ways to begin.'],
   ['/projects', 'The floor is the evidence.'],
   ['/resources', 'Clear answers before you coat a floor.'],
+  ['/about', 'A local finish, with a real name behind it.'],
+  ['/process', 'How a floor actually goes.'],
 ] as const;
 
 for (const [route, heading] of publicRoutes) {
@@ -34,6 +38,47 @@ for (const [route] of publicRoutes) {
     await expect(page.locator('astro-island[data-astro-transition-persist="site-surface"]')).toHaveCount(1);
   });
 }
+
+/**
+ * Step 30. Seven `/areas/<town>` pages were replaced by one `/service-area` page,
+ * because six of the towns were a coverage claim `CONTEXT-SHEET.md` A8 forbids.
+ * Deleting a URL that has been crawled is only safe if the old address keeps
+ * resolving, so each one is asserted as a real 301 with a real Location rather
+ * than being allowed to become a 404. `maxRedirects: 0` is what makes this
+ * falsifiable: without it Playwright follows the hop and a 404 at the end of a
+ * chain would still report 200.
+ */
+const retiredAreaRoutes = [
+  '/areas',
+  '/areas/edmonton',
+  '/areas/sherwood-park',
+  '/areas/st-albert',
+  '/areas/leduc',
+  '/areas/fort-saskatchewan',
+  '/areas/spruce-grove',
+  '/areas/beaumont',
+];
+
+for (const route of retiredAreaRoutes) {
+  test(`${route} is permanently redirected to /service-area`, async ({ request }) => {
+    const response = await request.get(route, { maxRedirects: 0 });
+    expect(response.status()).toBe(301);
+    expect(response.headers().location).toBe('/service-area');
+  });
+
+  test(`${route}/ (trailing slash) is permanently redirected to /service-area`, async ({ request }) => {
+    const response = await request.get(`${route}/`, { maxRedirects: 0 });
+    expect(response.status()).toBe(301);
+    expect(response.headers().location).toBe('/service-area');
+  });
+}
+
+test('the retired area pages are gone rather than quietly rebuilt', async ({ page }) => {
+  await page.goto('/service-area', { waitUntil: 'domcontentloaded' });
+  const footerLinks = await page.locator('.footer-areas a').evaluateAll((nodes) => nodes.map((node) => node.getAttribute('href')));
+  expect(footerLinks.some((href) => href?.startsWith('/areas/'))).toBe(false);
+  expect(footerLinks).toContain('/service-area');
+});
 
 test('quote form starts with project location and preserves direct calling', async ({ page }) => {
   await page.goto('/contact#quote', { waitUntil: 'domcontentloaded' });

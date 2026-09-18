@@ -102,7 +102,7 @@ export const finishPresets: readonly FinishPreset[] = [
   makeFinish('silver-tide', 'Graphite Silver', 'metallic', 'marble', 'Charcoal base with silver metalite movement — the industrial-modern garage look.', ['#1c2226', '#8d989c', '#e8eae6'], 1.5, 0.18),
   makeFinish('blue-orbit', 'Blue Orbit', 'metallic', 'ocean', 'Cobalt and midnight-blue movement with fine pale highlights.', ['#0c2740', '#1a6a9c', '#d7eef7'], 1.65, 0.14),
   makeFinish('bronze-veil', 'Copper on Black', 'metallic', 'copper', 'Deep black with hand-swirled copper veining — high contrast, gallery-dramatic.', ['#0e0d0c', '#8a4a1c', '#e0b07a'], 1.48, 0.17),
-  makeFinish('smoked-quartz', 'Nero Marquina', 'metallic', 'marble', 'Black marble epoxy with gold and pewter veins, sealed under a glass polyaspartic.', ['#0c0d0e', '#c9a45a', '#6e6a64'], 1.52, 0.16),
+  makeFinish('smoked-quartz', 'Nero Marquina', 'metallic', 'marble', 'Black marble epoxy with gold and pewter veins, sealed under a glass-clear top coat.', ['#0c0d0e', '#c9a45a', '#6e6a64'], 1.52, 0.16),
   makeFinish('glacial-water', 'Ocean Teal', 'metallic', 'ocean', 'Deep teal, pearl and white currents — water-like flow for spas, pools and bright rooms.', ['#0b3a44', '#2f9aa8', '#e7f6f4'], 1.6, 0.15),
   makeFinish('umbra', 'Midnight Galaxy', 'metallic', 'galaxy', 'Near-black nebula with pewter and star-flash — a cosmic statement floor.', ['#07080c', '#3d4a72', '#d8dde8'], 1.58, 0.13),
   makeFinish('champagne-stone', 'Champagne Bronze', 'metallic', 'pearl', 'Warm champagne, bronze and pearl movement with a soft iridescent shift.', ['#c9ae7a', '#f4ead6', '#6e4f2c'], 1.5, 0.18),

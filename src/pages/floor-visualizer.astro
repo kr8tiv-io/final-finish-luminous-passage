@@ -4,8 +4,12 @@ import SiteFooter from '../components/SiteFooter.astro';
 import SiteHeader from '../components/SiteHeader.astro';
 import BaseLayout from '../layouts/BaseLayout.astro';
 
+import { finishPresets } from '../lib/visualizer/finishes';
+
+/** The count renders from the finish data so the page cannot claim a stale number. */
+const finishCount = finishPresets.length;
 const title = 'Epoxy Floor Visualizer | Final Finish Epoxy Edmonton';
-const description = 'Explore 30 epoxy-floor inspirations in your own garage or room photo. Private local preview, practical finish comparisons, and a clear next step with Denis.';
+const description = `Try ${finishCount} epoxy-floor inspirations on a photo of your own garage or room. The preview runs on your device, and the next step is a free estimate from Denis.`;
 ---
 <BaseLayout title={title} description={description} canonicalPath="/floor-visualizer" imagePath="/images/brand/luminous-finish-hall.jpg">
   <SiteHeader />
@@ -17,7 +21,7 @@ const description = 'Explore 30 epoxy-floor inspirations in your own garage or r
           <!-- The line mask splits this heading; the label keeps one stable accessible name. -->
           <h1 aria-label="Your space. A new surface.">Your space.<br />A new surface.</h1>
         </div>
-        <p>Explore 30 finish inspirations. Add your room, define the floor, and compare your favourites. Your photo stays on this device unless you choose to send it.</p>
+        <p>Try {finishCount} finish inspirations. Add your room, mark where the floor is, and compare your favourites. Your photo stays on this device unless you choose to send it.</p>
       </div>
     </section>
     <FloorVisualizer client:load />

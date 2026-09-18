@@ -1,6 +1,6 @@
 # Final Finish Epoxy
 
-Final Finish Epoxy is an Edmonton concrete coating business. The website presents residential and commercial floor-coating services, real project photographs, finish inspiration, and educational planning resources.
+Final Finish Epoxy was founded by Denis and does quality floor makeovers in Edmonton, Alberta. It is a service-area business with no published street address. The website presents residential and commercial floor-coating services, real project photographs, finish inspiration, and educational planning resources.
 
 ## Contact
 
@@ -20,12 +20,8 @@ Final Finish Epoxy is an Edmonton concrete coating business. The website present
 - Project photographs: https://www.finalfinishepoxy.ca/projects
 - Educational resources: https://www.finalfinishepoxy.ca/resources
 - Request a quote: https://www.finalfinishepoxy.ca/contact
-- Edmonton: https://www.finalfinishepoxy.ca/areas/edmonton/
-- Sherwood Park: https://www.finalfinishepoxy.ca/areas/sherwood-park/
-- St. Albert: https://www.finalfinishepoxy.ca/areas/st-albert/
-- Leduc: https://www.finalfinishepoxy.ca/areas/leduc/
-- Fort Saskatchewan: https://www.finalfinishepoxy.ca/areas/fort-saskatchewan/
-- Spruce Grove: https://www.finalfinishepoxy.ca/areas/spruce-grove/
-- Beaumont: https://www.finalfinishepoxy.ca/areas/beaumont/
+- Service area: https://www.finalfinishepoxy.ca/service-area
+- Garage floor coating: https://www.finalfinishepoxy.ca/services/garage-floor-coating-edmonton
+- About Denis: https://www.finalfinishepoxy.ca/about
 
 The resource library is educational planning copy. Scope, products, timing, warranties, credentials, and performance for a specific floor are confirmed in the quote, not as slogans on this file.

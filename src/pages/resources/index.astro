@@ -11,18 +11,28 @@ import { resourcePath, resourcesForDeployment } from '../../lib/publishing.js';
 const deployment = import.meta.env.SITE_ENV;
 const resources = (resourcesForDeployment(await getCollection('resources'), deployment) as CollectionEntry<'resources'>[])
   .sort((a, b) => b.data.updatedAt.valueOf() - a.data.updatedAt.valueOf());
-const description = 'Clear, sourced guides to garage floor coatings, concrete preparation, Edmonton winters, design and project decisions.';
+const description = 'Sourced guides to garage floor coatings, concrete preparation, Edmonton winters, finish choices, and contractor conversations.';
 ---
 
 <BaseLayout title="Epoxy Flooring Resources Edmonton | Final Finish" description={description} canonicalPath="/resources">
   <SiteHeader />
   <main id="main-content">
-    <InteriorHero eyebrow="The Edmonton floor library" title="Clear answers before you coat a floor." lead="Fifty practical guides covering preparation, winter conditions, finish choices, ownership, costs and contractor conversations." />
+    <!--
+      Counts render from the collection rather than being typed in: drafts are
+      filtered out in production, so a hard-coded "fifty" would eventually be wrong.
+    -->
+    <InteriorHero eyebrow="The Edmonton floor library" title="Clear answers before you coat a floor." lead={`${resources.length} practical guides on preparation, winter conditions, finish choices, ownership, costs, and talking to contractors.`} />
     <SectionShell>
-      <p class="section-kicker">Fifty launch resources</p>
+      <p class="section-kicker">{resources.length} guides</p>
       <h2 class="section-title">Useful enough to make the next decision easier.</h2>
-      <p class="section-lead">Use these sourced guides to frame the right questions for a site assessment. They do not replace a written scope or current product documentation.</p>
-      <div class="resource-grid">
+      <p class="section-lead">Use these to frame the right questions before a site visit. They do not replace a written scope or the product documentation for your floor.</p>
+      <!--
+        data-copy-exempt: these descriptions come from `src/content/resources`
+        frontmatter, which Step 31 owns. `scripts/validate-copy-claims.mjs` skips
+        the subtree so this page's sentence-length gate measures its own four
+        sentences instead of fifty guide summaries.
+      -->
+      <div class="resource-grid" data-copy-exempt>
         {resources.map((resource, index) => (
           <article class="resource-card">
             <p><span>{String(index + 1).padStart(2, '0')}</span>{resource.data.category.replace('-', ' ')}</p>

@@ -18,13 +18,24 @@ const allowPending = import.meta.env.DEV || import.meta.env.SITE_ENV === 'stagin
 type Asset = (typeof projectPhotos.assets)[number];
 
 const assets = new Map(projectPhotos.assets.map((asset) => [asset.id, asset]));
+
+/**
+ * Step 29 neutralised these six labels. The previous set asserted things about
+ * individual photographs that nothing verifies: "Salt-worn slab", "Two-day garage
+ * coating", and "Diamond-grind bay" each read a cause, a duration, or a method
+ * off an image nobody has captioned yet. The pairs are still awaiting Denis's
+ * approval (`docs/project-pair-approval-queue.md`), so a label may describe only
+ * what the frame plainly shows. The two-day installation fact is A8-sourced and
+ * still appears on `/process` and the service pages, where it is a statement about
+ * how the work runs rather than about one photograph.
+ */
 const projectLabels = [
-  'Edmonton garage floor',
-  'Matched-angle garage finish',
-  'Salt-worn slab, then coated',
-  'Two-day garage coating',
-  'Diamond-grind bay',
-  'Shop floor, same camera',
+  'Edmonton garage floor, one',
+  'Edmonton garage floor, two',
+  'Edmonton garage floor, three',
+  'Edmonton garage bay',
+  'Edmonton garage bay, wide',
+  'Edmonton shop floor',
 ];
 const captions = [
   'The overhead door, side entry, and wall line are visible in both photographs.',
@@ -70,7 +81,7 @@ const comparisons: ComparisonProject[] = projectPhotos.curatedPairCandidates.map
         <p class="eyebrow">The Proof Arcade · Edmonton</p>
         <h1>The floor<br />is the <em>evidence.</em></h1>
         <div class="hero-deck">
-          <p>Real project photographs. Similar viewpoints. No synthetic “after” images and no retouching of the work.</p>
+          <p>Real photographs of finished work, paired from similar viewpoints. Nothing here is generated, and nothing is retouched.</p>
           <span>Drag · hover · use arrow keys</span>
         </div>
       </div>
@@ -81,7 +92,7 @@ const comparisons: ComparisonProject[] = projectPhotos.curatedPairCandidates.map
       <div class="archive-intro">
         <p class="eyebrow">Six close viewpoints</p>
         <h2 id="archive-title">Move the threshold.<br />See the work.</h2>
-        <p>Each pairing was selected from the Final Finish project archive for a closely related point of view. The photographs are the work as shot.</p>
+        <p>Each pair was picked from the Final Finish project archive because the two frames sit at close to the same angle. The photographs are the work as shot.</p>
       </div>
       {allowPending && <p class="review-note">Project pairing review · not approved for publication</p>}
       <div class="comparison-grid" data-pairing-mode={allowPending ? 'review' : 'static'}>
@@ -107,14 +118,15 @@ const comparisons: ComparisonProject[] = projectPhotos.curatedPairCandidates.map
       </div>
       <aside class="review-key" aria-label="Project photo status">
         <span><i aria-hidden="true"></i>Real job photos</span>
-        <p>These are authentic Final Finish project images, paired by camera angle. No synthetic afters.</p>
+        <p>Every image here is a Final Finish job, paired by camera angle. None of the afters is generated.</p>
       </aside>
     </section>
 
     <section class="project-cta">
       <p class="eyebrow">Your floor, next</p>
       <h2>Bring us the concrete<br />you have now.</h2>
-      <div><a class="button button-primary" href="/contact#quote">Request a quote</a><a class="text-link" href="/floor-visualizer">Try 30 finishes in your room <span aria-hidden="true">↗</span></a></div>
+      <p class="project-cta-lead">Send photos for a free estimate, or book a visit. Denis looks at the slab before anyone talks about colour.</p>
+      <div><a class="button button-primary" href="/contact#quote">Request a quote</a><a class="text-link" href="/floor-visualizer">Try a finish in your room <span aria-hidden="true">↗</span></a></div>
     </section>
   </main>
   <SiteFooter />
@@ -160,6 +172,7 @@ const comparisons: ComparisonProject[] = projectPhotos.curatedPairCandidates.map
   .project-cta > * { width: min(100%, var(--max)); margin-inline: auto; }
   .project-cta .eyebrow { color: #a9d9ec; }
   .project-cta h2 { margin-top: 1rem; font-family: var(--serif); font-size: clamp(4.2rem, 9vw, 9rem); font-weight: 400; letter-spacing: -.055em; line-height: .82; }
+  .project-cta-lead { max-width: 42rem; margin: 2rem 0 0; color: #cfe3ee; line-height: 1.7; }
   .project-cta > div { display: flex; gap: 2rem; align-items: center; margin-top: 3rem; }
   .project-cta .text-link { color: white; font-size: .7rem; font-weight: 750; letter-spacing: .1em; text-transform: uppercase; }
   @media (max-width: 800px) { .hero-deck, .archive-intro, .review-key { grid-template-columns: 1fr; } .hero-deck span { display: none; } .project-evidence-views { grid-template-columns: 1fr; } .hero-architecture { inset-inline: -25vw; } .project-cta > div { align-items: flex-start; flex-direction: column; } }
