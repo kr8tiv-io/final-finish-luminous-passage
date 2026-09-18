@@ -12,6 +12,10 @@ const smoothstep = (value: number) => value * value * (3 - 2 * value);
  * Maps chapter scroll to the chapter film clock. The foundation passage keeps
  * coherent bookend frames around the authored walk, while all existing films
  * retain their direct scroll-to-time contract.
+ *
+ * Act 1's pour is one of the direct ones: `currentTime` is a monotonic function of
+ * `chapterProgress`, and nothing in this step reshapes it.
+ * @motion film-scrub
  */
 export const journeyFilmProgress = (chapter: JourneyChapterId, chapterProgress: number) => {
   const progress = Number.isFinite(chapterProgress) ? clamp01(chapterProgress) : 0;

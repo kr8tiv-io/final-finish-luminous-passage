@@ -6,6 +6,7 @@ import {
   journeyEnhancementReady,
   journeyMediaResidents,
   plateMediaChoice,
+  pourFilmSource,
   shouldInvalidateForMediaReadiness,
   shouldRequestVideo,
   thresholdHdrSupported,
@@ -17,7 +18,53 @@ import {
   veilFrameRequired,
   veilVisible,
 } from './journey-media';
-import { FILM_VEIL_FRAGMENT_SHADER } from '../../components/motion/FilmVeil';
+import { FILM_VEIL_FRAGMENT_SHADER, RESIN_BLOOM_PIXELS, resinBloomSigma } from '../../components/motion/FilmVeil';
+
+describe('Act 1 film rung', () => {
+  it('reaches the 1080 pour only on a wide, full-tier viewport', () => {
+    expect(pourFilmSource({ viewportWidth: 1440, tier: 'full' })).toBe('/videos/follow-floor/1080/epoxy-pour-pearl.mp4');
+    expect(pourFilmSource({ viewportWidth: 1920, tier: 'full' })).toBe('/videos/follow-floor/1080/epoxy-pour-pearl.mp4');
+    // One pixel below the rung, and on every tier that must not pay 5 MB for it.
+    expect(pourFilmSource({ viewportWidth: 1439, tier: 'full' })).toBeNull();
+    expect(pourFilmSource({ viewportWidth: 1440, tier: 'balanced' })).toBeNull();
+    expect(pourFilmSource({ viewportWidth: 1440, tier: 'still' })).toBeNull();
+    expect(pourFilmSource({ viewportWidth: Number.NaN, tier: 'full' })).toBeNull();
+  });
+});
+
+describe('resin-wipe edge light', () => {
+  it('keeps the bloom a fixed pixel width whatever the screen height is', () => {
+    // The light is exp(-(d/sigma)^2); it is above a tenth of its peak while
+    // |d| <= sigma * sqrt(ln 10), so the visible band is 2*sqrt(ln10)*sigma uv tall.
+    const band = (height: number) =>
+      2 * Math.sqrt(Math.LN10) * resinBloomSigma(RESIN_BLOOM_PIXELS, height) * height;
+
+    expect(RESIN_BLOOM_PIXELS).toBeLessThanOrEqual(12);
+    for (const height of [844, 900, 1024, 1440]) expect(band(height)).toBeCloseTo(RESIN_BLOOM_PIXELS, 6);
+    // Falsifiable: a sigma that ignored the viewport would NOT hold that band.
+    const fixedSigma = resinBloomSigma(RESIN_BLOOM_PIXELS, 900);
+    expect(2 * Math.sqrt(Math.LN10) * fixedSigma * 1440).toBeGreaterThan(RESIN_BLOOM_PIXELS);
+  });
+
+  it('blooms mode 3 toward the paper it reveals, so the paper cannot be tinted', () => {
+    expect(FILM_VEIL_FRAGMENT_SHADER).toMatch(/const vec3 VEIL_PAPER = vec3\(0\.98039216, 0\.97647059, 0\.96470588\);/);
+    expect(FILM_VEIL_FRAGMENT_SHADER).toMatch(/bloomColor = VEIL_PAPER;/);
+    // Every other mode keeps the shared bloom colour it shipped with.
+    expect(FILM_VEIL_FRAGMENT_SHADER).toMatch(/vec3 bloomColor = VEIL_BLOOM;/);
+    expect(FILM_VEIL_FRAGMENT_SHADER).toMatch(/composite = mix\(composite, bloomColor,/);
+  });
+
+  it('falls back to the analytic resin edge when the plate has not decoded', () => {
+    expect(FILM_VEIL_FRAGMENT_SHADER).toMatch(/uniform sampler2D uResinPlate;/);
+    expect(FILM_VEIL_FRAGMENT_SHADER).toMatch(/uniform float uResinPlateReady;/);
+    // The mix is the fallback: at uResinPlateReady 0 the field is exactly the
+    // shipped analytic one, so a failed plate load degrades the shape, not the wipe.
+    expect(FILM_VEIL_FRAGMENT_SHADER)
+      .toMatch(/float analyticField = vUv\.y \+ staticUndulation\(vec2\(vUv\.y, vUv\.x\)\) \* 2\.35;/);
+    expect(FILM_VEIL_FRAGMENT_SHADER)
+      .toMatch(/float resinField = mix\(analyticField, platedField, uResinPlateReady\);/);
+  });
+});
 
 describe('cinematic plate sampling', () => {
   it('crops wide and tall media like object-fit cover', () => {

@@ -77,7 +77,21 @@ uniform vec2 uFromScale;
 uniform vec2 uFromOffset;
 uniform vec2 uToScale;
 uniform vec2 uToOffset;
+// The poured-resin alpha plate (Act 1's resin-wipe, mode 3 only). uResinPlateReady
+// is 0 until the texture has decoded, and mode 3 then falls back to exactly the
+// analytic edge it shipped with, so a slow or failed plate load is never a
+// different transition, only a less shaped one.
+uniform sampler2D uResinPlate;
+uniform float uResinPlateReady;
+uniform vec2 uResinPlateScale;
+uniform vec2 uResinPlateOffset;
+/** Gaussian sigma for mode 3's edge light, in uv, sized so the bloom is <= 12 CSS px. */
+uniform float uResinBloom;
 varying vec2 vUv;
+
+const vec3 VEIL_BLOOM = vec3(0.973, 0.969, 0.952);
+/** Storyboard paper #FAF9F6. Blooming toward it cannot tint the paper it reveals. */
+const vec3 VEIL_PAPER = vec3(0.98039216, 0.97647059, 0.96470588);
 
 float easeInOut(float value) {
   float t = clamp(value, 0.0, 1.0);
@@ -106,6 +120,7 @@ void main() {
     float organic = staticUndulation(vUv);
     float toWeight;
     float light = 0.0;
+    vec3 bloomColor = VEIL_BLOOM;
 
     if (uMode < 0.5) {
       toWeight = smoothstep(0.22, 0.78, progress + organic);
@@ -130,9 +145,20 @@ void main() {
       light = exp(-pow((foldedAxis - fold) / 0.16, 2.0)) * sin(progress * 3.14159265) * 0.13;
     } else if (uMode < 3.5) {
       float resinFront = mix(-0.18, 1.18, eased);
-      float resinField = vUv.y + staticUndulation(vec2(vUv.y, vUv.x)) * 2.35;
+      float analyticField = vUv.y + staticUndulation(vec2(vUv.y, vUv.x)) * 2.35;
+      // The front's shape is the plate's own matte: alpha 1 (inside the poured
+      // resin) pulls the boundary forward by up to 0.11 uv, alpha 0 holds it back,
+      // so the paper arrives behind an uneven poured-resin front rather than a sine.
+      // The analytic undulation stays on at a third of its weight as fine detail.
+      float plateAlpha = texture2D(uResinPlate, vUv * uResinPlateScale + uResinPlateOffset).a;
+      float platedField = vUv.y + (0.5 - plateAlpha) * 0.22 + staticUndulation(vec2(vUv.y, vUv.x)) * 0.9;
+      float resinField = mix(analyticField, platedField, uResinPlateReady);
       toWeight = 1.0 - smoothstep(resinFront - 0.14, resinFront + 0.14, resinField);
-      light = exp(-pow((resinField - resinFront) / 0.12, 2.0)) * sin(progress * 3.14159265) * 0.2;
+      // A lit meniscus rather than a glow. Sigma arrives as a fraction of the
+      // viewport so the lit band is <= 12 CSS px on any screen, and the bloom
+      // colour is the paper itself, so the revealed paper cannot be tinted by it.
+      light = exp(-pow((resinField - resinFront) / uResinBloom, 2.0)) * sin(progress * 3.14159265) * 0.34;
+      bloomColor = VEIL_PAPER;
     } else {
       float curlAxis = uDirection > 0.0 ? vUv.x : 1.0 - vUv.x;
       float curlEdge = mix(-0.2, 1.2, eased);
@@ -142,7 +168,7 @@ void main() {
     }
 
     vec3 composite = mix(fromColor.rgb, toColor.rgb, clamp(toWeight, 0.0, 1.0));
-    composite = mix(composite, vec3(0.973, 0.969, 0.952), clamp(light, 0.0, 0.72));
+    composite = mix(composite, bloomColor, clamp(light, 0.0, 0.72));
     outputColor = vec4(composite, 1.0);
   }
   gl_FragColor = outputColor;
@@ -209,6 +235,31 @@ function viewportSize(): { readonly width: number; readonly height: number } {
   if (typeof window === 'undefined') return { width: 1, height: 1 };
   return { width: window.innerWidth, height: window.innerHeight };
 }
+
+/**
+ * The poured-resin front, extracted from the pour's own frame 235
+ * (`ASSET-LEDGER.md`, wave 3). 2048 on a desktop, 1024 on a phone — the
+ * storyboard's §6 rule for this plate, and the only rung difference.
+ */
+const RESIN_PLATE_SIZE = Object.freeze({ wide: 2048, phone: 1024 });
+const RESIN_PLATE_ASPECT = Object.freeze({ width: 2048, height: 1152 });
+const resinPlateUrl = (): string => {
+  const phone = typeof window !== 'undefined' && window.matchMedia('(max-width: 680px)').matches;
+  return `/images/brand/plates/resin-front-${phone ? RESIN_PLATE_SIZE.phone : RESIN_PLATE_SIZE.wide}.webp`;
+};
+
+/**
+ * Sigma, in uv, for mode 3's edge light, so the lit band measures `pixels` CSS px.
+ *
+ * The light is `exp(-(d/sigma)^2)`; it is above a tenth of its peak while
+ * `|d| <= sigma * sqrt(ln 10)`, so the visible band is `2 * sqrt(ln 10) * sigma`
+ * tall. Inverting that for a 12 px band is the whole of this function, and it is
+ * why the bloom does not grow with the screen.
+ */
+export const resinBloomSigma = (pixels: number, viewportHeight: number): number =>
+  pixels / (2 * Math.sqrt(Math.LN10) * Math.max(1, viewportHeight));
+
+export const RESIN_BLOOM_PIXELS = 12;
 
 export default function FilmVeil({ host, motionEnabled }: {
   readonly host: HTMLElement;
@@ -282,6 +333,11 @@ export default function FilmVeil({ host, motionEnabled }: {
       uFromOffset: { value: new THREE.Vector2(0, 0) },
       uToScale: { value: new THREE.Vector2(1, 1) },
       uToOffset: { value: new THREE.Vector2(0, 0) },
+      uResinPlate: { value: fallback },
+      uResinPlateReady: { value: 0 },
+      uResinPlateScale: { value: new THREE.Vector2(1, 1) },
+      uResinPlateOffset: { value: new THREE.Vector2(0, 0) },
+      uResinBloom: { value: resinBloomSigma(RESIN_BLOOM_PIXELS, 900) },
     },
     vertexShader: VERT,
     fragmentShader: FILM_VEIL_FRAGMENT_SHADER,
@@ -392,6 +448,53 @@ export default function FilmVeil({ host, motionEnabled }: {
   useEffect(() => {
     if (!active) setPlateReady(false);
   }, [active]);
+
+  /**
+   * The resin plate: loaded once for the life of the compositor, disposed with it.
+   *
+   * It is not a room plate, so it has no residency and never enters `bindings` —
+   * it is the shape of one transition, and `resin-wipe` is the only mode that
+   * samples it. Until it decodes, `uResinPlateReady` stays 0 and mode 3 runs its
+   * analytic edge, which is why a failed load degrades the shape and never the
+   * transition.
+   */
+  useEffect(() => {
+    if (!active) return undefined;
+    let disposed = false;
+    let loaded: THREE.Texture | null = null;
+    new THREE.TextureLoader().load(resinPlateUrl(), (texture) => {
+      if (disposed) {
+        texture.dispose();
+        return;
+      }
+      texture.colorSpace = THREE.NoColorSpace;
+      texture.minFilter = THREE.LinearFilter;
+      texture.magFilter = THREE.LinearFilter;
+      texture.generateMipmaps = false;
+      loaded = texture;
+      material.uniforms.uResinPlate.value = texture;
+      material.uniforms.uResinPlateReady.value = 1;
+      invalidate();
+    });
+    return () => {
+      disposed = true;
+      material.uniforms.uResinPlateReady.value = 0;
+      material.uniforms.uResinPlate.value = fallback;
+      loaded?.dispose();
+    };
+  }, [active, fallback, invalidate, material]);
+
+  useEffect(() => {
+    const plateUv = coverUvTransform(
+      RESIN_PLATE_ASPECT.width,
+      RESIN_PLATE_ASPECT.height,
+      size.width,
+      size.height,
+    );
+    material.uniforms.uResinPlateScale.value.set(...plateUv.scale);
+    material.uniforms.uResinPlateOffset.value.set(...plateUv.offset);
+    material.uniforms.uResinBloom.value = resinBloomSigma(RESIN_BLOOM_PIXELS, size.height);
+  }, [material, size.height, size.width]);
 
   useEffect(() => {
     const onResize = () => {
