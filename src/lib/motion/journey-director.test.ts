@@ -29,15 +29,15 @@ const metrics: JourneyMetrics = {
 describe('native journey snapshots', () => {
   afterEach(() => vi.unstubAllGlobals());
 
-  it('publishes the stable eight-room manifest in semantic order', () => {
+  it('publishes the stable eight-room manifest in storyboard act order', () => {
     expect(JOURNEY_CHAPTER_IDS).toEqual([
       'portico',
       'foundation',
       'garage',
       'vault',
+      'proof',
       'finish-hall',
       'commercial',
-      'proof',
       'consultation',
     ]);
   });

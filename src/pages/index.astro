@@ -72,7 +72,7 @@ const thresholdStudy = import.meta.env.DEV && Astro.url.searchParams.get('study'
         </div>
         <nav class="hero-ribbon" data-hero-ribbon aria-label="Follow the floor chapters">
           <span class="hero-ribbon-line" aria-hidden="true"></span>
-          <a href="#portico"><span>01</span>The pour</a><a href="#customer-reviews"><span>02</span>The proof</a><a href="#proof"><span>05</span>See the difference</a><a href="#finish-hall"><span>07</span>Your finish</a>
+          <a href="#portico">The pour</a><a href="#customer-reviews">The proof</a><a href="#proof">See the difference</a><a href="#finish-hall">Your finish</a>
         </nav>
       </div>
 
@@ -155,7 +155,15 @@ const thresholdStudy = import.meta.env.DEV && Astro.url.searchParams.get('study'
       <p>A coating is one part of a room transformation. It does not replace moisture remediation, ventilation, heating, or a complete renovation.</p>
     </ChapterReading>
 
-    <div class="journey-breath" data-hall-from="vault" data-hall-to="finish-hall" aria-hidden="true"></div>
+    <div class="journey-breath" data-hall-from="vault" data-hall-to="proof" aria-hidden="true"></div>
+
+    <section class="journey-chapter proof-chapter white-stage" id="proof" tabindex="-1" data-journey-chapter="proof" data-journey-white-stage aria-label="Real Final Finish transformations">
+      <TransformationGallery client:visible={{ rootMargin: '800px' }} allowPending={import.meta.env.DEV || import.meta.env.SITE_ENV === 'staging'} />
+      <div class="gallery-project-link editorial-width"><a class="chapter-link" href="/projects">Explore the project archive <span aria-hidden="true">↗</span></a></div>
+      <p class="chapter-index" data-act-label aria-hidden="true">05 / See the difference <span>Edmonton project archive</span></p>
+    </section>
+
+    <div class="journey-breath" data-hall-from="proof" data-hall-to="finish-hall" aria-hidden="true"></div>
 
     <section class="journey-chapter finish-chapter" id="finish-hall" tabindex="-1" data-journey-chapter="finish-hall" aria-labelledby="finish-title">
       <picture class="chapter-frame" data-chapter-frame aria-hidden="true">
@@ -210,19 +218,11 @@ const thresholdStudy = import.meta.env.DEV && Astro.url.searchParams.get('study'
       <p>Discuss equipment, operating conditions, and areas that must remain accessible. Preparation and return-to-use requirements belong in the project conversation, not a blanket promise.</p>
     </ChapterReading>
 
-    <div class="journey-breath" data-hall-from="commercial" data-hall-to="proof" aria-hidden="true"></div>
-
-    <section class="journey-chapter proof-chapter white-stage" id="proof" tabindex="-1" data-journey-chapter="proof" data-journey-white-stage aria-label="Real Final Finish transformations">
-      <TransformationGallery client:visible={{ rootMargin: '800px' }} allowPending={import.meta.env.DEV || import.meta.env.SITE_ENV === 'staging'} />
-      <div class="gallery-project-link editorial-width"><a class="chapter-link" href="/projects">Explore the project archive <span aria-hidden="true">↗</span></a></div>
-      <p class="chapter-index" data-act-label aria-hidden="true">05 / See the difference <span>Edmonton project archive</span></p>
-    </section>
-
     <ProjectStory story={projectStories[2]} />
 
     <FloorPlanning />
 
-    <div class="journey-breath" data-hall-from="proof" data-hall-to="consultation" aria-hidden="true"></div>
+    <div class="journey-breath" data-hall-from="commercial" data-hall-to="consultation" aria-hidden="true"></div>
 
     <section class="journey-chapter consultation-chapter" id="consultation" tabindex="-1" data-journey-chapter="consultation" aria-labelledby="consultation-title">
       <div class="floor-film" aria-hidden="true">

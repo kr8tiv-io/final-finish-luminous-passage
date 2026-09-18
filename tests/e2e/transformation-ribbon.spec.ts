@@ -196,6 +196,7 @@ test('Explore all navigates native horizontal cards and keeps each divider in it
   await page.goto('/#proof', { waitUntil: 'domcontentloaded' });
   await galleryReady(page);
   const gallery = page.locator('.transformation-gallery');
+  await expect(gallery).toHaveAttribute('data-gallery-layout', 'passage');
   await gallery.getByRole('link', { name: 'Skip featured comparisons' }).click();
   const explore = gallery.locator('#transformation-explore');
   await expect(explore).toBeInViewport();

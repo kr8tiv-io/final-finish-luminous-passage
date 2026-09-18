@@ -51,14 +51,15 @@ test.describe('Final Finish homepage', () => {
   });
 
   /**
-   * The storyboard's ten acts, in the order it tells them (§2). `#proof` is act
-   * 05 but still sits after act 08 in the DOM — Step 23 is what moves the
-   * gallery between Reclaim and Your finish — so the ordering rule is checked
-   * in act order and the one chapter whose DOM position does not yet match its
-   * number is named below. When Step 23 lands, `PENDING_ACT_MOVE` becomes `[]`.
+   * The storyboard's ten acts, in the order it tells them (§2). Step 11b moved
+   * `#proof` (act 05) into its act position between Reclaim and Your finish, so
+   * DOM order and act order are now the same list and nothing is excused from
+   * the DOM-order rule. `PENDING_ACT_MOVE` stays as the seam for act 06, the
+   * archive lattice, which has no section yet — when Step 23b builds it, it is
+   * added here only if it lands out of position, never to hide a regression.
    */
   const ACT_ORDER = ['portico', 'foundation', 'garage', 'vault', 'proof', 'finish-hall', 'commercial', 'consultation'];
-  const PENDING_ACT_MOVE = ['proof'];
+  const PENDING_ACT_MOVE: string[] = [];
 
   test('numbers the acts 01 to 10 with one shared number for the two Reclaim rooms', async ({ page }) => {
     await page.goto('/', { waitUntil: 'domcontentloaded' });
@@ -120,18 +121,31 @@ test.describe('Final Finish homepage', () => {
     }
   });
 
-  test('routes the hero ribbon to the four act anchors it names', async ({ page }) => {
+  /**
+   * `COPY-DECK.md` §0 and its "Lines removed or moved from G2" row: the ribbon
+   * keeps four anchors and drops their numerals, because four numbers cannot
+   * stand in for a ten-act sequence; the menu carries the numbering. The act
+   * labels inside the sections keep theirs — that is the test above.
+   */
+  test('routes the hero ribbon to the four unnumbered act anchors it names', async ({ page }) => {
     await page.goto('/', { waitUntil: 'domcontentloaded' });
     const ribbon = page.locator('[data-hero-ribbon] a');
     await expect(ribbon).toHaveCount(4);
+    // Text plus a count of the anchor's own content spans. `intent-motion.ts`
+    // appends one empty, aria-hidden `.intent-glint` to every Astro-owned link
+    // at runtime, so that one is excluded by name; anything else inside the
+    // anchor is content, which is what a returning numeral would be. Counting
+    // as well as reading the text is what catches a numeral that comes back
+    // hidden from the accessible name rather than written into it.
     expect(await ribbon.evaluateAll((nodes) => nodes.map((node) => [
-      node.querySelector('span')?.textContent?.trim(),
+      (node.textContent ?? '').trim(),
       node.getAttribute('href'),
+      node.querySelectorAll('span:not(.intent-glint)').length,
     ]))).toEqual([
-      ['01', '#portico'],
-      ['02', '#customer-reviews'],
-      ['05', '#proof'],
-      ['07', '#finish-hall'],
+      ['The pour', '#portico', 0],
+      ['The proof', '#customer-reviews', 0],
+      ['See the difference', '#proof', 0],
+      ['Your finish', '#finish-hall', 0],
     ]);
     for (const href of ['#portico', '#customer-reviews', '#proof', '#finish-hall']) {
       await expect(page.locator(href)).toHaveCount(1);
