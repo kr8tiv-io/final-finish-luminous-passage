@@ -7,7 +7,14 @@ import { fileURLToPath } from 'node:url';
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const ffmpeg = process.env.FFMPEG_PATH || 'ffmpeg';
 const ffprobe = process.env.FFPROBE_PATH || 'ffprobe';
-const films = ['pour', 'walkway', 'garage', 'basement', 'finish', 'consultation', 'mancave'];
+/**
+ * `walkway-pearl` is Act 3's option A (Step 20): the same camera walk as `walkway`,
+ * regraded by `scripts/grade-stair-walk.mjs` into
+ * `assets/films/source/epoxy-walkway-pearl.mp4`. It builds the full 480/720/1080
+ * ladder — it is a candidate full-bleed set piece — so it takes no `filmHeights`
+ * override. The ungraded `walkway` entry stays until the A/B is decided.
+ */
+const films = ['pour', 'walkway', 'walkway-pearl', 'garage', 'basement', 'finish', 'consultation', 'mancave'];
 const profiles = [{ height: 480, crf: 27 }, { height: 720, crf: 26 }, { height: 1080, crf: 27 }];
 /**
  * Per-film ladder overrides. A film absent from this map builds every profile
