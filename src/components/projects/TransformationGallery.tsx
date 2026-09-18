@@ -1,3 +1,4 @@
+import gsap from 'gsap';
 import {
   useCallback,
   useEffect,
@@ -8,11 +9,18 @@ import {
   type CSSProperties,
 } from 'react';
 import { selectedProjectPhotos, transformations } from '../../data/transformation-gallery';
+import { ensureGsapKit, ScrollTrigger } from '../../lib/motion/gsap-kit';
 import { journeyControls } from '../../lib/motion/journey-controls';
 import { journeyDirector } from '../../lib/motion/journey-director';
+import { onRouteTeardown } from '../../lib/motion/route-lifecycle';
 import { getArcCardState, getImageLoadingState, resolveGalleryRender } from '../../lib/projects/gallery';
 import {
-  getFeaturedPassageState,
+  CYLINDER_GAP_RATIO,
+  CYLINDER_MEDIA,
+  cylinderInnerAngle,
+  cylinderRadius,
+  cylinderRingRotation,
+  getCylinderState,
   getFeaturedScrollTarget,
   getGalleryScrollTarget,
   isFeaturedPassageAdmissible,
@@ -23,10 +31,28 @@ import Comparison, { Picture } from './Comparison';
 import './transformation-gallery.css';
 
 type Props = { allowPending?: boolean };
-type PassageGeometry = { start: number; travel: number; contentHeight: number };
+
+/**
+ * Everything the cylinder needs that only a measurement can supply. `null`
+ * means the ring is not built, which is the same thing as "the snap ribbon is
+ * what this visitor gets" — there is no third state.
+ */
+type CylinderGeometry = {
+  readonly cardWidth: number;
+  readonly gap: number;
+  readonly radius: number;
+  readonly innerAngle: number;
+  /** Document scroll position at which the pin starts, and its travel. */
+  readonly start: number;
+  readonly travel: number;
+};
 
 const INITIAL_REVEAL = 50;
 const PROJECT_ARCHIVE_PATH = '/projects';
+/** Matches `--pin-top` in `transformation-gallery.css`; the header's own height. */
+const PIN_TOP = 88;
+/** Viewport heights of pin travel per card step (storyboard §2: Act 5 ≈ 3.0 vh). */
+const CARD_TRAVEL = 1;
 
 /**
  * Production fallback. Never an empty section and never an "archive" apology:
@@ -51,25 +77,90 @@ function SelectedPhotos() {
   </section>;
 }
 
+declare global {
+  interface Window {
+    __ffeCylinder?: {
+      /** The ring's live `rotationY`, in degrees. Read-only. */
+      readonly rotation: () => number;
+      readonly progress: () => number;
+      readonly radius: () => number;
+      readonly innerAngle: () => number;
+      /** Document scroll positions at which the pin starts and releases. */
+      readonly start: () => number;
+      readonly end: () => number;
+      readonly cards: number;
+    };
+  }
+}
+
+/**
+ * Read-only diagnostics, on staging only — the same gate `window.__ffeRoute`
+ * and `window.__ffeSurface` use, read off `html[data-environment]`. The Step 23
+ * gates need this because the ring's angle is a composed `matrix3d` in the
+ * computed style: "rotateY is monotonic across 30 samples" is otherwise
+ * unmeasurable without re-deriving it from the matrix in every probe.
+ */
+function installCylinderProbe(probe: NonNullable<Window['__ffeCylinder']>) {
+  if (typeof window === 'undefined' || document.documentElement.dataset.environment === 'production') return;
+  Object.defineProperty(window, '__ffeCylinder', { configurable: true, value: probe });
+}
+
+function removeCylinderProbe() {
+  if (typeof window === 'undefined') return;
+  delete window.__ffeCylinder;
+}
+
+/**
+ * The Act 5 eyebrow. Both words are always printed and the arrow between them
+ * never moves; when a different pair takes the front slot each word is clipped
+ * out upward while the same word arrives from below in the same clip, so the
+ * line re-stamps itself per pair instead of mutating into invented copy.
+ * `COPY-DECK.md` Act 5 locks the line to exactly "Concrete → Coated".
+ *
+ * Keyed on the front index so the swap is a mount, not a tween: nothing is left
+ * running to tear down, and `prefers-reduced-motion` turns it off in CSS with
+ * both words still printed and static.
+ *
+ * @motion word-swap
+ */
+function WordSwapEyebrow({ swapKey }: { swapKey: number }) {
+  return <p className="eyebrow transformation-gallery__eyebrow" data-word-swap>
+    <span className="transformation-gallery__swap"><span key={`concrete-${swapKey}`}>Concrete</span></span>
+    <span aria-hidden="true"> → </span>
+    <span className="transformation-gallery__swap"><span key={`coated-${swapKey}`}>Coated</span></span>
+  </p>;
+}
+
 export default function TransformationGallery({ allowPending = false }: Props) {
   const render = useMemo(() => resolveGalleryRender(transformations, { allowPending }), [allowPending]);
   const pairs = render.pairs;
   const passageRef = useRef<HTMLDivElement>(null);
   const featuredNavRef = useRef<HTMLElement>(null);
   const featuredWindowRef = useRef<HTMLDivElement>(null);
+  const ringRef = useRef<HTMLDivElement>(null);
+  const slotRef = useRef<HTMLDivElement>(null);
   const firstFeaturedRef = useRef<HTMLDivElement>(null);
   const viewportRef = useRef<HTMLDivElement>(null);
   const frames = useRef(new Set<number>());
   const [hydrated, setHydrated] = useState(false);
   const [reducedMotion, setReducedMotion] = useState(false);
-  const [passageEnabled, setPassageEnabled] = useState(false);
-  const [passageGeometry, setPassageGeometry] = useState<PassageGeometry>({ start: 0, travel: 1, contentHeight: 0 });
+  const [cylinder, setCylinder] = useState<CylinderGeometry | null>(null);
+  const [progress, setProgress] = useState(0);
   const [featuredNavigation, setFeaturedNavigation] = useState<FeaturedNavigation>(null);
   const [interactionIndex, setInteractionIndex] = useState<number | null>(null);
   const [exploreIndex, setExploreIndex] = useState(0);
   const [reveals, setReveals] = useState<Record<string, number>>({});
+  /**
+   * Bumped once when the card has stopped changing size (webfont metrics, a
+   * decoding image). Step 9's guard, kept: the first frame after hydration can
+   * measure a card that has not reached its final height, and a miss there would
+   * latch the ribbon for the rest of the visit because nothing resizes again.
+   * The one bump re-runs the admission effect exactly once.
+   */
+  const [settleTick, setSettleTick] = useState(0);
   const journey = useSyncExternalStore(journeyDirector.subscribe, journeyDirector.getSnapshot, journeyDirector.getServerSnapshot);
   const controls = useSyncExternalStore(journeyControls.subscribe, journeyControls.getSnapshot, journeyControls.getServerSnapshot);
+  const passageEnabled = cylinder !== null;
 
   /** Every queued frame this component owns, so teardown can cancel all of them. */
   const schedule = useCallback((task: () => void) => {
@@ -79,9 +170,6 @@ export default function TransformationGallery({ allowPending = false }: Props) {
     });
     frames.current.add(id);
     return id;
-  }, []);
-  const cancelFrame = useCallback((id: number) => {
-    if (frames.current.delete(id)) window.cancelAnimationFrame(id);
   }, []);
   const cancelQueued = useCallback(() => {
     frames.current.forEach((id) => window.cancelAnimationFrame(id));
@@ -100,56 +188,10 @@ export default function TransformationGallery({ allowPending = false }: Props) {
 
   useEffect(() => cancelQueued, [cancelQueued]);
 
-  const measurePassage = useCallback(() => {
-    const passage = passageRef.current;
-    const panel = firstFeaturedRef.current;
-    const nav = featuredNavRef.current;
-    if (!passage || !panel || !nav || typeof window === 'undefined') return;
-    const viewportWidth = window.innerWidth;
-    const viewportHeight = window.innerHeight;
-    const comparisonHeight = panel.querySelector<HTMLElement>('.transformation-comparison')?.scrollHeight ?? panel.scrollHeight;
-    const contentHeight = nav.offsetHeight + comparisonHeight + 16;
-    const admitted = isFeaturedPassageAdmissible({
-      viewportWidth,
-      viewportHeight,
-      contentHeight,
-      still: controls.motionPreference === 'still',
-      reducedMotion,
-    });
-    const stickyTop = 88;
-    const passageTop = passage.getBoundingClientRect().top + window.scrollY;
-    setPassageEnabled(admitted);
-    const next = {
-      start: passageTop - stickyTop,
-      travel: Math.max(1, viewportHeight * .72 * Math.max(1, pairs.length - 1)),
-      contentHeight,
-    };
-    setPassageGeometry((current) => current.start === next.start && current.travel === next.travel && current.contentHeight === next.contentHeight ? current : next);
-  }, [controls.motionPreference, pairs.length, reducedMotion]);
-
-  useEffect(() => {
-    const frame = schedule(() => {
-      measurePassage();
-      journeyDirector.invalidateGeometry();
-    });
-    const observer = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(measurePassage);
-    const comparison = firstFeaturedRef.current?.querySelector<HTMLElement>('.transformation-comparison');
-    if (comparison) observer?.observe(comparison);
-    if (featuredNavRef.current) observer?.observe(featuredNavRef.current);
-    return () => {
-      cancelFrame(frame);
-      observer?.disconnect();
-    };
-  }, [cancelFrame, journey.viewportWidth, journey.viewportHeight, measurePassage, schedule]);
-
-  // The first frame after hydration can measure a card that has not reached its
-  // final size (webfont metrics, a decoding image), and a miss there would latch
-  // the native layout for the rest of the visit because nothing resizes again.
-  // The single admission decision is therefore confirmed once the card settles.
   useEffect(() => {
     let cancelled = false;
     const confirm = () => {
-      if (!cancelled) schedule(measurePassage);
+      if (!cancelled) setSettleTick((tick) => (tick === 0 ? 1 : tick));
     };
     const settle = window.setTimeout(confirm, 200);
     void document.fonts?.ready.then(confirm);
@@ -157,22 +199,155 @@ export default function TransformationGallery({ allowPending = false }: Props) {
       cancelled = true;
       window.clearTimeout(settle);
     };
-  }, [measurePassage, schedule]);
+  }, []);
 
+  /**
+   * The cylinder, and the single ScrollTrigger that drives it.
+   *
+   * `gsap.matchMedia` owns the lifecycle: the query is `CYLINDER_MEDIA` — the
+   * media half of the one admission rule — so a visitor who resizes below it,
+   * plugs in a touch screen, or turns reduced motion on has the ring reverted
+   * for them and lands on the native snap ribbon with nothing left behind. The
+   * measured half of the rule (`isFeaturedPassageAdmissible`) is checked inside,
+   * because "a real card actually fits" and "the visitor asked for `still`" are
+   * not media features.
+   *
+   * Exactly one ScrollTrigger is created here, its trigger is the *inner*
+   * `.transformation-gallery__passage` (storyboard §8 directive 2 — never the
+   * chapter, never `.journey`, never with `snap`), and the only thing it writes
+   * is the ring's `rotationY`.
+   *
+   * @motion perspective-cylinder
+   */
+  useEffect(() => {
+    if (!hydrated || pairs.length === 0 || typeof window === 'undefined') return;
+    ensureGsapKit();
+    ScrollTrigger.config({ ignoreMobileResize: true });
+    const media = gsap.matchMedia();
+
+    media.add(CYLINDER_MEDIA, () => {
+      const passage = passageRef.current;
+      const ring = ringRef.current;
+      const slot = slotRef.current;
+      const nav = featuredNavRef.current;
+      const panel = firstFeaturedRef.current;
+      if (!passage || !ring || !slot || !nav || !panel) return undefined;
+
+      /** The front slot's rect, for a later step's `shrink-to-card` to land on. */
+      const writeFrontSlot = () => {
+        const rect = slot.getBoundingClientRect();
+        if (rect.width === 0) return;
+        passage.dataset.frontSlot = [rect.x, rect.y, rect.width, rect.height]
+          .map((value) => Math.round(value))
+          .join(',');
+      };
+
+      const admitted = () => {
+        const comparison = panel.querySelector<HTMLElement>('.transformation-comparison');
+        const contentHeight = nav.offsetHeight + (comparison?.scrollHeight ?? panel.scrollHeight) + 16;
+        return isFeaturedPassageAdmissible({
+          viewportWidth: window.innerWidth,
+          viewportHeight: window.innerHeight,
+          contentHeight,
+          still: controls.motionPreference === 'still',
+          reducedMotion,
+        });
+      };
+      if (!admitted()) return undefined;
+
+      const measure = (): CylinderGeometry => {
+        const cardWidth = slot.getBoundingClientRect().width || panel.getBoundingClientRect().width;
+        const gap = cardWidth * CYLINDER_GAP_RATIO;
+        return {
+          cardWidth,
+          gap,
+          radius: cylinderRadius({ cardWidth, gap, cards: pairs.length }),
+          innerAngle: cylinderInnerAngle(pairs.length),
+          start: 0,
+          travel: Math.max(1, window.innerHeight * CARD_TRAVEL * Math.max(1, pairs.length - 1)),
+        };
+      };
+
+      // Published before the trigger exists so the ring has its radius on the
+      // very first painted frame and never rotates through an unsized cylinder.
+      let geometry = measure();
+      setCylinder(geometry);
+      // Pulls the ring back by one radius so face 0 — which sits at `+radius`,
+      // the ring's nearest point — lands exactly on the screen plane.
+      gsap.set(ring, { z: -geometry.radius });
+
+      const tween = gsap.fromTo(
+        ring,
+        { rotationY: 0 },
+        {
+          rotationY: cylinderRingRotation(1, pairs.length),
+          ease: 'none',
+          scrollTrigger: {
+            trigger: passage,
+            pin: passage,
+            pinSpacing: true,
+            start: `top top+=${PIN_TOP}`,
+            end: () => `+=${geometry.travel}`,
+            scrub: true,
+            invalidateOnRefresh: true,
+            onRefresh: (self) => {
+              geometry = { ...measure(), start: self.start, travel: Math.max(1, self.end - self.start) };
+              setCylinder(geometry);
+              gsap.set(ring, { z: -geometry.radius });
+              writeFrontSlot();
+              journeyDirector.invalidateGeometry();
+            },
+            onUpdate: (self) => setProgress(self.progress),
+            onLeave: () => journeyDirector.invalidateGeometry(),
+            onLeaveBack: () => journeyDirector.invalidateGeometry(),
+          },
+        },
+      );
+
+      writeFrontSlot();
+      journeyDirector.invalidateGeometry();
+      installCylinderProbe({
+        rotation: () => Number(gsap.getProperty(ring, 'rotationY')),
+        progress: () => tween.scrollTrigger?.progress ?? 0,
+        radius: () => geometry.radius,
+        innerAngle: () => geometry.innerAngle,
+        start: () => tween.scrollTrigger?.start ?? 0,
+        end: () => tween.scrollTrigger?.end ?? 0,
+        cards: pairs.length,
+      });
+
+      return () => {
+        removeCylinderProbe();
+        tween.scrollTrigger?.kill();
+        tween.kill();
+        gsap.set(ring, { clearProps: 'transform' });
+        delete passage.dataset.frontSlot;
+        setCylinder(null);
+        setProgress(0);
+        journeyDirector.invalidateGeometry();
+      };
+    });
+
+    // Step 12: the route lifecycle tears this down at `astro:before-swap`, and
+    // React's own unmount call of the same handle is a no-op.
+    return onRouteTeardown(() => media.revert());
+  }, [controls.motionPreference, hydrated, pairs.length, reducedMotion, settleTick]);
+
+  /**
+   * The first measurement is taken before React has committed the `--cylinder`
+   * class, so it reads a full-width ribbon card rather than the narrower card
+   * the ring actually lays out — a radius derived from the wrong pitch. One
+   * refresh on the frame after the class lands re-enters `onRefresh` with the
+   * real geometry. It cannot loop: what comes back changes only transform
+   * values, and a transform never changes layout.
+   */
   useEffect(() => {
     if (!passageEnabled) return;
-    const frame = schedule(() => {
-      measurePassage();
-      journeyDirector.invalidateGeometry();
-    });
-    // Teardown of the passage cancels every frame this layout queued, so a
-    // measurement or a reposition scheduled under the sticky layout can never
-    // land on the native one and move a settled card.
+    const frame = schedule(() => ScrollTrigger.refresh());
     return () => {
-      cancelFrame(frame);
-      cancelQueued();
+      if (frames.current.delete(frame)) window.cancelAnimationFrame(frame);
     };
-  }, [cancelFrame, cancelQueued, measurePassage, passageEnabled, schedule]);
+  }, [passageEnabled, schedule]);
 
   // While pinned, the window is the only scroller. A focus ring, a hash jump,
   // or scroll anchoring must never scroll the inner track sideways instead.
@@ -214,53 +389,53 @@ export default function TransformationGallery({ allowPending = false }: Props) {
 
   if (render.mode === 'selected-photos') return <SelectedPhotos />;
 
-  /**
-   * The director owns the scroll coordinate. Until it has published its first
-   * frame (`revision === 0` — `JourneyMotion` starts it, and on a cold load
-   * that island can hydrate after this one), fall back to reading the live
-   * scroll position rather than trusting its zero. This adds no listener and
-   * no second owner: the moment the director speaks, it wins.
-   */
-  const passageScrollY = journey.revision === 0 && hydrated && typeof window !== 'undefined' ? window.scrollY : journey.scrollY;
-  const scrollPassageState = getFeaturedPassageState(
-    passageEnabled ? Math.min(1, Math.max(0, (passageScrollY - passageGeometry.start) / passageGeometry.travel)) : 0,
-    pairs.length,
-  );
+  const cylinderState = getCylinderState(progress, pairs.length);
   const passageState = resolveFeaturedPresentation({
     passageEnabled,
-    scrollState: scrollPassageState,
-    // Deliberately the director's own coordinate, not the seeded one: a jump is
+    scrollState: { activeIndex: cylinderState.activeIndex, position: cylinderState.position },
+    // Deliberately the director's own coordinate, not a seeded one: a jump is
     // held until the *owner* reports movement, which is what makes it settle.
     scrollY: journey.scrollY,
     navigation: featuredNavigation,
     interactionIndex,
     count: pairs.length,
   });
+  // `settled` on the cylinder means "flat enough to read and to touch", which is
+  // the hold window — not an exact whole-number rotation the ring never sits at
+  // for more than one frame.
+  const settled = passageState.settled || cylinderState.inHoldWindow;
   const updateReveal = (id: string, value: number) => setReveals((current) => ({ ...current, [id]: value }));
-  /**
-   * The single presentation input, published to CSS: `--featured-position` is
-   * the continuous index (0 … n-1, fractional between cards) and
-   * `--featured-count` is n. Step 23 replaces the panel transform with the
-   * jh3y cylinder by reading only these two — no new state, no second owner.
-   */
   const passageStyle = {
-    '--passage-travel': `${passageGeometry.travel}px`,
-    '--featured-panel-height': `${Math.max(1, passageGeometry.contentHeight - (featuredNavRef.current?.offsetHeight ?? 0) - 16)}px`,
+    '--passage-travel': `${cylinder?.travel ?? 0}px`,
     '--featured-count': pairs.length,
     '--featured-position': passageState.position,
+    '--cylinder-radius': cylinder?.radius ?? 0,
+    '--cylinder-inner-angle': `${cylinder?.innerAngle ?? 0}deg`,
+    '--front-emphasis': cylinderState.emphasis,
   } as CSSProperties;
-  const featuredScrollTarget = (index: number) => getFeaturedScrollTarget({
-    passageTop: passageGeometry.start,
-    passageTravel: passageGeometry.travel,
-    index,
-    count: pairs.length,
-  });
+  // Held one pixel inside the pin's own end, so "Last" lands on a card the
+  // trigger is still holding rather than on the exact frame it releases.
+  const featuredScrollTarget = (index: number) => Math.min(
+    getFeaturedScrollTarget({
+      passageTop: cylinder?.start ?? 0,
+      passageTravel: cylinder?.travel ?? 1,
+      index,
+      count: pairs.length,
+    }),
+    (cylinder?.start ?? 0) + Math.max(0, (cylinder?.travel ?? 1) - 1),
+  );
   const pinTrack = () => {
     const track = featuredWindowRef.current;
     if (!track) return;
     track.scrollLeft = 0;
     track.scrollTop = 0;
   };
+  /**
+   * First / Previous / Next / Last move the *window* to the scroll position at
+   * which the ScrollTrigger holds that card in the front slot. Nothing here
+   * touches the ring's angle: the trigger reads the new scroll position and
+   * rotates to match, which is why a jump and a scroll can never disagree.
+   */
   const scrollToFeatured = (index: number) => {
     // A frame queued by the previous layout must not land on top of this jump.
     cancelQueued();
@@ -268,16 +443,27 @@ export default function TransformationGallery({ allowPending = false }: Props) {
     setFeaturedNavigation({ index, scrollY: journey.scrollY });
     pinTrack();
     if (!passageEnabled) {
-      schedule(() => featuredWindowRef.current?.querySelectorAll<HTMLElement>('[data-featured-panel]')[index]?.scrollIntoView({
+      // Both axes: `inline` moves the snap ribbon to the card, `block` moves the
+      // page to the ribbon. Without the second the card can arrive in the track
+      // while the track itself is still below the fold.
+      //
+      // Once now and once on the next frame. Nothing in this layout reflows on
+      // a click, so the immediate call is the one that lands; the queued one
+      // only re-asserts the position if a late image decode moved the ribbon
+      // under it, and re-asserting an unchanged position is a no-op.
+      const jump = () => featuredWindowRef.current?.querySelectorAll<HTMLElement>('[data-featured-panel]')[index]?.scrollIntoView({
         behavior: 'auto',
         block: 'center',
-      }));
+        inline: 'center',
+      });
+      jump();
+      schedule(jump);
       return;
     }
     window.scrollTo({ top: featuredScrollTarget(index), behavior: 'auto' });
   };
   // Focus moves the window, never the track: the element keeps its own scroll
-  // position (preventScroll) and the passage is driven to that card's progress.
+  // position (preventScroll) and the ring is driven to that card's progress.
   const focusFeatured = (index: number, target: HTMLElement | null) => {
     target?.focus({ preventScroll: true });
     pinTrack();
@@ -300,19 +486,27 @@ export default function TransformationGallery({ allowPending = false }: Props) {
   };
 
   return <section
-    className={`transformation-gallery${hydrated ? ' is-hydrated' : ''}${passageEnabled ? ' transformation-gallery--passage' : ''}`}
+    className={`transformation-gallery${hydrated ? ' is-hydrated' : ''}${passageEnabled ? ' transformation-gallery--passage transformation-gallery--cylinder' : ''}`}
     style={passageStyle}
     data-gallery-mode="native"
     data-gallery-layout={passageEnabled ? 'passage' : 'native'}
     data-featured-index={passageState.activeIndex}
-    data-featured-settled={passageState.settled}
+    data-featured-settled={settled}
+    data-hold-window={cylinderState.inHoldWindow}
     aria-labelledby="transformation-gallery-title"
   >
-    <div className="transformation-gallery__head"><div><p className="eyebrow">Selected from the public project archive</p><h2 id="transformation-gallery-title">See the difference.</h2></div><p>Move each divider to compare the original concrete with the finished floor. Captions point to features visible in both photographs.</p></div>
+    <div className="transformation-gallery__head">
+      <div><h2 id="transformation-gallery-title">See the difference.</h2></div>
+      <p>Drag the divider between the concrete and the finished floor. Same job, same room.</p>
+    </div>
     {render.reviewBadge ? <p className="transformation-gallery__review-note">Project pairing review · not approved for publication</p> : null}
 
     <div className="transformation-gallery__passage" ref={passageRef}>
       <div className="transformation-gallery__sticky">
+        {/* Inside the pinned wrapper, because the eyebrow is the act's live
+            label: it is driven by the front card's index and has to be on
+            screen with the ring, not scrolled away above it. */}
+        <WordSwapEyebrow swapKey={passageState.activeIndex} />
         <nav className="transformation-gallery__feature-nav" aria-label="Featured transformation passage" ref={featuredNavRef}>
           <button type="button" disabled={!hydrated || passageState.activeIndex === 0} onClick={() => scrollToFeatured(0)}>First <span className="visually-hidden">featured project</span></button>
           <button type="button" disabled={!hydrated || passageState.activeIndex === 0} onClick={() => scrollToFeatured(Math.max(0, passageState.activeIndex - 1))} aria-label="Previous featured project">←</button>
@@ -322,47 +516,54 @@ export default function TransformationGallery({ allowPending = false }: Props) {
           <a href="#transformation-explore">Skip featured comparisons</a>
         </nav>
         <div className="transformation-gallery__featured-window" ref={featuredWindowRef}>
-          {pairs.map((project, index) => {
-            const active = index === passageState.activeIndex;
-            const distance = index - passageState.position;
-            const load = getImageLoadingState(index, passageState.activeIndex, pairs.length);
-            return <div
-              className="transformation-gallery__featured-panel"
-              data-featured-panel
-              data-active={active}
-              aria-hidden={passageEnabled && !active ? true : undefined}
-              inert={passageEnabled && !active ? true : undefined}
-              key={project.id}
-              ref={index === 0 ? firstFeaturedRef : undefined}
-              style={{
-                '--panel-x': `${distance * 104}%`,
-                '--panel-y': `${Math.min(24, Math.abs(distance) * 18)}px`,
-                '--panel-tilt': `${active ? 0 : Math.max(-1.5, Math.min(1.5, distance * 1.25))}deg`,
-                '--panel-scale': active ? 1 : .955,
-              } as CSSProperties}
-            >
-              <Comparison
-                project={project}
-                instance="featured"
-                reveal={reveals[project.id] ?? INITIAL_REVEAL}
-                onReveal={(value) => updateReveal(project.id, value)}
-                hydrated={hydrated}
-                full={!hydrated || load.full}
-                loading={hydrated ? load.loading : 'lazy'}
-                // Hovering holds the card that is already showing; it never
-                // retargets the passage, so a card sliding under the cursor
-                // after a jump cannot steal the counter from the card asked for.
-                onInteractionStart={() => setInteractionIndex((current) => index === passageState.activeIndex ? index : current)}
-                onInteractionEnd={() => setInteractionIndex(null)}
-                // Keyboard focus is deliberate, so it does retarget.
-                onFocusWithin={(target) => {
-                  setFeaturedNavigation({ index, scrollY: journey.scrollY });
-                  setInteractionIndex(index);
-                  focusFeatured(index, target);
-                }}
-              />
-            </div>;
-          })}
+          <div className="transformation-gallery__ring" ref={ringRef}>
+            {pairs.map((project, index) => {
+              const active = index === passageState.activeIndex;
+              const offset = index - passageState.position;
+              const load = getImageLoadingState(index, passageState.activeIndex, pairs.length);
+              return <div
+                className="transformation-gallery__featured-panel"
+                data-featured-panel
+                data-active={active}
+                data-front={passageEnabled ? active && cylinderState.inHoldWindow : undefined}
+                key={project.id}
+                ref={index === 0 ? firstFeaturedRef : undefined}
+                style={{
+                  '--card-index': index,
+                  '--card-offset': offset,
+                  // The coated side. Off on the front card, ramping up on the
+                  // faces turning away, so the ring reads as one glossed floor
+                  // catching the light rather than as a stack of photographs.
+                  '--card-shine': Math.min(.62, Math.abs(offset) * .46),
+                } as CSSProperties}
+              >
+                <span className="transformation-gallery__shine" aria-hidden="true" />
+                <Comparison
+                  project={project}
+                  instance="featured"
+                  reveal={reveals[project.id] ?? INITIAL_REVEAL}
+                  onReveal={(value) => updateReveal(project.id, value)}
+                  hydrated={hydrated}
+                  full={!hydrated || load.full}
+                  loading={hydrated ? load.loading : 'lazy'}
+                  // Hovering holds the card that is already showing; it never
+                  // retargets the passage, so a card sliding under the cursor
+                  // after a jump cannot steal the counter from the card asked for.
+                  onInteractionStart={() => setInteractionIndex((current) => index === passageState.activeIndex ? index : current)}
+                  onInteractionEnd={() => setInteractionIndex(null)}
+                  // Keyboard focus is deliberate, so it does retarget.
+                  onFocusWithin={(target) => {
+                    setFeaturedNavigation({ index, scrollY: journey.scrollY });
+                    setInteractionIndex(index);
+                    focusFeatured(index, target);
+                  }}
+                />
+              </div>;
+            })}
+          </div>
+          {/* The geometric twin of the front card: never rotated, so its rect is
+              the front slot at any ring angle. Published as `data-front-slot`. */}
+          <div className="transformation-gallery__slot" ref={slotRef} aria-hidden="true" />
         </div>
       </div>
     </div>
@@ -407,6 +608,6 @@ export default function TransformationGallery({ allowPending = false }: Props) {
         </div>
       </div>
     </section>
-    <p className="transformation-gallery__source">Source images are from the public <a href="https://www.finalfinishepoxy.ca/projects">Final Finish Epoxy project archive</a>. {render.reviewBadge ? 'Pairings shown in this review are pending publication approval.' : 'Only publication-approved pairings are shown.'}</p>
+    <p className="transformation-gallery__source">Edmonton project archive · {passageState.activeIndex + 1} of {pairs.length}. Source images are from the public <a href="https://www.finalfinishepoxy.ca/projects">Final Finish Epoxy project archive</a>. {render.reviewBadge ? 'Pairings shown in this review are pending publication approval.' : 'Only publication-approved pairings are shown.'}</p>
   </section>;
 }

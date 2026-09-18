@@ -86,13 +86,15 @@ test('desktop: in the pinned passage the inner track never scrolls — focus mov
   const gallery = page.locator('.transformation-gallery');
   await expect(gallery).toHaveAttribute('data-gallery-layout', 'passage');
 
-  // Falsifiability: the track really is a scroll container with room to move,
-  // and a forced offset is pinned back — so "scrollLeft === 0" is a constraint,
-  // not a property the element could not violate.
-  const overflow = (await trackOffsets(page)).overflow;
-  expect(overflow, 'featured track horizontal overflow').toBeGreaterThan(0);
+  // Falsifiability, restated for the cylinder. Step 9 proved the constraint by
+  // showing the track *could* scroll and was pinned back; the ring is 3D, so
+  // the honest statement is that the track has no sideways room at all here —
+  // and `cylinder.spec.ts` measures the same element having real overflow in
+  // the fallback ribbon, so this zero distinguishes two layouts rather than
+  // being a number the reader could never have produced otherwise.
   await page.evaluate(() => { document.querySelector<HTMLElement>('.transformation-gallery__featured-window')!.scrollLeft = 240; });
   await expect.poll(async () => (await trackOffsets(page)).scrollLeft).toBe(0);
+  expect((await trackOffsets(page)).overflow, 'featured track horizontal overflow while pinned').toBe(0);
 
   // Leave card 0 first so every button in the loop below is enabled.
   await gallery.getByRole('button', { name: 'Last featured project' }).click();
@@ -124,7 +126,15 @@ test('desktop: in the pinned passage the inner track never scrolls — focus mov
   }
 });
 
-test('vertical passage changes the featured project and exposes direct first, last, and skip navigation', async ({ page }) => {
+/**
+ * Step 23 made `(pointer: fine)` part of the one admission rule, so a phone
+ * project resized to desktop dimensions no longer reaches the pinned layout —
+ * which is the point of the rule. The three passage tests below are therefore
+ * Chromium-only; the phone's own path is covered by "phone, short viewport, and
+ * still preference" here and by `cylinder.spec.ts`'s fallback-ribbon test.
+ */
+test('vertical passage changes the featured project and exposes direct first, last, and skip navigation', async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== 'chromium', 'Desktop-only: a coarse pointer is never admitted to the ring.');
   await page.setViewportSize({ width: 1440, height: 1000 });
   await page.goto('/#proof', { waitUntil: 'domcontentloaded' });
   await galleryReady(page);
@@ -138,23 +148,31 @@ test('vertical passage changes the featured project and exposes direct first, la
   await expect(gallery.getByRole('link', { name: 'Skip featured comparisons' })).toBeVisible();
   await expect(gallery).toHaveAttribute('data-featured-index', '0');
 
-  const passage = gallery.locator('.transformation-gallery__passage');
-  await passage.evaluate((element) => {
-    const rect = element.getBoundingClientRect();
-    window.scrollTo({ top: window.scrollY + rect.top + element.scrollHeight - window.innerHeight - 8, behavior: 'instant' });
+  // Scroll to the end of the pin's own travel, read off the trigger rather than
+  // off a hand-rolled guess at the passage's box (which is `position: fixed`
+  // while pinned and therefore says nothing about where the pin ends).
+  await page.evaluate(() => {
+    const probe = window.__ffeCylinder;
+    if (!probe) throw new Error('cylinder probe missing — the ring was never built');
+    window.scrollTo({ top: probe.end() - 1, behavior: 'instant' });
   });
-  await expect(gallery).toHaveAttribute('data-featured-index', '2');
+  await expect.poll(() => gallery.getAttribute('data-featured-index')).toBe('2');
 
   await gallery.getByRole('button', { name: 'First featured project' }).click();
   await expect(gallery).toHaveAttribute('data-featured-index', '0');
   const firstPanel = gallery.locator('[data-featured-panel]').first();
-  await expect.poll(() => firstPanel.evaluate((element) => getComputedStyle(element).getPropertyValue('--panel-x'))).toBe('0%');
+  // Step 23: the card is settled when the ring has brought it flat into the
+  // front slot, which is `data-front` — the cylinder's equivalent of the panel
+  // transform reaching 0% in the Step 9 sliding passage.
+  await expect(firstPanel).toHaveAttribute('data-front', 'true');
+  await expect.poll(() => firstPanel.evaluate((element) => getComputedStyle(element).getPropertyValue('--card-index'))).toBe('0');
   const firstStage = firstPanel.locator('[data-comparison]');
   await firstStage.getByRole('button', { name: 'Show before photograph' }).click();
   await expect(firstStage).toHaveAttribute('data-displayed-reveal', '100');
 });
 
-test('keyboard endpoints control the matching visual layer and hover restores the committed reveal', async ({ page }) => {
+test('keyboard endpoints control the matching visual layer and hover restores the committed reveal', async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== 'chromium', 'Desktop-only: hover restore is a fine-pointer affordance.');
   await page.setViewportSize({ width: 1280, height: 900 });
   await page.goto('/#proof', { waitUntil: 'domcontentloaded' });
   await galleryReady(page);
@@ -191,7 +209,8 @@ test('keyboard endpoints control the matching visual layer and hover restores th
   await expect(slider).toHaveValue('0');
 });
 
-test('Explore all navigates native horizontal cards and keeps each divider in its own viewport card', async ({ page }) => {
+test('Explore all navigates native horizontal cards and keeps each divider in its own viewport card', async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== 'chromium', 'Desktop-only: the skip link is asserted against the pinned passage.');
   await page.setViewportSize({ width: 1280, height: 900 });
   await page.goto('/#proof', { waitUntil: 'domcontentloaded' });
   await galleryReady(page);
@@ -219,6 +238,9 @@ test('Explore all navigates native horizontal cards and keeps each divider in it
 });
 
 test('phone, short viewport, and still preference retain native flow without a sticky passage', async ({ page }) => {
+  // The phone project decodes the full-size pairs; on a machine running other
+  // agents' builds the first navigation can outrun the 30 s default.
+  test.setTimeout(120_000);
   await page.setViewportSize({ width: 390, height: 844 });
   await page.addInitScript(() => localStorage.setItem('final-finish:journey-controls:v1', JSON.stringify({ selectedFinish: 'alabaster-stone', motionPreference: 'still' })));
   await page.goto('/#proof', { waitUntil: 'domcontentloaded' });
