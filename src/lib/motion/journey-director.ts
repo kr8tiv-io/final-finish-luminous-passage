@@ -1,3 +1,5 @@
+import { dissolveWeight } from './journey-media';
+
 export const JOURNEY_CHAPTER_IDS = [
   'portico',
   'foundation',
@@ -68,6 +70,20 @@ export interface JourneyMetrics {
   readonly whiteTargets?: readonly JourneyWhiteTargetMetric[];
 }
 
+/**
+ * Who is painting the floor right now.
+ *
+ * `veil` means the WebGL compositor has confirmed a painted frame for the
+ * boundary the director asked for (`reportVeil`). Otherwise the DOM plates own
+ * the picture and `handoff` is the opacity of the incoming plate, so an
+ * unconfirmed veil — or a `balanced` device with no veil at all — still
+ * crossfades instead of cutting.
+ */
+export type JourneyMediaOwner = 'from' | 'to' | 'veil';
+
+/** Feather width of the DOM plate crossfade around the midpoint of a boundary. */
+export const JOURNEY_HANDOFF_FEATHER = 0.12;
+
 export interface JourneySnapshot {
   readonly revision: number;
   readonly activeChapter: JourneyChapterId;
@@ -89,6 +105,11 @@ export interface JourneySnapshot {
   readonly transitionFromWhite: boolean;
   readonly readingChapter: JourneyChapterId | null;
   readonly whiteTarget: JourneyWhiteTargetSnapshot | null;
+  /** `from:to` for a room boundary, `customer-reviews:white-target` for the review wipe. */
+  readonly boundaryKey: string | null;
+  readonly mediaOwner: JourneyMediaOwner;
+  /** Opacity of the incoming plate, 0 at the outgoing end and 1 at the incoming end. */
+  readonly handoff: number;
 }
 
 export interface JourneyDirector {
@@ -99,6 +120,12 @@ export interface JourneyDirector {
   readonly getServerSnapshot: () => JourneySnapshot;
   readonly invalidateGeometry: () => void;
   readonly scrollToChapter: (id: JourneyChapterId, behavior?: ScrollBehavior) => void;
+  /**
+   * Called from the compositor's `onAfterRender` once it has actually painted
+   * `boundaryKey` (or lost it). The director — never the compositor — decides
+   * what that means for the plates.
+   */
+  readonly reportVeil: (boundaryKey: string | null, confirmed: boolean) => void;
 }
 
 interface JourneyDirectorOptions {
@@ -130,6 +157,9 @@ const EMPTY_SNAPSHOT: JourneySnapshot = Object.freeze({
   transitionFromWhite: false,
   readingChapter: null,
   whiteTarget: null,
+  boundaryKey: null,
+  mediaOwner: 'from',
+  handoff: 0,
 });
 
 function chapterIndex(id: JourneyChapterId, metrics: JourneyMetrics): number {
@@ -154,6 +184,7 @@ export function sampleJourneySnapshot(
   viewportWidth = 0,
   previousScrollY = scrollY,
   previousScrollDirection: -1 | 0 | 1 = 0,
+  veilBoundary: string | null = null,
 ): JourneySnapshot {
   const chapters = [...metrics.chapters].sort((a, b) => a.start - b.start);
   if (chapters.length === 0) return Object.freeze({
@@ -190,6 +221,9 @@ export function sampleJourneySnapshot(
   let to = chapters[Math.min(chapters.length - 1, chapters.indexOf(active) + 1)] ?? active;
   let transitionProgress = 0;
   let transitionFromWhite = false;
+  let boundaryKey: string | null = null;
+  let handoff = 0;
+  let crossfading = false;
 
   if (viewportCenter >= chapters.at(-1)!.end) {
     active = chapters.at(-1)!;
@@ -200,8 +234,25 @@ export function sampleJourneySnapshot(
     to = chapters.find((chapter) => chapter.id === transition.to) ?? from;
     transitionProgress = clamp01((viewportCenter - transition.start) / Math.max(1, transition.end - transition.start));
     transitionFromWhite = Boolean(transition.fromWhiteStage);
-    active = transitionProgress < 0.5 ? from : to;
+    boundaryKey = `${from.id}:${to.id}`;
+    handoff = dissolveWeight(transitionProgress, 0.5, JOURNEY_HANDOFF_FEATHER);
+    crossfading = transitionProgress > 0 && transitionProgress < 1;
+    // The crossfade weight, not a bare `p < 0.5`, decides which room is on stage.
+    active = handoff < 0.5 ? from : to;
   }
+
+  if (whiteTarget) {
+    // The review wipe has no incoming plate to fade up, so the DOM layer keeps
+    // showing the outgoing room and only the veil can improve on it.
+    boundaryKey = `${whiteTarget.id}:white-target`;
+    handoff = 0;
+    crossfading = whiteTarget.progress > 0 && whiteTarget.progress < 1;
+  }
+
+  const veilOwnsBoundary = crossfading && boundaryKey !== null && veilBoundary === boundaryKey;
+  const mediaOwner: JourneyMediaOwner = veilOwnsBoundary
+    ? 'veil'
+    : handoff < 0.5 ? 'from' : 'to';
 
   const activeIndex = chapterIndex(active.id, metrics);
   const readingLine = scrollY + viewportHeight * 0.66;
@@ -232,6 +283,9 @@ export function sampleJourneySnapshot(
     transitionFromWhite,
     readingChapter,
     whiteTarget,
+    boundaryKey,
+    mediaOwner,
+    handoff,
   });
 }
 
@@ -251,6 +305,9 @@ function snapshotChanged(previous: JourneySnapshot, next: JourneySnapshot): bool
     || previous.scrollDirection !== next.scrollDirection
     || previous.transitionFromWhite !== next.transitionFromWhite
     || previous.readingChapter !== next.readingChapter
+    || previous.boundaryKey !== next.boundaryKey
+    || previous.mediaOwner !== next.mediaOwner
+    || previous.handoff !== next.handoff
     || previous.whiteTarget?.id !== next.whiteTarget?.id
     || previous.whiteTarget?.from !== next.whiteTarget?.from
     || previous.whiteTarget?.progress !== next.whiteTarget?.progress;
@@ -266,6 +323,7 @@ export function createJourneyDirector(options: JourneyDirectorOptions = {}): Jou
   let updateFrame = 0;
   let measureFrame = 0;
   let resizeObserver: ResizeObserver | null = null;
+  let veilBoundary: string | null = null;
 
   const publish = () => {
     updateFrame = 0;
@@ -279,6 +337,7 @@ export function createJourneyDirector(options: JourneyDirectorOptions = {}): Jou
       window.innerWidth,
       snapshot.scrollY,
       snapshot.scrollDirection,
+      veilBoundary,
     );
     if (!snapshotChanged(snapshot, next)) return;
     snapshot = next;
@@ -288,6 +347,19 @@ export function createJourneyDirector(options: JourneyDirectorOptions = {}): Jou
   const scheduleUpdate = () => {
     if (!started || updateFrame || document.visibilityState === 'hidden') return;
     updateFrame = window.requestAnimationFrame(publish);
+  };
+
+  /**
+   * Arrives from inside a render pass, so it never publishes synchronously —
+   * it records the confirmation and lets the next frame republish.
+   */
+  const reportVeil = (boundaryKey: string | null, confirmed: boolean) => {
+    const next = confirmed
+      ? boundaryKey
+      : boundaryKey === null || veilBoundary === boundaryKey ? null : veilBoundary;
+    if (next === veilBoundary) return;
+    veilBoundary = next;
+    scheduleUpdate();
   };
 
   const measure = () => {
@@ -368,6 +440,7 @@ export function createJourneyDirector(options: JourneyDirectorOptions = {}): Jou
           window.innerWidth,
           snapshot.scrollY,
           snapshot.scrollDirection,
+          veilBoundary,
         );
         if (snapshotChanged(snapshot, next)) {
           snapshot = next;
@@ -414,11 +487,13 @@ export function createJourneyDirector(options: JourneyDirectorOptions = {}): Jou
     measureFrame = 0;
     metrics = null;
     journey = null;
+    veilBoundary = null;
   };
 
   return {
     start,
     stop,
+    reportVeil,
     subscribe: (listener) => {
       listeners.add(listener);
       return () => listeners.delete(listener);

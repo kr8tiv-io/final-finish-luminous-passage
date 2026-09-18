@@ -1,3 +1,4 @@
+import type { MotionPreference } from './journey-controls';
 import type { JourneyChapterId, JourneySnapshot } from './journey-director';
 
 export interface UvTransform {
@@ -34,6 +35,11 @@ export function endpointBlend(progress: number): readonly [number, number] {
   return [1 - to, to];
 }
 
+/**
+ * Smoothstep crossfade weight. The director uses it for the DOM plate handoff,
+ * so the incoming plate is already half up at the midpoint of a boundary
+ * instead of appearing in one frame.
+ */
 export function dissolveWeight(progress: number, threshold: number, feather = 0.12): number {
   const low = threshold - feather;
   const high = threshold + feather;
@@ -78,17 +84,6 @@ export function transitionPlateChoice({ image, video }: {
   if (image && image.complete && image.naturalWidth > 0 && image.naturalHeight > 0) return 'poster';
   if (!outgoing && videoReady && video!.currentTime <= 0.12) return 'video';
   return 'fallback';
-}
-
-export function shouldUseFilmVeil(capabilities: {
-  readonly webgl2: boolean;
-  readonly reducedMotion: boolean;
-  readonly saveData: boolean;
-  readonly deviceMemory: number | null;
-  readonly motionPreference: 'auto' | 'still';
-}): boolean {
-  return capabilities.webgl2 && !capabilities.reducedMotion && !capabilities.saveData
-    && capabilities.motionPreference === 'auto';
 }
 
 export function thresholdHdrSupported(capabilities: {
@@ -176,18 +171,13 @@ export function veilFrameRequired(previouslyVisible: boolean, currentlyVisible: 
   return previouslyVisible || currentlyVisible;
 }
 
-/** The journey begins on its pouring plate; scroll controls time, not plate opacity. */
-export function openingPourOpacity(): 1 {
-  return 1;
-}
-
 /** Use this boolean as the CSS-mode effect dependency, never a scroll revision. */
 export function journeyEnhancementReady(state: {
   readonly contextReady: boolean;
   readonly plateReady: boolean;
   readonly directorRevision: number;
   readonly motionEnabled: boolean;
-  readonly motionPreference: 'auto' | 'still';
+  readonly motionPreference: MotionPreference;
 }): boolean {
   return state.contextReady && state.plateReady && state.directorRevision > 0
     && state.motionEnabled && state.motionPreference === 'auto';

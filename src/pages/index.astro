@@ -38,11 +38,6 @@ const chapterLinks = [
     <EditorialMotion client:only="react" />
     <FilmVeilLoader client:only="react" enableThresholdStudy={thresholdStudy} />
     {thresholdStudy && <p class="threshold-study-note">Local 3D study · visual direction not approved</p>}
-    <nav class="journey-rail" aria-label="Explore the floor journey">
-      {chapterLinks.map(([id, label]) => (
-        <a href={`#${id}`} data-journey-target={id}>{label}</a>
-      ))}
-    </nav>
     <section class="journey-chapter hero-chapter" id="portico" tabindex="-1" data-journey-chapter="portico" aria-labelledby="hero-title">
       <div class="pour-stage" aria-hidden="true">
         <img
