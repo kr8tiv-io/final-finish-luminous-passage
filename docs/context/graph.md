@@ -51,7 +51,7 @@ flowchart TD
     step-33["step-33: Resilience pack: webglcontextrestored recovery, "]:::stTodo
   end
   subgraph phase-5["phase-5"]
-    step-34["step-34: Budgets enforced in CI: phone = 0.8MB, desktop ="]:::stDoing
+    step-34["step-34: Budgets enforced in CI: phone = 0.8MB, desktop ="]:::stDone
     step-35["step-35: Mobile and tablet composition: per-breakpoint re"]:::stTodo
     step-36["step-36: Accessibility: axe on every route, keyboard jour"]:::stTodo
   end
@@ -599,7 +599,7 @@ flowchart TD
 - **Phase:** phase-5
 - **Tier:** S
 - **Owner(s):** ui
-- **Status:** doing
+- **Status:** done
 - **Files:** scripts/measure-delivery.mjs, quality.yml
 - **Inputs (informs):** none recorded
 - **Constraints (locks):** none recorded
