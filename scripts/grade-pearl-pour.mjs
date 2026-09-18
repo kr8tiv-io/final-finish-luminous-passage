@@ -7,7 +7,7 @@ import { fileURLToPath } from 'node:url';
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const ffmpeg = process.env.FFMPEG_PATH || 'ffmpeg';
 const ffprobe = process.env.FFPROBE_PATH || 'ffprobe';
-const source = resolve(root, 'public/videos/epoxy-pour.mp4');
+const source = resolve(root, 'assets/films/source/epoxy-pour.mp4');
 const profiles = [
   { height: 480, crf: 27 },
   { height: 720, crf: 26 },
@@ -61,4 +61,4 @@ for (const { height, crf } of profiles) {
   if (stream?.height !== height || stream?.r_frame_rate !== '24/1' || Number(stream.nb_read_frames || stream.nb_frames) !== 241) throw new Error(`Profile mismatch: ${target}`);
   assets.push({ height, crf, video: `/videos/follow-floor/${height}/epoxy-pour-pearl.mp4`, poster: `/images/brand/follow-floor/${height}/epoxy-pour-pearl-poster.jpg`, bytes: statSync(target).size, posterBytes: statSync(poster).size, sha256: digest(target), posterSha256: digest(poster), sourceSha256: digest(source), ...stream, duration: Number(metadata.format.duration) });
 }
-console.log(JSON.stringify({ source: { file: '/videos/epoxy-pour.mp4', ...sourceStream, frames: Number(sourceStream.nb_read_frames || sourceStream.nb_frames), duration: Number(sourceMetadata.format.duration) }, filter, assets }, null, 2));
+console.log(JSON.stringify({ source: { file: 'assets/films/source/epoxy-pour.mp4', ...sourceStream, frames: Number(sourceStream.nb_read_frames || sourceStream.nb_frames), duration: Number(sourceMetadata.format.duration) }, filter, assets }, null, 2));

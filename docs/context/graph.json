@@ -425,7 +425,7 @@
       "id": "gate-01",
       "type": "gate",
       "title": "Folder moved; patch saved; HARVEST.md lists every B2 keep/drop with source paths.",
-      "status": "todo"
+      "status": "done"
     },
     {
       "id": "step-02",
@@ -443,13 +443,13 @@
       "id": "gate-02",
       "type": "gate",
       "title": "src/** hash-diff vs worktree = 0; 96 originals + 384 variants decode; check/test(191)/build:staging green.",
-      "status": "todo"
+      "status": "done"
     },
     {
       "id": "step-03",
       "type": "step",
       "title": "Context layer: CONTEXT-SHEET.md, graph.json/graph.md, MOTION-VOCABULARY.md and CLAIMS-LEDGER.md stubs, ownership matrix, replace CLAUDE.md/AGENTS.md",
-      "status": "doing",
+      "status": "done",
       "phase": "phase-0",
       "tier": "S",
       "owner": "ui",
@@ -463,13 +463,13 @@
       "id": "gate-03",
       "type": "gate",
       "title": "Files present; CLAUDE.md < 200 lines; every \"do not\" from continue.md carried over.",
-      "status": "todo"
+      "status": "done"
     },
     {
       "id": "step-04",
       "type": "step",
       "title": "Tooling + harness: GSAP skills, Astro docs MCP, Context7, capture-journey.mjs + measure-delivery.mjs baseline",
-      "status": "todo",
+      "status": "done",
       "phase": "phase-0",
       "tier": "S",
       "owner": "ui",
@@ -482,13 +482,13 @@
       "id": "gate-04",
       "type": "gate",
       "title": "output/baseline/ holds captures + JSON for all chapters at three widths.",
-      "status": "todo"
+      "status": "done"
     },
     {
       "id": "step-05",
       "type": "step",
       "title": "Dev contract: port 4333, SITE_ENV=staging, serial Playwright, built app on 4334",
-      "status": "todo",
+      "status": "done",
       "phase": "phase-0",
       "tier": "H",
       "owner": "mechanical",
@@ -501,13 +501,13 @@
       "id": "gate-05",
       "type": "gate",
       "title": "Preview visible in the built-in browser; pour scrubs with scroll.",
-      "status": "todo"
+      "status": "done"
     },
     {
       "id": "step-06",
       "type": "step",
       "title": "Start the slow human gate: Denis approval pack for 23 gallery rows",
-      "status": "todo",
+      "status": "done",
       "phase": "phase-0",
       "tier": "H pack, S captions",
       "owner": "mechanical,ui",
@@ -520,13 +520,13 @@
       "id": "gate-06",
       "type": "gate",
       "title": "Pack has >= 15 candidate pairs; Matt confirms it was sent.",
-      "status": "todo"
+      "status": "done"
     },
     {
       "id": "step-07",
       "type": "step",
       "title": "Dead-code sweep + harvest port (FinishOrbit, word-reveal vocab id, rail-station data)",
-      "status": "todo",
+      "status": "done",
       "phase": "phase-1",
       "tier": "S",
       "owner": "ui",
@@ -541,13 +541,13 @@
       "id": "gate-07",
       "type": "gate",
       "title": "Tests green; 0 console errors; poster/frame-0 pixel diff < 1%; every HARVEST keeper ported or assigned to a later step.",
-      "status": "todo"
+      "status": "done"
     },
     {
       "id": "step-08",
       "type": "step",
       "title": "Handoff + tiers (one owner): mediaOwner via reportVeil, single canvas-opacity writer, tier resolver, retire .journey-rail",
-      "status": "todo",
+      "status": "doing",
       "phase": "phase-1",
       "tier": "O+",
       "owner": "motion-a",
@@ -572,7 +572,7 @@
       "id": "step-09",
       "type": "step",
       "title": "Gallery owner + production fallback: restore deleted desktop assertions, rejected admission state, never-empty fallback",
-      "status": "todo",
+      "status": "doing",
       "phase": "phase-1",
       "tier": "O",
       "owner": "motion-b",
@@ -594,7 +594,7 @@
       "id": "step-10",
       "type": "step",
       "title": "Security and delivery basics: Nodemailer advisory fix, same-origin quote API, CSP headers, expiry CI check",
-      "status": "todo",
+      "status": "doing",
       "phase": "phase-1",
       "tier": "S",
       "owner": "ui",
@@ -754,7 +754,7 @@
       "id": "step-18",
       "type": "step",
       "title": "3D navigation: full-screen menu, Flip transitions over a live floor plane, harvested chapter-station rail",
-      "status": "todo",
+      "status": "doing",
       "phase": "phase-3",
       "tier": "O+",
       "owner": "motion-b",
@@ -775,7 +775,7 @@
       "id": "step-19",
       "type": "step",
       "title": "Social proof after the pour: scroll-linked review gallery, alternating-direction arrivals, freshness check",
-      "status": "todo",
+      "status": "doing",
       "phase": "phase-3",
       "tier": "O motion, S data",
       "owner": "motion-c,ui",
@@ -817,7 +817,7 @@
       "id": "step-21",
       "type": "step",
       "title": "Preparation cutaway: layered illustrative diagram with staggered scrub lags (isladjan)",
-      "status": "todo",
+      "status": "doing",
       "phase": "phase-3",
       "tier": "S",
       "owner": "ui",
@@ -877,7 +877,7 @@
       "id": "step-24",
       "type": "step",
       "title": "Epoxy layer-mask headline (Creative Ocean): resin alpha plate as layer + mask",
-      "status": "todo",
+      "status": "doing",
       "phase": "phase-3",
       "tier": "O",
       "owner": "motion-c",

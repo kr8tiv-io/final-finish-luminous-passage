@@ -19,19 +19,6 @@
       "duration": 10.041667
     },
     {
-      "film": "walkway",
-      "height": 480,
-      "crf": 27,
-      "src": "/videos/follow-floor/480/epoxy-walkway.mp4",
-      "bytes": 772752,
-      "sha256": "98e0cfdd823f3d87a7cb0901f19594eac44b8d21f51037c0279c7b902e791c9c",
-      "sourceSha256": "3e443c4862379334cd01df05631e7683c9a6369f6c9978716a70b49de801d29a",
-      "codec_name": "h264",
-      "width": 854,
-      "r_frame_rate": "24/1",
-      "duration": 6.041667
-    },
-    {
       "film": "garage",
       "height": 480,
       "crf": 27,
@@ -71,19 +58,6 @@
       "duration": 10.041667
     },
     {
-      "film": "consultation",
-      "height": 480,
-      "crf": 27,
-      "src": "/videos/follow-floor/480/epoxy-consultation.mp4",
-      "bytes": 723644,
-      "sha256": "e35ebf6b5a58cead1c709d793b130f39d1e9b77543731ee56b63b8d78bc4e937",
-      "sourceSha256": "0db69c337d63a487a87a397e1b849aa7f162d7ccb59f4ff5041b17f55b9cecde",
-      "codec_name": "h264",
-      "width": 854,
-      "r_frame_rate": "24/1",
-      "duration": 6.041667
-    },
-    {
       "film": "pour",
       "height": 720,
       "crf": 26,
@@ -95,19 +69,6 @@
       "width": 1280,
       "r_frame_rate": "24/1",
       "duration": 10.041667
-    },
-    {
-      "film": "walkway",
-      "height": 720,
-      "crf": 26,
-      "src": "/videos/follow-floor/720/epoxy-walkway.mp4",
-      "bytes": 1771199,
-      "sha256": "1fe2f580badd96e2287e65d2ffe5352fc00136a8dbf5a55961bdcc078006d6a3",
-      "sourceSha256": "3e443c4862379334cd01df05631e7683c9a6369f6c9978716a70b49de801d29a",
-      "codec_name": "h264",
-      "width": 1280,
-      "r_frame_rate": "24/1",
-      "duration": 6.041667
     },
     {
       "film": "garage",
@@ -147,97 +108,6 @@
       "width": 1280,
       "r_frame_rate": "24/1",
       "duration": 10.041667
-    },
-    {
-      "film": "consultation",
-      "height": 720,
-      "crf": 26,
-      "src": "/videos/follow-floor/720/epoxy-consultation.mp4",
-      "bytes": 1452556,
-      "sha256": "3de22952d5ae2c0f4b2bb760f9e6d1d20459053e7761be8ab2017832a9163b51",
-      "sourceSha256": "0db69c337d63a487a87a397e1b849aa7f162d7ccb59f4ff5041b17f55b9cecde",
-      "codec_name": "h264",
-      "width": 1280,
-      "r_frame_rate": "24/1",
-      "duration": 6.041667
-    },
-    {
-      "film": "pour",
-      "height": 1080,
-      "crf": 27,
-      "src": "/videos/follow-floor/1080/epoxy-pour.mp4",
-      "bytes": 4846755,
-      "sha256": "ff0a1a0721e133ec4bababf45ffa8ea375613453dc782f0beef37ca87e4bec53",
-      "sourceSha256": "22e11bea51b3e4cca513a4cd26a6a87d262e37580b8bae2dfceb52c20aa0d4bf",
-      "codec_name": "h264",
-      "width": 1920,
-      "r_frame_rate": "24/1",
-      "duration": 10.041667
-    },
-    {
-      "film": "walkway",
-      "height": 1080,
-      "crf": 27,
-      "src": "/videos/follow-floor/1080/epoxy-walkway.mp4",
-      "bytes": 3098400,
-      "sha256": "90f0ff952d63d0e5029f47f4d00fa1bfe231baa2577723fb83a6d5b1cc1408fd",
-      "sourceSha256": "3e443c4862379334cd01df05631e7683c9a6369f6c9978716a70b49de801d29a",
-      "codec_name": "h264",
-      "width": 1920,
-      "r_frame_rate": "24/1",
-      "duration": 6.041667
-    },
-    {
-      "film": "garage",
-      "height": 1080,
-      "crf": 27,
-      "src": "/videos/follow-floor/1080/epoxy-garage.mp4",
-      "bytes": 3769372,
-      "sha256": "600e1ce63fcae8498fcd0ab9e2adbb56157f7d2365aa13b18d794057d4a040f1",
-      "sourceSha256": "555209aa0e448edfb9434fa4feb136fc918d0ea177b7faecb2e397cc15f382a5",
-      "codec_name": "h264",
-      "width": 1920,
-      "r_frame_rate": "24/1",
-      "duration": 6.041667
-    },
-    {
-      "film": "basement",
-      "height": 1080,
-      "crf": 27,
-      "src": "/videos/follow-floor/1080/epoxy-basement.mp4",
-      "bytes": 1878192,
-      "sha256": "4ec9ce46579b5fcb9076082bb32745b74edc24b5ea8ce7d170f04ffcfde8199a",
-      "sourceSha256": "6394ab459ecf44093479b6b632a14f6609e5a2c5bc67db0af0e276ec1c40f7e1",
-      "codec_name": "h264",
-      "width": 1920,
-      "r_frame_rate": "24/1",
-      "duration": 6.041667
-    },
-    {
-      "film": "finish",
-      "height": 1080,
-      "crf": 27,
-      "src": "/videos/follow-floor/1080/epoxy-finish.mp4",
-      "bytes": 3826979,
-      "sha256": "037b75c57956602012ca84abeff163779c845917d53a28c16ea64ef03a80c1d4",
-      "sourceSha256": "dba08a6e85d4304e7c5bff12e546e22f37a2f8577be5db490205a1532acf0660",
-      "codec_name": "h264",
-      "width": 1920,
-      "r_frame_rate": "24/1",
-      "duration": 10.041667
-    },
-    {
-      "film": "consultation",
-      "height": 1080,
-      "crf": 27,
-      "src": "/videos/follow-floor/1080/epoxy-consultation.mp4",
-      "bytes": 2522032,
-      "sha256": "9cad9933b4e5790a6319d178c66796cbcf2e9d4f6f19a4b9eb5fca3344d0bb02",
-      "sourceSha256": "0db69c337d63a487a87a397e1b849aa7f162d7ccb59f4ff5041b17f55b9cecde",
-      "codec_name": "h264",
-      "width": 1920,
-      "r_frame_rate": "24/1",
-      "duration": 6.041667
     }
   ]
 }

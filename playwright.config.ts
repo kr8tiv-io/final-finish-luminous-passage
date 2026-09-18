@@ -1,5 +1,9 @@
 import { defineConfig, devices } from '@playwright/test';
 
+// FFE_BASE_URL lets parallel worktree agents (and CI) point the suite at an already-running
+// built app on their own port instead of booting the shared dev server on 4333.
+const externalBaseUrl = process.env.FFE_BASE_URL;
+
 export default defineConfig({
   testDir: './tests/e2e',
   // Astro's Windows dev server can stall while compiling several fresh routes at once.
@@ -9,20 +13,22 @@ export default defineConfig({
   retries: process.env.CI ? 2 : 0,
   reporter: 'list',
   use: {
-    baseURL: 'http://127.0.0.1:4333',
+    baseURL: externalBaseUrl ?? 'http://127.0.0.1:4333',
     trace: 'retain-on-failure',
   },
-  webServer: {
-    command: 'npm run dev -- --host 127.0.0.1 --port 4333',
-    url: 'http://127.0.0.1:4333',
-    reuseExistingServer: true,
-    timeout: 120_000,
-    env: {
-      ASTRO_DEV_BACKGROUND: '0',
-      SITE_ENV: 'staging',
-      PUBLIC_SITE_URL: 'http://127.0.0.1:4333',
-    },
-  },
+  webServer: externalBaseUrl
+    ? undefined
+    : {
+        command: 'npm run dev -- --host 127.0.0.1 --port 4333',
+        url: 'http://127.0.0.1:4333',
+        reuseExistingServer: true,
+        timeout: 120_000,
+        env: {
+          ASTRO_DEV_BACKGROUND: '0',
+          SITE_ENV: 'staging',
+          PUBLIC_SITE_URL: 'http://127.0.0.1:4333',
+        },
+      },
   projects: [
     { name: 'chromium', use: { ...devices['Desktop Chrome'] } },
     { name: 'mobile-safari', use: { ...devices['iPhone 15 Pro'] } },

@@ -9,16 +9,16 @@ flowchart TD
   subgraph phase-0["phase-0"]
     step-01["step-01: Move G3 to archive; save reference patch; write "]:::stDone
     step-02["step-02: Fresh clone into C:\workspace\final-finish-epoxy"]:::stDone
-    step-03["step-03: Context layer: CONTEXT-SHEET.md, graph.json/grap"]:::stDoing
-    step-04["step-04: Tooling + harness: GSAP skills, Astro docs MCP, "]:::stTodo
-    step-05["step-05: Dev contract: port 4333, SITE_ENV=staging, seria"]:::stTodo
-    step-06["step-06: Start the slow human gate: Denis approval pack f"]:::stTodo
+    step-03["step-03: Context layer: CONTEXT-SHEET.md, graph.json/grap"]:::stDone
+    step-04["step-04: Tooling + harness: GSAP skills, Astro docs MCP, "]:::stDone
+    step-05["step-05: Dev contract: port 4333, SITE_ENV=staging, seria"]:::stDone
+    step-06["step-06: Start the slow human gate: Denis approval pack f"]:::stDone
   end
   subgraph phase-1["phase-1"]
-    step-07["step-07: Dead-code sweep + harvest port (FinishOrbit, wor"]:::stTodo
-    step-08["step-08: Handoff + tiers (one owner): mediaOwner via repo"]:::stTodo
-    step-09["step-09: Gallery owner + production fallback: restore del"]:::stTodo
-    step-10["step-10: Security and delivery basics: Nodemailer advisor"]:::stTodo
+    step-07["step-07: Dead-code sweep + harvest port (FinishOrbit, wor"]:::stDone
+    step-08["step-08: Handoff + tiers (one owner): mediaOwner via repo"]:::stDoing
+    step-09["step-09: Gallery owner + production fallback: restore del"]:::stDoing
+    step-10["step-10: Security and delivery basics: Nodemailer advisor"]:::stDoing
     step-11["step-11: One numbering, one comparison: single chapter nu"]:::stTodo
     step-12["step-12: Route transitions and island lifecycle: ClientRo"]:::stTodo
   end
@@ -30,13 +30,13 @@ flowchart TD
   end
   subgraph phase-3["phase-3"]
     step-17["step-17: Opening: keep pearl pour scrub, add 1080 source,"]:::stTodo
-    step-18["step-18: 3D navigation: full-screen menu, Flip transition"]:::stTodo
-    step-19["step-19: Social proof after the pour: scroll-linked revie"]:::stTodo
+    step-18["step-18: 3D navigation: full-screen menu, Flip transition"]:::stDoing
+    step-19["step-19: Social proof after the pour: scroll-linked revie"]:::stDoing
     step-20["step-20: Stair chapter: pearl-grade walkway film (A) vs 2"]:::stTodo
-    step-21["step-21: Preparation cutaway: layered illustrative diagra"]:::stTodo
+    step-21["step-21: Preparation cutaway: layered illustrative diagra"]:::stDoing
     step-22["step-22: Reclaim your garage or basement: garage, basemen"]:::stTodo
     step-23["step-23: See the difference: pin the inner passage, jh3y "]:::stTodo
-    step-24["step-24: Epoxy layer-mask headline (Creative Ocean): resi"]:::stTodo
+    step-24["step-24: Epoxy layer-mask headline (Creative Ocean): resi"]:::stDoing
     step-25["step-25: Finish alcove and visualizer: entrance from fini"]:::stTodo
     step-26["step-26: Commercial chapter: poster becomes a DepthPlate "]:::stTodo
     step-27["step-27: Consultation: single poster, wash only behind wo"]:::stTodo
@@ -180,7 +180,7 @@ flowchart TD
 - **Phase:** phase-0
 - **Tier:** S
 - **Owner(s):** ui
-- **Status:** doing
+- **Status:** done
 - **Files:** docs/context/*, CLAUDE.md, AGENTS.md
 - **Inputs (informs):** none recorded
 - **Constraints (locks):** none recorded
@@ -193,7 +193,7 @@ flowchart TD
 - **Phase:** phase-0
 - **Tier:** S
 - **Owner(s):** ui
-- **Status:** todo
+- **Status:** done
 - **Files:** scripts/, .mcp.json
 - **Inputs (informs):** none recorded
 - **Constraints (locks):** none recorded
@@ -206,7 +206,7 @@ flowchart TD
 - **Phase:** phase-0
 - **Tier:** H
 - **Owner(s):** mechanical
-- **Status:** todo
+- **Status:** done
 - **Files:** .claude/launch.json, README
 - **Inputs (informs):** none recorded
 - **Constraints (locks):** none recorded
@@ -219,7 +219,7 @@ flowchart TD
 - **Phase:** phase-0
 - **Tier:** H pack, S captions
 - **Owner(s):** mechanical, ui
-- **Status:** todo
+- **Status:** done
 - **Files:** docs/approvals/2026-09-project-pairs.md, scripts/build-approval-pack.mjs
 - **Inputs (informs):** none recorded
 - **Constraints (locks):** D1
@@ -232,7 +232,7 @@ flowchart TD
 - **Phase:** phase-1
 - **Tier:** S
 - **Owner(s):** ui
-- **Status:** todo
+- **Status:** done
 - **Files:** src/**, public/videos, package.json, scripts/grade-pearl-pour.mjs
 - **Inputs (informs):** none recorded
 - **Constraints (locks):** none recorded
@@ -245,7 +245,7 @@ flowchart TD
 - **Phase:** phase-1
 - **Tier:** O+
 - **Owner(s):** motion-a
-- **Status:** todo
+- **Status:** doing
 - **Files:** journey-director.ts, JourneyMotion.tsx, FilmVeil.tsx, journey-media.ts, journey-controls.ts, FilmVeilLoader.tsx, journey.css, readable-experience.css
 - **Inputs (informs):** none recorded
 - **Constraints (locks):** L1, L2, L3, L4
@@ -258,7 +258,7 @@ flowchart TD
 - **Phase:** phase-1
 - **Tier:** O
 - **Owner(s):** motion-b
-- **Status:** todo
+- **Status:** doing
 - **Files:** TransformationGallery.tsx, transformation-gallery.ts, src/lib/projects/gallery.ts, src/data/transformation-gallery.ts, projects.spec.ts
 - **Inputs (informs):** none recorded
 - **Constraints (locks):** D1
@@ -271,7 +271,7 @@ flowchart TD
 - **Phase:** phase-1
 - **Tier:** S
 - **Owner(s):** ui
-- **Status:** todo
+- **Status:** doing
 - **Files:** package.json, api/quote.ts, src/middleware.ts, test/
 - **Inputs (informs):** none recorded
 - **Constraints (locks):** none recorded
@@ -375,7 +375,7 @@ flowchart TD
 - **Phase:** phase-3
 - **Tier:** O+
 - **Owner(s):** motion-b
-- **Status:** todo
+- **Status:** doing
 - **Files:** src/components/nav/*, SiteHeader.astro, header-ribbon.ts, SurfaceCanvas.tsx
 - **Inputs (informs):** none recorded
 - **Constraints (locks):** L1, L2, L3, L4
@@ -388,7 +388,7 @@ flowchart TD
 - **Phase:** phase-3
 - **Tier:** O motion, S data
 - **Owner(s):** motion-c, ui
-- **Status:** todo
+- **Status:** doing
 - **Files:** SocialProof.astro, EditorialMotion.tsx, customer-proof.json
 - **Inputs (informs):** none recorded
 - **Constraints (locks):** none recorded
@@ -414,7 +414,7 @@ flowchart TD
 - **Phase:** phase-3
 - **Tier:** S
 - **Owner(s):** ui
-- **Status:** todo
+- **Status:** doing
 - **Files:** src/components/home/PreparationLayers.astro
 - **Inputs (informs):** none recorded
 - **Constraints (locks):** none recorded
@@ -453,7 +453,7 @@ flowchart TD
 - **Phase:** phase-3
 - **Tier:** O
 - **Owner(s):** motion-c
-- **Status:** todo
+- **Status:** doing
 - **Files:** headline-motion.ts, src/components/motion/ResinMask.astro, JourneyMotion.tsx (after 8)
 - **Inputs (informs):** none recorded
 - **Constraints (locks):** none recorded

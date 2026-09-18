@@ -15,7 +15,7 @@ for (const { height, crf } of profiles) {
   const directory = resolve(root, 'public/videos/follow-floor', String(height));
   mkdirSync(directory, { recursive: true });
   for (const film of films) {
-    const source = resolve(root, 'public/videos', `epoxy-${film}.mp4`);
+    const source = resolve(root, 'assets/films/source', `epoxy-${film}.mp4`);
     const target = resolve(directory, `epoxy-${film}.mp4`);
     if (!existsSync(target)) {
       const encoded = spawnSync(ffmpeg, ['-hide_banner', '-loglevel', 'error', '-n', '-i', source, '-an', '-vf', `scale=-2:${height},fps=24`, '-c:v', 'libx264', '-preset', 'medium', '-crf', String(crf), '-g', '6', '-keyint_min', '6', '-sc_threshold', '0', '-pix_fmt', 'yuv420p', '-movflags', '+faststart', '-threads', '2', target], { windowsHide: true, encoding: 'utf8', timeout: 180_000 });
