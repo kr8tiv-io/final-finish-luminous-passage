@@ -2,6 +2,7 @@ import { lazy, Suspense, useEffect, useState, useSyncExternalStore } from 'react
 import { journeyControls } from '../../lib/motion/journey-controls';
 import { currentJourneyTier } from '../../lib/motion/journey-tier';
 import { resolveThresholdStudyOptIn } from '../../lib/motion/journey-threshold';
+import { onRouteTeardown } from '../../lib/motion/route-lifecycle';
 import MotionErrorBoundary from './MotionErrorBoundary';
 
 const FilmVeil = lazy(() => import('./FilmVeil'));
@@ -62,10 +63,15 @@ export default function FilmVeilLoader({ enableThresholdStudy = false }: {
     };
     reduced.addEventListener('change', updateTier);
     updateTier();
-    return () => {
+    // A route swap must not leave an idle callback queued against a document that is
+    // about to be replaced: it would resolve into a `setReady(true)` on an unmounted
+    // island, downloading the compositor chunk for a page that has no `.film-veil`.
+    // The `film-veil` view itself is dropped by `route-lifecycle`'s
+    // `unregisterPageViews`, because `FilmVeil.tsx` belongs to another owner.
+    return onRouteTeardown(() => {
       reduced.removeEventListener('change', updateTier);
       clearDeferredImport();
-    };
+    });
   }, [controls.motionPreference]);
 
   const registerView = ready && admitted;

@@ -2,6 +2,43 @@ import gsap from 'gsap';
 import { journeyControls } from '../lib/motion/journey-controls';
 import { NAV_MENU_STATE_EVENT, type NavMenuStateDetail } from '../components/nav/nav-destinations';
 
+/** `/` is `home`; everything else is its first path segment, so `/services` and
+ *  `/services/concrete-solutions` share one route theme. */
+export function headerRouteKey(path:string):string {
+  return path === '/' ? 'home' : (path.split('/').filter(Boolean)[0] ?? 'home');
+}
+
+/**
+ * Re-derive everything on the header that belongs to the route.
+ *
+ * The header is `transition:persist`ed, so a swap hands the incoming page the header
+ * the *outgoing* page was rendered with — including the `aria-current="page"` the
+ * server put on the link the visitor has just left, and a `data-scrolled` earned by a
+ * scroll position that no longer exists. This is the single writer of that state
+ * after first paint, and `route-lifecycle.ts` runs it on `astro:after-swap`, the last
+ * moment before the new page is painted.
+ *
+ * The matching rule is the one `SiteHeader.astro` renders with: longest matching
+ * link wins, so `/services/commercial-epoxy-flooring` marks Commercial and not
+ * Services.
+ */
+export function syncHeaderRoute(path:string = location.pathname):void {
+  const header=document.querySelector<HTMLElement>('[data-site-header]');
+  if(!header) return;
+  // Queried from the document, not the header: while the full-screen menu is open the
+  // nav has physically moved into the overlay.
+  const links=[...document.querySelectorAll<HTMLAnchorElement>('[data-primary-navigation] a')];
+  const current=links
+    .filter(link=>path===link.pathname||path.startsWith(`${link.pathname}/`))
+    .sort((a,b)=>b.pathname.length-a.pathname.length)[0]??null;
+  links.forEach(link=>{
+    if(link===current) link.setAttribute('aria-current','page');
+    else if(link.getAttribute('aria-current')==='page') link.removeAttribute('aria-current');
+  });
+  header.dataset.route=headerRouteKey(path);
+  header.toggleAttribute('data-scrolled',scrollY>28);
+}
+
 /** The highlight moves; links and their hit areas never do. */
 export function initializeHeaderRibbon(header:HTMLElement, navigation:HTMLElement) {
   const highlight = navigation.querySelector<HTMLElement>('[data-nav-highlight]');

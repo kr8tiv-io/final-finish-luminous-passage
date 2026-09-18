@@ -300,6 +300,18 @@ export function surfaceTargetsEqual(a: SurfaceTarget, b: SurfaceTarget): boolean
 /* Store                                                                       */
 /* -------------------------------------------------------------------------- */
 
+/**
+ * Views the *layout* owns, and therefore the only ones allowed to cross a
+ * client-side navigation.
+ *
+ * `surface-floor` is registered by `SurfaceFloor` inside the `transition:persist`ed
+ * `SurfaceCanvas` island against the `transition:persist`ed band, so both ends of
+ * that registration survive the swap. `film-veil` and `nav-floor` are registered
+ * from islands inside the page body, which the swap replaces — see
+ * `unregisterPageViews`.
+ */
+export const PERSISTENT_SURFACE_VIEW_IDS: readonly string[] = Object.freeze(['surface-floor']);
+
 const EMPTY_SNAPSHOT: SurfaceSnapshot = Object.freeze({
   revision: 0,
   a: 0,
@@ -373,6 +385,28 @@ export function createSurfaceStore() {
     },
     unregisterView: (id: string) => {
       views.delete(id);
+    },
+    /**
+     * Drop every view a *document* registered and keep the layout's own. Returns how
+     * many went, so a caller can assert on the number.
+     *
+     * Astro does unmount the outgoing islands, but only on `astro:after-swap` — a
+     * window in which this registry would still be walking `.film-veil`'s rectangle
+     * on a node that is no longer in the document, and in which a
+     * `nav-floor` left over from an open menu would claim a rectangle in the page the
+     * visitor is arriving at. `route-lifecycle.ts` calls this on `astro:before-swap`
+     * instead, so the one persisted canvas crosses a navigation drawing exactly the
+     * views that still have an element.
+     */
+    unregisterPageViews: (keep: readonly string[] = PERSISTENT_SURFACE_VIEW_IDS) => {
+      let removed = 0;
+      for (const id of [...views.keys()]) {
+        if (keep.includes(id)) continue;
+        views.delete(id);
+        removed += 1;
+      }
+      if (removed > 0) store.invalidate();
+      return removed;
     },
     listViews: (): readonly SurfaceView[] =>
       [...views.values()].sort((left, right) => left.priority - right.priority),
@@ -526,6 +560,21 @@ export function createSurfaceStore() {
 
     setRenderer: (renderer: SurfaceRenderer) => {
       publish({ renderer });
+    },
+
+    /**
+     * Re-assert on the document the state this store already holds.
+     *
+     * A swap wipes it twice over: `swapRootAttributes` removes every attribute from
+     * `<html>`, `html[data-surface]` included, and the band the incoming document
+     * brought with it carries the SSR defaults. Neither is a *state* change, so
+     * `publish` short-circuits and would never write them again. The band is
+     * re-queried rather than reused, because the incoming document may have brought
+     * its own.
+     */
+    syncDocumentState: () => {
+      fallbackBand = null;
+      writeFallbackAttributes();
     },
 
     /** Test seam only — the singleton below is module state. */
