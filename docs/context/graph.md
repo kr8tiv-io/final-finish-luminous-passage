@@ -29,7 +29,7 @@ flowchart TD
     step-16["step-16: Surfaces: paper/ink/cobalt/bronze tokens, per-ch"]:::stTodo
   end
   subgraph phase-3["phase-3"]
-    step-17["step-17: Opening: keep pearl pour scrub, add 1080 source,"]:::stDoing
+    step-17["step-17: Opening: keep pearl pour scrub, add 1080 source,"]:::stDone
     step-18["step-18: 3D navigation: full-screen menu, Flip transition"]:::stDoing
     step-19["step-19: Social proof after the pour: scroll-linked revie"]:::stDone
     step-20["step-20: Stair chapter: pearl-grade walkway film (A) vs 2"]:::stDoing
@@ -365,7 +365,7 @@ flowchart TD
 - **Phase:** phase-3
 - **Tier:** O
 - **Owner(s):** motion-a
-- **Status:** doing
+- **Status:** done
 - **Files:** index.astro, FilmVeil.tsx mode 3, journey-transitions.ts
 - **Inputs (informs):** S7
 - **Constraints (locks):** L1, L2, L3, L4
