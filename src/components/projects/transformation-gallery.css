@@ -24,6 +24,7 @@
 .transformation-gallery__head,
 .transformation-gallery__photo-grid,
 .transformation-gallery__review-note,
+.transformation-gallery__eyebrow,
 .transformation-gallery__feature-nav,
 .transformation-gallery__featured-window,
 .transformation-gallery__explore-head,
@@ -126,6 +127,38 @@
   .transformation-gallery__photo-grid { grid-template-columns: 1fr; }
 }
 
+/* @motion word-swap
+   The Act 5 eyebrow. Each word sits in its own clip; a change of front card
+   remounts the inner span, which plays the swap once — the old glyphs are
+   already gone, so the arriving word rises into a clip the reader sees as the
+   same slot. Reduced motion prints both words, static, exactly as the
+   vocabulary's fallback column says. */
+.transformation-gallery__eyebrow {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  gap: .12em;
+  align-items: baseline;
+  margin-block: 0 .55rem;
+}
+
+.transformation-gallery__swap {
+  display: inline-grid;
+  overflow: hidden;
+  padding-block: .12em;
+  margin-block: -.12em;
+}
+
+.transformation-gallery__swap > span {
+  display: block;
+  animation: transformation-word-swap .45s cubic-bezier(.45, 0, .2, 1) both;
+}
+
+@keyframes transformation-word-swap {
+  from { opacity: 0; transform: translateY(105%); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
 .transformation-gallery__passage {
   position: relative;
   z-index: 1;
@@ -137,13 +170,42 @@
   top: auto;
 }
 
-.transformation-gallery--passage .transformation-gallery__passage {
-  min-height: calc(100svh + var(--passage-travel));
+/* --------------------------------------------------------------------------
+   Fallback layout — the native horizontal snap ribbon.
+   Phones, coarse pointers, short viewports, `still`, and reduced motion all
+   arrive here (`isFeaturedPassageAdmissible` / `CYLINDER_MEDIA`). One card per
+   screen, a live divider on every card, native `scroll-snap`, and no pin.
+   -------------------------------------------------------------------------- */
+.transformation-gallery__featured-window {
+  position: relative;
+  display: flex;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scroll-snap-type: x mandatory;
+  overscroll-behavior-inline: contain;
+  gap: clamp(1.25rem, 4vw, 2.5rem);
+  padding-bottom: .4rem;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(23, 52, 64, .46) transparent;
 }
 
-.transformation-gallery--passage .transformation-gallery__sticky {
-  position: sticky;
-  top: 5.5rem;
+.transformation-gallery__featured-panel {
+  flex: 0 0 100%;
+  min-width: 0;
+  scroll-snap-align: center;
+  margin-bottom: clamp(1rem, 3vw, 2rem);
+}
+
+/* In the ribbon the ring is not a box at all, so each card is a flex item of
+   the track itself and native snapping has something to snap to. */
+.transformation-gallery__ring {
+  display: contents;
+}
+
+/* The slot only exists to be measured by the cylinder. */
+.transformation-gallery__slot,
+.transformation-gallery__shine {
+  display: none;
 }
 
 .transformation-gallery__feature-nav {
@@ -196,26 +258,125 @@
   text-underline-offset: .25em;
 }
 
-.transformation-gallery__featured-window {
+/* --------------------------------------------------------------------------
+   @motion perspective-cylinder
+   Act 5's admitted layout. The cards are the faces of one regular polygon:
+   `rotateY(innerAngle x i) translateZ(radius)` places each face on the ring,
+   and the ring itself carries `translateZ(-radius)` (written by GSAP as `z`)
+   so face 0 lands exactly on the screen plane at progress 0.
+
+   The sign matters, and it is the opposite of the shorthand in the reference
+   note. With `translateZ(-radius)` the card at angle 0 is on the *far* side of
+   the cylinder, so its neighbours are nearer the camera and render *larger* —
+   the front card would be the smallest thing on screen, and the far side of the
+   ring crosses the perspective origin and smears across the frame. With
+   `translateZ(+radius)` the card at angle 0 is the nearest point of the ring,
+   every neighbour recedes, and no face can ever reach the camera plane.
+
+   The ring's `rotationY` has exactly one writer — the scrubbed tween in
+   `TransformationGallery.tsx` — so nothing in this file ever sets a transform
+   on `.transformation-gallery__ring`.
+   -------------------------------------------------------------------------- */
+.transformation-gallery--cylinder .transformation-gallery__passage {
+  --pin-top: 88px;
+  min-height: calc(100svh - var(--pin-top));
+}
+
+.transformation-gallery--cylinder .transformation-gallery__featured-window {
+  --cylinder-card-width: min(48rem, 48vw);
+  --cylinder-pad: 1rem;
+  display: block;
+  overflow: hidden;
+  padding-block: var(--cylinder-pad);
+  padding-bottom: var(--cylinder-pad);
+  gap: 0;
+  scroll-snap-type: none;
+  perspective: 1600px;
+  perspective-origin: 50% 44%;
+  /* Edge fade: the ring keeps turning past the frame instead of ending at it. */
+  mask-image: linear-gradient(90deg, transparent 0, #000 13%, #000 87%, transparent 100%);
+}
+
+/* In flow, so the window's height is the front card's own height at every ring
+   angle — a rotation never changes layout, which is why nothing here has to
+   measure a panel and feed it back as a pixel height. */
+.transformation-gallery--cylinder .transformation-gallery__ring {
+  display: block;
+  position: relative;
+  transform-style: preserve-3d;
+  /* The ring is geometry, not a surface. Its own box is a full-width plate
+     sitting one radius off the screen plane; left hittable it would collect
+     every pointer event meant for a card. The cards take them back below. */
+  pointer-events: none;
+}
+
+.transformation-gallery--cylinder .transformation-gallery__featured-panel {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  flex: none;
+  width: var(--cylinder-card-width);
+  margin: 0 0 0 calc(var(--cylinder-card-width) / -2);
+  /* Flat, deliberately: `backface-visibility` only hides a subtree that has
+     been flattened into its own plane, and a card turned past 90 degrees has to
+     disappear whole rather than leave its photographs facing the camera. */
+  transform: rotateY(calc(var(--cylinder-inner-angle) * var(--card-index))) translateZ(calc(var(--cylinder-radius) * 1px));
+  transform-style: flat;
+  backface-visibility: hidden;
+  pointer-events: auto;
+  will-change: transform;
+}
+
+/* Card 0 alone stays in flow: it is the ring's height. */
+.transformation-gallery--cylinder .transformation-gallery__featured-panel:first-child {
   position: relative;
 }
 
-.transformation-gallery__featured-panel {
-  margin-bottom: clamp(3rem, 7vw, 6rem);
+/* The front card is flat and largest. The lift is proportional to the hold
+   window, so it is fully applied exactly while the card is being read. */
+.transformation-gallery--cylinder .transformation-gallery__featured-panel[data-front='true'] {
+  transform:
+    rotateY(calc(var(--cylinder-inner-angle) * var(--card-index)))
+    translateZ(calc(var(--cylinder-radius) * 1px))
+    translateZ(calc(var(--front-emphasis, 0) * 22px));
 }
 
-.transformation-gallery--passage .transformation-gallery__featured-window {
-  height: var(--featured-panel-height);
-  overflow: hidden;
-}
-
-.transformation-gallery--passage .transformation-gallery__featured-panel {
+/* The coated side: a sheen on the faces turning away, tracking the direction
+   they turn, absent on the card being read. */
+.transformation-gallery--cylinder .transformation-gallery__shine {
   position: absolute;
-  inset: 0;
-  margin: 0;
-  transform: translate3d(var(--panel-x), var(--panel-y), 0) rotate(var(--panel-tilt)) scale(var(--panel-scale));
-  transform-origin: 50% 80%;
-  will-change: transform;
+  z-index: 12;
+  inset: 0 0 auto;
+  display: block;
+  aspect-ratio: 4 / 3;
+  content: '';
+  pointer-events: none;
+  opacity: var(--card-shine, 0);
+  background: linear-gradient(104deg, rgba(255, 253, 248, 0) 26%, rgba(255, 253, 248, .72) 48%, rgba(190, 214, 222, .34) 60%, rgba(255, 253, 248, 0) 78%);
+  transform: translateX(calc(var(--card-offset, 0) * -14%));
+}
+
+/* The geometric twin of the front card: the box a card occupies once the ring
+   has brought it to `rotateY(0), z 0`. Never transformed, so its rect is the
+   front slot at any ring angle — published as `data-front-slot` for a later
+   step's `shrink-to-card` to land on. */
+.transformation-gallery--cylinder .transformation-gallery__slot {
+  position: absolute;
+  top: var(--cylinder-pad);
+  bottom: var(--cylinder-pad);
+  left: 50%;
+  display: block;
+  width: var(--cylinder-card-width);
+  margin-left: calc(var(--cylinder-card-width) / -2);
+  pointer-events: none;
+  visibility: hidden;
+}
+
+/* Only the front card owns a live divider. The others keep the same painted
+   divider and stay keyboard-reachable — `pointer-events` does not change tab
+   order — so Tab still brings a card to the front slot. */
+.transformation-gallery--cylinder .transformation-gallery__featured-panel:not([data-front='true']) .transformation-stage {
+  pointer-events: none;
 }
 
 /* The comparison itself (`.transformation-comparison`, `.transformation-stage`
@@ -223,6 +384,31 @@
    that owns it. Only the gallery's own framing of it stays here. */
 .transformation-gallery__featured-panel .transformation-stage {
   width: min(100%, calc((100svh - 19rem) * 4 / 3));
+}
+
+/* A cylinder card is narrower than a full-width one, so the same caption wraps
+   to more lines on it. The pin has a fixed height budget, so the caption is
+   given a smaller type scale and the photograph a deeper vertical reserve —
+   otherwise the last pair's three-line title falls out of the frame at 900 px. */
+.transformation-gallery--cylinder .transformation-gallery__featured-panel .transformation-stage {
+  width: min(100%, calc((100svh - 26rem) * 4 / 3));
+}
+
+.transformation-gallery--cylinder .transformation-caption {
+  padding-top: .85rem;
+  grid-template-columns: minmax(0, 1.05fr) minmax(0, .95fr);
+  gap: clamp(1rem, 2.6vw, 2rem);
+}
+
+.transformation-gallery--cylinder .transformation-caption h3 {
+  margin-bottom: .7rem;
+  font-size: clamp(1.35rem, 2.1vw, 2.05rem);
+}
+
+.transformation-gallery--cylinder .transformation-rationale {
+  margin-bottom: .7rem;
+  font-size: .9375rem;
+  line-height: 1.55;
 }
 
 .transformation-gallery__explore {
@@ -372,4 +558,6 @@
 
 @media (prefers-reduced-motion: reduce) {
   .transformation-gallery__slide { transition: none; }
+  /* Both words printed, static, joined by the arrow. */
+  .transformation-gallery__swap > span { animation: none; }
 }
