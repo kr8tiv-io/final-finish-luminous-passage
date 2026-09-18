@@ -1,4 +1,61 @@
-@import '@fontsource-variable/manrope';
+/* Manrope, self-hosted, one file (Step 13).
+ *
+ * This replaced a bare CSS import of the @fontsource-variable Manrope package,
+ * which pulled in six @font-face rules over six woff2 files. A browser only
+ * downloads the subsets
+ * whose unicode-range it needs, so the transfer cost was never six files — but
+ * the URLs were Vite-hashed build output, which meant nothing in `<head>` could
+ * preload them, and the font was therefore discovered only after the CSS had
+ * parsed. `output/step-13/codepoint-scan.mjs` walks every source file that can
+ * contribute rendered text and finds zero codepoints in the five dropped
+ * subsets (cyrillic, cyrillic-ext, greek, vietnamese, latin-ext); the nine
+ * non-latin characters the site does use (arrows, ★, ✓, ≈, Ⅱ, ▶) are covered by
+ * no Manrope subset at all and already fell back to a system font before this
+ * step. Serving the latin file from `public/` gives it a stable path that
+ * `BaseLayout.astro` preloads by name.
+ *
+ * `@fontsource-variable/manrope` stays in devDependencies as this file's
+ * provenance: `public/fonts/manrope-latin-var.woff2` is a byte-for-byte copy of
+ * its `files/manrope-latin-wght-normal.woff2`, and the unicode-range below is
+ * verbatim from its `index.css`. Regenerate by copying that file again.
+ */
+@font-face {
+  font-family: 'Manrope Variable';
+  font-style: normal;
+  font-weight: 200 800;
+  font-display: swap;
+  src: url('/fonts/manrope-latin-var.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA,
+    U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193,
+    U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+/* The metric-matched stand-in that holds the layout while the swap is in
+ * flight. Manrope's own line box is 1.366em (hhea 2132/-600 over a 2000 upm)
+ * against Arial's 1.150em — a 19% difference that, left alone, reflows every
+ * paragraph the moment the real font lands and forces GSAP's SplitText to
+ * re-split the hero against a different set of line breaks.
+ *
+ * The four descriptors are measured, not guessed: `output/step-13/font-metrics.py`
+ * pins the variable font to wght 400 (its fvar default is 200, so a naive read
+ * measures the thinnest instance), takes the letter-frequency-weighted mean
+ * advance width of both families, and prints
+ *   size-adjust = avg(Manrope)/avg(Arial), the overrides = hhea/upm/size-adjust.
+ * Arial, Helvetica and Liberation Sans are metrically compatible, which is why
+ * one set of numbers covers all three; a machine with none of them falls
+ * through to 'Segoe UI' unadjusted, which is worse than this and better than a
+ * blank frame.
+ */
+@font-face {
+  font-family: 'Manrope Fallback';
+  font-style: normal;
+  font-weight: 200 800;
+  src: local('Arial'), local('Helvetica Neue'), local('Liberation Sans');
+  size-adjust: 101.91%;
+  ascent-override: 104.61%;
+  descent-override: 29.44%;
+  line-gap-override: 0%;
+}
 
 :root {
   color-scheme: light;
@@ -14,7 +71,7 @@
   --bronze: #a57d42;
   --line: rgba(23, 34, 42, 0.16);
   --shadow: 0 28px 80px rgba(31, 39, 42, 0.12);
-  --sans: 'Manrope Variable', 'Segoe UI', sans-serif;
+  --sans: 'Manrope Variable', 'Manrope Fallback', 'Segoe UI', Arial, sans-serif;
   --serif: var(--sans);
   --body: var(--sans);
   --ease-out: cubic-bezier(.22, 1, .36, 1);

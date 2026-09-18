@@ -1,39 +1,123 @@
 /* The reading layer is deliberately separate from the cinematic layer.
    No animation library owns these layout, type, or contrast properties. */
+/* ── The type scale (Step 13) ───────────────────────────────────────────────
+ *
+ * Manrope only — no second family, no weight the wght axis (200–800) cannot
+ * reach. Two scales, because display type and reading type do not want the
+ * same ratio:
+ *
+ *   Reading   caption 14 · body 16→18 · lead 18→22
+ *             14 px is a fixed UI size, not a fluid step: it is the floor the
+ *             contrast work measures against and it must not drift under a
+ *             viewport. Body lands at 17.3 px on a 1440 desktop and 16 px on a
+ *             390 phone; lead is body x 1.25 at the top of its band.
+ *
+ *   Display   chapter 36→80 · hero 44→112
+ *             The pair opens as the viewport widens — hero/chapter is 1.22 on a
+ *             phone and 1.40 from 1647 px up — so a phone reads one strong
+ *             voice and a desktop reads a hierarchy.
+ *
+ * Every optical token is a clamp over the SAME band as the size it serves, so
+ * tracking and leading stay continuous with font-size at both ends instead of
+ * stepping at a media query. Each is a straight line through the two endpoints
+ * of that band; the derivation is in the comment beside it, and re-deriving it
+ * is the way to change it. `tests/e2e/typography.spec.ts` asserts the scale is
+ * monotonic, that caption is exactly 14 px, and that the hero's tracking
+ * tightens (never loosens) from 390 to 1440.
+ * ─────────────────────────────────────────────────────────────────────────── */
 :root {
-  --type-hero: clamp(2.75rem, 6.8vw, 7rem);
-  --type-chapter: clamp(2.25rem, 5.25vw, 5rem);
-  --type-lead: clamp(1.125rem, 1.5vw, 1.375rem);
-  --type-body: clamp(1rem, 1.2vw, 1.125rem);
-  --type-caption: .875rem;
+  /* Sizes. Band = the viewport range over which the middle term is live. */
+  --type-hero: clamp(2.75rem, 6.8vw, 7rem);       /* 44 → 112px, band 647–1647px */
+  --type-chapter: clamp(2.25rem, 5.25vw, 5rem);   /* 36 → 80px,  band 686–1524px */
+  --type-lead: clamp(1.125rem, 1.5vw, 1.375rem);  /* 18 → 22px,  band 1200–1467px */
+  --type-body: clamp(1rem, 1.2vw, 1.125rem);      /* 16 → 18px,  band 1333–1500px */
+  --type-caption: .875rem;                        /* 14px, fixed */
+
+  /* Tracking. Large type closes up, small type needs the air: −0.030em at the
+     top of a display range, −0.018em at the bottom. Solved in px because the
+     middle term has to be a vw length, and em inside a clamp would resolve
+     against a font-size that is itself still being clamped.
+       hero    −0.79px @44px … −3.36px @112px, fs = 6.8vw  →  0.873px − 0.257vw
+       chapter −0.65px @36px … −2.24px @80px,  fs = 5.25vw →  0.655px − 0.190vw */
+  --tracking-hero: clamp(-3.36px, 0.873px - 0.257vw, -0.79px);
+  --tracking-chapter: clamp(-2.24px, 0.655px - 0.19vw, -0.65px);
+  --tracking-lead: 0em;
+  --tracking-body: 0em;
+  --tracking-caption: .08em;  /* uppercase labels only — see --tracking-ui */
+  --tracking-ui: .02em;       /* buttons and nav: sentence case, barely opened */
+
+  /* Leading. 0.96 at the top of the hero range easing to 1.00 at the bottom,
+     1.02 → 1.08 for chapter. Stated as a length so it can ride the same vw band
+     as the size; a unitless line-height cannot be interpolated. Linearised
+     between the two endpoints — the exact curve is quadratic in font-size and
+     departs from this line by under 0.7 px at the midpoint. */
+  --leading-hero: clamp(2.75rem, 6.35vw + 0.182rem, 6.72rem);    /* 44 → 107.5px */
+  --leading-chapter: clamp(2.43rem, 5.1vw + 0.246rem, 5.1rem);   /* 38.9 → 81.6px */
+  --leading-lead: 1.5;
+  --leading-body: 1.65;
+  --leading-caption: 1.5;
+
+  /* Weights. Display type carries less weight than reading type at the same
+     optical size, which is why hero sits below chapter here and takes weight
+     back on a phone (the 680px block below) where it is only 44 px tall. */
+  --weight-hero: 520;
+  --weight-chapter: 550;
+  --weight-body: 400;
+  --weight-ui: 600;
+
+  /* Measure and paragraph rhythm. */
+  --measure-body: 64ch;     /* inside the 60–68ch reading band */
+  --measure-lead: 43ch;
+  --rhythm-paragraph: 1.25rem;
+  --rhythm-block: 2rem;
+
   --reading-space: clamp(4rem, 8vw, 11rem);
 }
-body { font-size: var(--type-body); }
-body :is(.display-title, .interlude-title, .section-title) { font-family: var(--sans); font-weight: 550; letter-spacing: -.025em; line-height: 1.08; }
-body .display-title { font-size: var(--type-hero); }
-body .chapter-title { font-size: var(--type-chapter); font-weight: 550; line-height: 1.08; letter-spacing: -.025em; }
-body .lead { font-size: var(--type-lead); line-height: 1.5; letter-spacing: 0; }
-body :is(.eyebrow, .section-kicker) { font-size: var(--type-caption); letter-spacing: .075em; line-height: 1.5; }
-body :is(.button, .header-cta, .menu-toggle) { min-height: 2.75rem; font-size: var(--type-caption); }
+body { font-size: var(--type-body); font-weight: var(--weight-body); line-height: var(--leading-body); letter-spacing: var(--tracking-body); }
+body :is(.display-title, .interlude-title, .section-title) { font-family: var(--sans); }
+body .display-title { font-size: var(--type-hero); font-weight: var(--weight-hero); line-height: var(--leading-hero); letter-spacing: var(--tracking-hero); }
+body :is(.chapter-title, .interlude-title, .section-title) { font-size: var(--type-chapter); font-weight: var(--weight-chapter); line-height: var(--leading-chapter); letter-spacing: var(--tracking-chapter); }
+body .lead { font-size: var(--type-lead); line-height: var(--leading-lead); letter-spacing: var(--tracking-lead); }
+/* `.eyebrow` and `.section-kicker` are already uppercase in global.css:169 and
+   SectionShell.astro:12; this sets the tracking and weight the caption token
+   specifies, and nothing else. Elements a previous readability pass explicitly
+   un-uppercased — `.chapter-index` and `.material-lens figcaption` below —
+   take the caption SIZE and keep their `text-transform: none`. */
+body :is(.eyebrow, .section-kicker) { font-size: var(--type-caption); font-weight: var(--weight-ui); letter-spacing: var(--tracking-caption); line-height: var(--leading-caption); }
+body :is(.button, .header-cta, .menu-toggle) { min-height: 2.75rem; font-size: var(--type-caption); font-weight: var(--weight-ui); }
+body :is(.button, .header-cta) { letter-spacing: var(--tracking-ui); }
+/* The menu toggle is an uppercase pill (global.css:358), so it takes the
+   caption tracking, not the sentence-case UI tracking. */
+body .menu-toggle { letter-spacing: var(--tracking-caption); }
 body .site-header { grid-template-columns: minmax(72px,1fr) auto minmax(132px,1fr); background: rgba(250,249,246,.97); }
-body .site-header [data-primary-navigation] a { font-size: var(--type-caption); letter-spacing: 0; padding-inline: .8rem; }
-body :is(.footer-meta, .footer-areas a) { font-size: var(--type-caption); letter-spacing: .02em; }
+body .site-header [data-primary-navigation] a { font-size: var(--type-caption); font-weight: var(--weight-ui); letter-spacing: 0; padding-inline: .8rem; }
+body .footer-meta { font-size: var(--type-caption); letter-spacing: var(--tracking-ui); }
+/* `.footer-areas a` is uppercase (global.css:348) — caption tracking. */
+body .footer-areas a { font-size: var(--type-caption); letter-spacing: var(--tracking-caption); }
 body .button { transition-duration: 200ms; }
 body .button-primary::before { width: 100%; transform: scaleX(0); transform-origin: right; transition: transform 200ms var(--ease-out); }
 body .button-primary:is(:hover,:focus-visible)::before { transform: scaleX(1); transform-origin: left; }
 body .nav-label, body .nav-label-echo { transition-duration: 220ms; }
 body .header-progress > span { background: var(--cobalt); }
 
-body .journey .display-title { font: 550 var(--type-hero)/1.02 var(--sans); letter-spacing: -.035em; max-width: 12.5ch; }
-body .journey .chapter-title { font: 550 var(--type-chapter)/1.08 var(--sans); letter-spacing: -.025em; max-width: 15ch; }
-body .journey .interlude-title { font-size: var(--type-chapter); font-weight: 550; letter-spacing: -.025em; line-height: 1.08; }
-body .journey .lead { font-size: var(--type-lead); line-height: 1.5; letter-spacing: 0; max-width: 43ch; }
-body .journey .eyebrow { font-size: var(--type-caption); line-height: 1.5; letter-spacing: .075em; margin-bottom: 1.25rem; }
+/* Longhand, not the `font:` shorthand these two used to carry: the shorthand
+   resets every font property it does not name, which silently wiped the
+   `font-variant-numeric: tabular-nums` the numerals rule below sets. */
+body .journey .display-title { font-family: var(--sans); font-size: var(--type-hero); font-weight: var(--weight-hero); line-height: var(--leading-hero); letter-spacing: var(--tracking-hero); max-width: 12.5ch; }
+body .journey .chapter-title { font-family: var(--sans); font-size: var(--type-chapter); font-weight: var(--weight-chapter); line-height: var(--leading-chapter); letter-spacing: var(--tracking-chapter); max-width: 15ch; }
+body .journey .interlude-title { font-size: var(--type-chapter); font-weight: var(--weight-chapter); letter-spacing: var(--tracking-chapter); line-height: var(--leading-chapter); }
+body .journey .lead { font-size: var(--type-lead); line-height: var(--leading-lead); letter-spacing: var(--tracking-lead); max-width: var(--measure-lead); }
+body .journey .eyebrow { font-size: var(--type-caption); font-weight: var(--weight-ui); line-height: var(--leading-caption); letter-spacing: var(--tracking-caption); margin-bottom: 1.25rem; }
 body .journey .chapter-content :is(.display-title,.chapter-title,.lead,.eyebrow) { text-shadow: none; }
 /* Section feathers blend the films beneath the settled reading layer. */
 body .journey :is(.chapter-content,.chapter-index) { z-index: 5; }
-body .journey .button { font-size: var(--type-caption); }
+body .journey .button { font-size: var(--type-caption); font-weight: var(--weight-ui); }
 body .journey .button-secondary { background: var(--paper); border-color: var(--cobalt); }
+/* The hero ribbon and act index: 14 px is the caption token's fixed size, which
+   is what the contrast report measures these spans at. Their tracking stays at
+   the .015em a previous pass settled on rather than the caption token's .08em —
+   these are sentence-case, not uppercase labels (`.chapter-index` is explicitly
+   `text-transform: none` below). Step 16 owns the backgrounds behind them. */
 body .journey :is(.text-call,.hero-proof,.hero-proof small,.chapter-index,.chapter-index span,.hero-ribbon a,.hero-ribbon a span) { font-size: var(--type-caption); letter-spacing: .015em; }
 body .journey .hero-content { padding-right: 42%; padding-left: 0; }
 body .journey .hero-chapter { min-height: max(100svh,52rem); padding-top: 9rem; padding-bottom: 10rem; align-content: center; }
@@ -63,10 +147,10 @@ body .journey .chapter-reading { padding-top: 1rem; padding-bottom: clamp(4rem,8
 body .journey .chapter-reading::before { display: none; }
 .chapter-reading-inner { display: grid; grid-template-columns: minmax(12rem,.65fr) minmax(0,1.35fr); gap: clamp(2rem,7vw,8rem); }
 .reading-label { display: flex; align-items: baseline; gap: 1rem; padding-top: .25rem; }
-.reading-label span { color: var(--cobalt); font-size: .875rem; font-variant-numeric: tabular-nums; }
-.reading-label strong { font-size: .875rem; font-weight: 650; line-height: 1.5; }
-.reading-body { max-width: 62ch; }
-.reading-body p { font-size: var(--type-body); line-height: 1.65; color: #3f4e57; margin: 0 0 1.25rem; opacity: 1; }
+.reading-label span { color: var(--cobalt); font-size: var(--type-caption); font-variant-numeric: tabular-nums; }
+.reading-label strong { font-size: var(--type-caption); font-weight: var(--weight-ui); line-height: var(--leading-caption); }
+.reading-body { max-width: var(--measure-body); }
+.reading-body p { font-size: var(--type-body); line-height: var(--leading-body); color: #3f4e57; margin: 0 0 var(--rhythm-paragraph); opacity: 1; }
 .reading-body .chapter-link { margin-top: .25rem; }
 body .journey .journey-breath { min-height: 42svh; }
 body .journey .journey-breath[data-hall-to='foundation'], body .journey .journey-breath[data-hall-from='foundation'] { min-height: 56svh; }
@@ -75,16 +159,26 @@ body .journey .journey-breath--end { min-height: 2rem; }
 
 body .journey .social-heading { gap: clamp(2rem,7vw,8rem); padding-bottom: 2rem; }
 body .journey .rating-number { letter-spacing: -.045em; }
-body .journey .social-intro > p:not(.eyebrow) { font-size: var(--type-body); line-height: 1.65; }
+body .journey .social-intro > p:not(.eyebrow) { font-size: var(--type-body); line-height: var(--leading-body); }
 body .journey :is(.google-rating small,.review-link-help,.review-card-top,.review-card footer strong,.review-card footer a,.review-topic,.review-position,.review-bottom p,.review-bottom a,.review-monogram) { font-size: var(--type-caption); letter-spacing: 0; color: #465761; }
+body .journey :is(.review-card footer strong,.review-monogram) { font-weight: var(--weight-ui); }
 body .journey .review-card { flex-basis: calc((100vw - 2 * var(--gutter) - 3rem) / 3); min-height: 0; padding: 1.5rem; border-radius: .35rem; background: linear-gradient(180deg,#fff,rgba(255,255,255,.65)); box-shadow: none; }
-body .journey .review-card > p { font-size: var(--type-body); line-height: 1.65; letter-spacing: 0; }
+body .journey .review-card > p { font-size: var(--type-body); font-weight: var(--weight-body); line-height: var(--leading-body); letter-spacing: 0; }
 body .journey .review-topic { padding-top: .8rem; }
 body .journey .review-controls { padding-right: 0; }
 body .journey .review-position { min-width: 5rem; }
 body .journey .review-stars { color: var(--cobalt); }
-body .journey :is(.story-intro,.story-detail p,.planning-intro > p:last-child,.planning-answer p) { font-size: var(--type-body); line-height: 1.65; }
+body .journey :is(.story-intro,.story-detail p,.planning-intro > p:last-child,.planning-answer p) { font-size: var(--type-body); line-height: var(--leading-body); }
 body .journey :is(.story-photo figcaption,.story-detail small,.planning-answer a,.planning-number) { font-size: var(--type-caption); letter-spacing: 0; }
+
+/* Tabular figures. The act numbers and the rating block are columns of digits
+   that have to hold their position while the film moves behind them and while
+   the carousel advances; Manrope's proportional figures let a 1 shrink the
+   column and the number appears to twitch. `.reading-label span`,
+   `.hero-ribbon a span`, `.review-position` and `.planning-number` already
+   carried this in their own files — the two title rules above used to reset it
+   through the `font:` shorthand, which is why it is stated once, here. */
+body .journey :is(.chapter-index,.chapter-index span,.hero-ribbon a span,.reading-label span,.planning-number,.review-position,.rating-number,.rating-number span,.rating-count,.google-rating small,.review-card-top,.material-lens figcaption) { font-variant-numeric: tabular-nums; }
 body .journey .story-photo picture { mask-image: radial-gradient(ellipse 67% 65% at 46% 50%,#000 51%,rgba(0,0,0,.95) 65%,transparent 100%); }
 body .journey .story-photo--finish picture { mask-image: radial-gradient(ellipse 65% 68% at 54% 48%,#000 51%,rgba(0,0,0,.95) 65%,transparent 100%); }
 body .journey .story-heading { margin-bottom: 3rem; }
@@ -99,7 +193,10 @@ body .journey .story-heading { margin-bottom: 3rem; }
   body .journey .review-card { flex-basis: calc((100vw - 2 * var(--gutter) - 1.5rem) / 2); }
 }
 @media (max-width: 680px) {
-  :root { --gutter: 1.25rem; }
+  /* A 44 px hero is no longer display type — it is roughly a phone headline, and
+     at that optical size Manrope needs the weight back that a 98 px desktop hero
+     can do without. Both ends stay inside the 500–550 the type lock allows. */
+  :root { --gutter: 1.25rem; --weight-hero: 550; }
   body .site-header { padding: .7rem var(--gutter); }
   body .header-cta { padding-inline: .8rem; letter-spacing: 0; }
   body .journey .hero-content { padding: 0; }
@@ -113,14 +210,14 @@ body .journey .story-heading { margin-bottom: 3rem; }
   body .journey .journey-chapter:not(.hero-chapter):not(.white-stage) { padding-top: 50svh; min-height: 95svh; }
   body .journey .material-lens { position: absolute; top: 12svh; right: var(--gutter); width: 8rem; margin: 0; }
   body .journey .material-lens figcaption { display: none; }
-  body .journey .chapter-index { font-size: .875rem; gap: 1rem; align-items: end; }
+  body .journey .chapter-index { font-size: var(--type-caption); gap: 1rem; align-items: end; }
   body .journey .chapter-index span { max-width: 42%; text-align: right; }
   .chapter-reading-inner { grid-template-columns: 1fr; gap: 1.5rem; }
   body .journey .chapter-reading { padding-top: 1rem; }
   body .journey .social-heading { grid-template-columns: 1fr; }
   body .journey .google-rating { gap: .25rem 1.25rem; }
   body .journey .rating-number { font-size: 5.5rem; }
-  body .journey .rating-count { font-size: .875rem; }
+  body .journey .rating-count { font-size: var(--type-caption); }
   body .journey .review-card { flex-basis: min(84vw,25rem); }
   body .journey .review-bottom > div:first-child { max-width: 60%; }
   body .journey .review-controls { max-width: 105px; gap: .4rem; }

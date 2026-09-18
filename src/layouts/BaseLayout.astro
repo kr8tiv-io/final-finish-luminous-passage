@@ -29,6 +29,25 @@ import { deploymentSettings } from '../lib/deployment.js';
  * @motion page-wipe
  */
 
+/**
+ * The font preload in `<head>`, and why there is exactly one.
+ *
+ * Step 13 self-hosts Manrope as a single latin-subset variable woff2 at
+ * `public/fonts/manrope-latin-var.woff2` (24.8 KB). Serving it from `public/`
+ * rather than importing the npm package is what makes it preloadable at all: an
+ * imported font is Vite-hashed build output, so no static `<link>` can name it,
+ * and the browser discovers it only after the stylesheet has parsed. The href
+ * below and the `@font-face` `src` in `src/styles/global.css` are the same
+ * string, so the two resolve to one request.
+ *
+ * `crossorigin` is not optional even though the file is same-origin: a font
+ * fetch driven by CSS is always CORS-mode anonymous, and a preload without the
+ * attribute does not match it — the file downloads twice. A second preload of
+ * any kind would take the bandwidth this one is buying, so
+ * `tests/e2e/typography.spec.ts` asserts the count is exactly one and that
+ * `document.fonts` reports Manrope loaded from this URL.
+ */
+
 interface Props {
   title: string;
   description: string;
@@ -99,6 +118,14 @@ const siteSchema = {
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <meta name="theme-color" content="#faf9f6" />
+    <!-- The one font file the site loads. See the Step 13 note above. -->
+    <link
+      rel="preload"
+      href="/fonts/manrope-latin-var.woff2"
+      as="font"
+      type="font/woff2"
+      crossorigin
+    />
     <meta name="generator" content={Astro.generator} />
     <meta name="description" content={description} />
     {shouldNoindex && <meta name="robots" content="noindex,nofollow,noarchive" />}
