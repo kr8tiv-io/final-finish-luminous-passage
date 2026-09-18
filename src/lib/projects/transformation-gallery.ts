@@ -90,6 +90,11 @@ export function getFeaturedScrollTarget({
   return passageTop + passageTravel * Math.min(1, Math.max(0, index / (count - 1)));
 }
 
+/**
+ * The one admission rule for the sticky featured passage. There is no second
+ * rule anywhere in the gallery: phones, short viewports, still motion, reduced
+ * motion, and any measured card that cannot actually fit stay on native flow.
+ */
 export function isFeaturedPassageAdmissible({
   viewportWidth,
   viewportHeight,
@@ -110,29 +115,65 @@ export function isFeaturedPassageAdmissible({
     && contentHeight <= viewportHeight - 128;
 }
 
+/** A direct jump (First/Previous/Next/Last) that has not yet been overtaken by scroll. */
+export type FeaturedNavigation = { index: number; scrollY: number } | null;
+
+export type FeaturedPresentation = {
+  activeIndex: number;
+  position: number;
+  /**
+   * `true` when the card is pinned to a whole-number position, so its panel
+   * transform is exactly 0% and the card sits fully inside the frame. Only a
+   * free scroll through the passage leaves it `false`.
+   */
+  settled: boolean;
+};
+
 /**
- * The enhancement has one admission rule. Phones, short viewports, still
- * motion, and any measured card that cannot actually fit stay native.
+ * One rule decides which card the featured window shows, in both layouts.
+ *
+ * Precedence, highest first:
+ *  1. a pointer/keyboard interaction — snapped, so a card being touched can
+ *     never be halfway out of the viewport;
+ *  2. a direct navigation, held until the director reports a different scroll
+ *     coordinate (in native flow there is no scroll coordinate, so it holds);
+ *  3. the scroll-derived passage state;
+ *  4. the first card.
+ *
+ * Holding (2) against the director's own coordinate is what makes First/Last
+ * deterministic: the jump lands the card immediately, and the scroll state
+ * takes over on the very next published frame with the same answer, because
+ * `getFeaturedScrollTarget` targets exactly that card's whole-number position.
  */
-export function isRibbonEnhancementAdmissible({
-  viewportWidth,
-  viewportHeight,
-  cardWidth,
-  cardHeight,
-  still,
-  reducedMotion,
+export function resolveFeaturedPresentation({
+  passageEnabled,
+  scrollState,
+  scrollY,
+  navigation,
+  interactionIndex,
+  count,
 }: {
-  viewportWidth: number;
-  viewportHeight: number;
-  cardWidth: number;
-  cardHeight: number;
-  still: boolean;
-  reducedMotion: boolean;
-}): boolean {
-  return !still
-    && !reducedMotion
-    && viewportWidth >= 768
-    && viewportHeight >= 620
-    && cardWidth <= viewportWidth - 96
-    && cardHeight <= viewportHeight - 140;
+  passageEnabled: boolean;
+  scrollState: { activeIndex: number; position: number };
+  scrollY: number;
+  navigation: FeaturedNavigation;
+  interactionIndex: number | null;
+  count: number;
+}): FeaturedPresentation {
+  const lastIndex = Math.max(0, count - 1);
+  const clamp = (index: number) => Math.min(lastIndex, Math.max(0, Math.round(index)));
+  if (interactionIndex !== null) {
+    const index = clamp(interactionIndex);
+    return { activeIndex: index, position: index, settled: true };
+  }
+  if (navigation && (!passageEnabled || navigation.scrollY === scrollY)) {
+    const index = clamp(navigation.index);
+    return { activeIndex: index, position: index, settled: true };
+  }
+  if (!passageEnabled) return { activeIndex: 0, position: 0, settled: true };
+  return {
+    activeIndex: clamp(scrollState.activeIndex),
+    position: scrollState.position,
+    settled: scrollState.position === Math.round(scrollState.position),
+  };
 }

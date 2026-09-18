@@ -5,9 +5,9 @@ import {
   getFeaturedScrollTarget,
   getGalleryScrollTarget,
   isFeaturedPassageAdmissible,
-  isRibbonEnhancementAdmissible,
   normalizeImageTransform,
   resolveDragOwner,
+  resolveFeaturedPresentation,
 } from './transformation-gallery';
 
 describe('transformation gallery helpers', () => {
@@ -30,12 +30,46 @@ describe('transformation gallery helpers', () => {
     expect(getGalleryScrollTarget({ cardLeft: 80, viewportLeft: 100, scrollLeft: 10, scrollPaddingStart: 48, maximumScrollLeft: 1700 })).toBe(0);
   });
 
-  it('admits enhancement from one width, height, and measured-fit check', () => {
-    expect(isRibbonEnhancementAdmissible({ viewportWidth: 1280, viewportHeight: 760, cardWidth: 840, cardHeight: 560, still: false, reducedMotion: false })).toBe(true);
-    expect(isRibbonEnhancementAdmissible({ viewportWidth: 700, viewportHeight: 760, cardWidth: 640, cardHeight: 420, still: false, reducedMotion: false })).toBe(false);
-    expect(isRibbonEnhancementAdmissible({ viewportWidth: 1280, viewportHeight: 540, cardWidth: 840, cardHeight: 560, still: false, reducedMotion: false })).toBe(false);
-    expect(isRibbonEnhancementAdmissible({ viewportWidth: 1280, viewportHeight: 760, cardWidth: 1240, cardHeight: 560, still: false, reducedMotion: false })).toBe(false);
-    expect(isRibbonEnhancementAdmissible({ viewportWidth: 1280, viewportHeight: 760, cardWidth: 840, cardHeight: 560, still: true, reducedMotion: false })).toBe(false);
+  it('settles a direct jump immediately and hands back to scroll on the next published coordinate', () => {
+    const scrollState = { activeIndex: 0, position: 0 };
+    // The director has not published yet (scrollY still 0): the jump must hold,
+    // or "Last" leaves the last card parked a full panel width off screen.
+    expect(resolveFeaturedPresentation({
+      passageEnabled: true, scrollState, scrollY: 0, navigation: { index: 2, scrollY: 0 }, interactionIndex: null, count: 3,
+    })).toEqual({ activeIndex: 2, position: 2, settled: true });
+    // Once the director reports a different coordinate, scroll owns it again.
+    expect(resolveFeaturedPresentation({
+      passageEnabled: true,
+      scrollState: { activeIndex: 2, position: 2 },
+      scrollY: 14075,
+      navigation: { index: 2, scrollY: 0 },
+      interactionIndex: null,
+      count: 3,
+    })).toEqual({ activeIndex: 2, position: 2, settled: true });
+    // Native flow has no scroll coordinate of its own, so the jump keeps holding.
+    expect(resolveFeaturedPresentation({
+      passageEnabled: false, scrollState, scrollY: 900, navigation: { index: 1, scrollY: 0 }, interactionIndex: null, count: 3,
+    })).toEqual({ activeIndex: 1, position: 1, settled: true });
+  });
+
+  it('snaps a touched card to a whole position so no interaction happens on a half-exited card', () => {
+    const drifting = { activeIndex: 1, position: 1.48 };
+    expect(resolveFeaturedPresentation({
+      passageEnabled: true, scrollState: drifting, scrollY: 900, navigation: null, interactionIndex: null, count: 3,
+    })).toEqual({ activeIndex: 1, position: 1.48, settled: false });
+    expect(resolveFeaturedPresentation({
+      passageEnabled: true, scrollState: drifting, scrollY: 900, navigation: null, interactionIndex: 1, count: 3,
+    })).toEqual({ activeIndex: 1, position: 1, settled: true });
+    // Interaction outranks a still-valid jump, and both are clamped to the set.
+    expect(resolveFeaturedPresentation({
+      passageEnabled: true, scrollState: drifting, scrollY: 0, navigation: { index: 0, scrollY: 0 }, interactionIndex: 9, count: 3,
+    })).toEqual({ activeIndex: 2, position: 2, settled: true });
+  });
+
+  it('falls back to the first card when nothing has been navigated or touched', () => {
+    expect(resolveFeaturedPresentation({
+      passageEnabled: false, scrollState: { activeIndex: 2, position: 2 }, scrollY: 0, navigation: null, interactionIndex: null, count: 3,
+    })).toEqual({ activeIndex: 0, position: 0, settled: true });
   });
 
   it('holds each featured comparison before moving across the shallow arc', () => {

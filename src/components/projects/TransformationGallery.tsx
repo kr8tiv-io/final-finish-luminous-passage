@@ -9,10 +9,10 @@ import {
   type FocusEvent,
   type PointerEvent,
 } from 'react';
-import { transformations, type ImageVariant, type Transformation } from '../../data/transformation-gallery';
+import { selectedProjectPhotos, transformations, type ImageVariant, type Transformation } from '../../data/transformation-gallery';
 import { journeyControls } from '../../lib/motion/journey-controls';
 import { journeyDirector } from '../../lib/motion/journey-director';
-import { getArcCardState, getImageLoadingState, selectPublishablePairs } from '../../lib/projects/gallery';
+import { getArcCardState, getImageLoadingState, resolveGalleryRender } from '../../lib/projects/gallery';
 import {
   clampReveal,
   getFeaturedPassageState,
@@ -21,15 +21,17 @@ import {
   isFeaturedPassageAdmissible,
   normalizeImageTransform,
   resolveDragOwner,
+  resolveFeaturedPresentation,
+  type FeaturedNavigation,
 } from '../../lib/projects/transformation-gallery';
 import './transformation-gallery.css';
 
 type Props = { allowPending?: boolean };
 type PointerStart = { x: number; y: number; pointerId: number; owner: 'comparison' | 'page' | null } | null;
 type PassageGeometry = { start: number; travel: number; contentHeight: number };
-type FeaturedInteraction = { index: number; position: number } | null;
 
 const INITIAL_REVEAL = 50;
+const PROJECT_ARCHIVE_PATH = '/projects';
 
 function Picture({ image, full, loading }: { image: ImageVariant; full: boolean; loading: 'eager' | 'lazy' }) {
   const crop = normalizeImageTransform(image.crop);
@@ -73,6 +75,7 @@ function Comparison({
   loading,
   onInteractionStart,
   onInteractionEnd,
+  onFocusWithin,
 }: {
   project: Transformation;
   instance: string;
@@ -83,6 +86,7 @@ function Comparison({
   loading: 'eager' | 'lazy';
   onInteractionStart?: () => void;
   onInteractionEnd?: () => void;
+  onFocusWithin?: (target: HTMLElement | null) => void;
 }) {
   const stageRef = useRef<HTMLDivElement>(null);
   const pointerStart = useRef<PointerStart>(null);
@@ -139,9 +143,10 @@ function Comparison({
     setHoverReveal(null);
     if (!stageRef.current?.contains(document.activeElement)) onInteractionEnd?.();
   };
-  const onFocus = () => {
+  const onFocus = (event: FocusEvent<HTMLDivElement>) => {
     setHoverReveal(null);
     onInteractionStart?.();
+    onFocusWithin?.(event.target instanceof HTMLElement ? event.target : null);
   };
   const onBlur = (event: FocusEvent<HTMLDivElement>) => {
     if (event.relatedTarget instanceof Node && event.currentTarget.contains(event.relatedTarget)) return;
@@ -195,23 +200,65 @@ function Comparison({
   </article>;
 }
 
+/**
+ * Production fallback. Never an empty section and never an "archive" apology:
+ * single finished-floor photographs carry no pairing claim, so they can be
+ * published while every before/after pairing is still awaiting approval.
+ */
+function SelectedPhotos() {
+  return <section className="transformation-gallery transformation-gallery--selected" aria-labelledby="transformation-gallery-title">
+    <div className="transformation-gallery__head">
+      <div><p className="eyebrow">Selected from the public project archive</p><h2 id="transformation-gallery-title">Selected project photos.</h2></div>
+      <p>Finished floors, photographed on site. Each caption describes only what is visible in its frame.</p>
+    </div>
+    <ul className="transformation-gallery__photo-grid">
+      {selectedProjectPhotos.map((photo, index) => <li key={photo.id} className="transformation-gallery__photo">
+        <figure>
+          <div className="transformation-gallery__photo-frame"><Picture image={photo.image} full loading={index < 3 ? 'eager' : 'lazy'} /></div>
+          <figcaption>{photo.caption}</figcaption>
+        </figure>
+      </li>)}
+    </ul>
+    <a className="transformation-gallery__archive-link" href={PROJECT_ARCHIVE_PATH}>See the project archive</a>
+  </section>;
+}
+
 export default function TransformationGallery({ allowPending = false }: Props) {
-  const pairs = useMemo(() => selectPublishablePairs(transformations, allowPending), [allowPending]);
+  const render = useMemo(() => resolveGalleryRender(transformations, { allowPending }), [allowPending]);
+  const pairs = render.pairs;
   const passageRef = useRef<HTMLDivElement>(null);
   const featuredNavRef = useRef<HTMLElement>(null);
   const featuredWindowRef = useRef<HTMLDivElement>(null);
   const firstFeaturedRef = useRef<HTMLDivElement>(null);
   const viewportRef = useRef<HTMLDivElement>(null);
+  const frames = useRef(new Set<number>());
   const [hydrated, setHydrated] = useState(false);
   const [reducedMotion, setReducedMotion] = useState(false);
   const [passageEnabled, setPassageEnabled] = useState(false);
   const [passageGeometry, setPassageGeometry] = useState<PassageGeometry>({ start: 0, travel: 1, contentHeight: 0 });
-  const [featuredInteraction, setFeaturedInteraction] = useState<FeaturedInteraction>(null);
-  const [nativeFeaturedIndex, setNativeFeaturedIndex] = useState(0);
+  const [featuredNavigation, setFeaturedNavigation] = useState<FeaturedNavigation>(null);
+  const [interactionIndex, setInteractionIndex] = useState<number | null>(null);
   const [exploreIndex, setExploreIndex] = useState(0);
   const [reveals, setReveals] = useState<Record<string, number>>({});
   const journey = useSyncExternalStore(journeyDirector.subscribe, journeyDirector.getSnapshot, journeyDirector.getServerSnapshot);
   const controls = useSyncExternalStore(journeyControls.subscribe, journeyControls.getSnapshot, journeyControls.getServerSnapshot);
+
+  /** Every queued frame this component owns, so teardown can cancel all of them. */
+  const schedule = useCallback((task: () => void) => {
+    const id = window.requestAnimationFrame(() => {
+      frames.current.delete(id);
+      task();
+    });
+    frames.current.add(id);
+    return id;
+  }, []);
+  const cancelFrame = useCallback((id: number) => {
+    if (frames.current.delete(id)) window.cancelAnimationFrame(id);
+  }, []);
+  const cancelQueued = useCallback(() => {
+    frames.current.forEach((id) => window.cancelAnimationFrame(id));
+    frames.current.clear();
+  }, []);
 
   useEffect(() => {
     setHydrated(true);
@@ -222,6 +269,8 @@ export default function TransformationGallery({ allowPending = false }: Props) {
     query.addEventListener('change', update);
     return () => query.removeEventListener('change', update);
   }, []);
+
+  useEffect(() => cancelQueued, [cancelQueued]);
 
   const measurePassage = useCallback(() => {
     const passage = passageRef.current;
@@ -251,7 +300,7 @@ export default function TransformationGallery({ allowPending = false }: Props) {
   }, [controls.motionPreference, pairs.length, reducedMotion]);
 
   useEffect(() => {
-    const frame = window.requestAnimationFrame(() => {
+    const frame = schedule(() => {
       measurePassage();
       journeyDirector.invalidateGeometry();
     });
@@ -260,19 +309,56 @@ export default function TransformationGallery({ allowPending = false }: Props) {
     if (comparison) observer?.observe(comparison);
     if (featuredNavRef.current) observer?.observe(featuredNavRef.current);
     return () => {
-      window.cancelAnimationFrame(frame);
+      cancelFrame(frame);
       observer?.disconnect();
     };
-  }, [journey.viewportWidth, journey.viewportHeight, measurePassage]);
+  }, [cancelFrame, journey.viewportWidth, journey.viewportHeight, measurePassage, schedule]);
+
+  // The first frame after hydration can measure a card that has not reached its
+  // final size (webfont metrics, a decoding image), and a miss there would latch
+  // the native layout for the rest of the visit because nothing resizes again.
+  // The single admission decision is therefore confirmed once the card settles.
+  useEffect(() => {
+    let cancelled = false;
+    const confirm = () => {
+      if (!cancelled) schedule(measurePassage);
+    };
+    const settle = window.setTimeout(confirm, 200);
+    void document.fonts?.ready.then(confirm);
+    return () => {
+      cancelled = true;
+      window.clearTimeout(settle);
+    };
+  }, [measurePassage, schedule]);
 
   useEffect(() => {
     if (!passageEnabled) return;
-    const frame = window.requestAnimationFrame(() => {
+    const frame = schedule(() => {
       measurePassage();
       journeyDirector.invalidateGeometry();
     });
-    return () => window.cancelAnimationFrame(frame);
-  }, [passageEnabled, measurePassage]);
+    // Teardown of the passage cancels every frame this layout queued, so a
+    // measurement or a reposition scheduled under the sticky layout can never
+    // land on the native one and move a settled card.
+    return () => {
+      cancelFrame(frame);
+      cancelQueued();
+    };
+  }, [cancelFrame, cancelQueued, measurePassage, passageEnabled, schedule]);
+
+  // While pinned, the window is the only scroller. A focus ring, a hash jump,
+  // or scroll anchoring must never scroll the inner track sideways instead.
+  useEffect(() => {
+    const track = featuredWindowRef.current;
+    if (!track || !passageEnabled) return;
+    const pin = () => {
+      if (track.scrollLeft !== 0) track.scrollLeft = 0;
+      if (track.scrollTop !== 0) track.scrollTop = 0;
+    };
+    pin();
+    track.addEventListener('scroll', pin, { passive: true });
+    return () => track.removeEventListener('scroll', pin);
+  }, [passageEnabled]);
 
   useEffect(() => {
     const viewport = viewportRef.current;
@@ -298,40 +384,77 @@ export default function TransformationGallery({ allowPending = false }: Props) {
     };
   }, [pairs.length]);
 
-  if (pairs.length === 0) return <section className="transformation-gallery transformation-gallery--archive" aria-labelledby="transformation-gallery-title">
-    <div className="transformation-gallery__head"><div><p className="eyebrow">Project archive</p><h2 id="transformation-gallery-title">Projects remain available in the archive.</h2></div><p>Before-and-after pairings are withheld until their publication approval is recorded.</p></div>
-    <a className="transformation-gallery__archive-link" href="https://www.finalfinishepoxy.ca/projects">Browse the public project archive</a>
-  </section>;
+  if (render.mode === 'selected-photos') return <SelectedPhotos />;
 
-  const rawProgress = passageEnabled
-    ? Math.min(1, Math.max(0, (journey.scrollY - passageGeometry.start) / passageGeometry.travel))
-    : 0;
-  const scrollPassageState = getFeaturedPassageState(rawProgress, pairs.length);
-  const passageState = featuredInteraction !== null
-    ? { activeIndex: featuredInteraction.index, position: featuredInteraction.position }
-    : passageEnabled
-      ? scrollPassageState
-      : { activeIndex: nativeFeaturedIndex, position: nativeFeaturedIndex };
+  /**
+   * The director owns the scroll coordinate. Until it has published its first
+   * frame (`revision === 0` — `JourneyMotion` starts it, and on a cold load
+   * that island can hydrate after this one), fall back to reading the live
+   * scroll position rather than trusting its zero. This adds no listener and
+   * no second owner: the moment the director speaks, it wins.
+   */
+  const passageScrollY = journey.revision === 0 && hydrated && typeof window !== 'undefined' ? window.scrollY : journey.scrollY;
+  const scrollPassageState = getFeaturedPassageState(
+    passageEnabled ? Math.min(1, Math.max(0, (passageScrollY - passageGeometry.start) / passageGeometry.travel)) : 0,
+    pairs.length,
+  );
+  const passageState = resolveFeaturedPresentation({
+    passageEnabled,
+    scrollState: scrollPassageState,
+    // Deliberately the director's own coordinate, not the seeded one: a jump is
+    // held until the *owner* reports movement, which is what makes it settle.
+    scrollY: journey.scrollY,
+    navigation: featuredNavigation,
+    interactionIndex,
+    count: pairs.length,
+  });
   const updateReveal = (id: string, value: number) => setReveals((current) => ({ ...current, [id]: value }));
+  /**
+   * The single presentation input, published to CSS: `--featured-position` is
+   * the continuous index (0 … n-1, fractional between cards) and
+   * `--featured-count` is n. Step 23 replaces the panel transform with the
+   * jh3y cylinder by reading only these two — no new state, no second owner.
+   */
   const passageStyle = {
     '--passage-travel': `${passageGeometry.travel}px`,
     '--featured-panel-height': `${Math.max(1, passageGeometry.contentHeight - (featuredNavRef.current?.offsetHeight ?? 0) - 16)}px`,
     '--featured-count': pairs.length,
+    '--featured-position': passageState.position,
   } as CSSProperties;
+  const featuredScrollTarget = (index: number) => getFeaturedScrollTarget({
+    passageTop: passageGeometry.start,
+    passageTravel: passageGeometry.travel,
+    index,
+    count: pairs.length,
+  });
+  const pinTrack = () => {
+    const track = featuredWindowRef.current;
+    if (!track) return;
+    track.scrollLeft = 0;
+    track.scrollTop = 0;
+  };
   const scrollToFeatured = (index: number) => {
-    setFeaturedInteraction(null);
+    // A frame queued by the previous layout must not land on top of this jump.
+    cancelQueued();
+    setInteractionIndex(null);
+    setFeaturedNavigation({ index, scrollY: journey.scrollY });
+    pinTrack();
     if (!passageEnabled) {
-      setNativeFeaturedIndex(index);
-      featuredWindowRef.current?.querySelectorAll<HTMLElement>('[data-featured-panel]')[index]?.scrollIntoView({
+      schedule(() => featuredWindowRef.current?.querySelectorAll<HTMLElement>('[data-featured-panel]')[index]?.scrollIntoView({
         behavior: 'auto',
         block: 'center',
-      });
+      }));
       return;
     }
-    window.scrollTo({
-      top: getFeaturedScrollTarget({ passageTop: passageGeometry.start, passageTravel: passageGeometry.travel, index, count: pairs.length }),
-      behavior: 'auto',
-    });
+    window.scrollTo({ top: featuredScrollTarget(index), behavior: 'auto' });
+  };
+  // Focus moves the window, never the track: the element keeps its own scroll
+  // position (preventScroll) and the passage is driven to that card's progress.
+  const focusFeatured = (index: number, target: HTMLElement | null) => {
+    target?.focus({ preventScroll: true });
+    pinTrack();
+    if (!passageEnabled) return;
+    window.scrollTo({ top: featuredScrollTarget(index), behavior: 'auto' });
   };
   const scrollToExplore = (index: number) => {
     const viewport = viewportRef.current;
@@ -354,10 +477,11 @@ export default function TransformationGallery({ allowPending = false }: Props) {
     data-gallery-mode="native"
     data-gallery-layout={passageEnabled ? 'passage' : 'native'}
     data-featured-index={passageState.activeIndex}
+    data-featured-settled={passageState.settled}
     aria-labelledby="transformation-gallery-title"
   >
     <div className="transformation-gallery__head"><div><p className="eyebrow">Selected from the public project archive</p><h2 id="transformation-gallery-title">See the difference.</h2></div><p>Move each divider to compare the original concrete with the finished floor. Captions point to features visible in both photographs.</p></div>
-    {allowPending ? <p className="transformation-gallery__review-note">Project pairing review · not approved for publication</p> : null}
+    {render.reviewBadge ? <p className="transformation-gallery__review-note">Project pairing review · not approved for publication</p> : null}
 
     <div className="transformation-gallery__passage" ref={passageRef}>
       <div className="transformation-gallery__sticky">
@@ -397,8 +521,17 @@ export default function TransformationGallery({ allowPending = false }: Props) {
                 hydrated={hydrated}
                 full={!hydrated || load.full}
                 loading={hydrated ? load.loading : 'lazy'}
-                onInteractionStart={() => setFeaturedInteraction((current) => current?.index === index ? current : { index, position: passageState.position })}
-                onInteractionEnd={() => setFeaturedInteraction(null)}
+                // Hovering holds the card that is already showing; it never
+                // retargets the passage, so a card sliding under the cursor
+                // after a jump cannot steal the counter from the card asked for.
+                onInteractionStart={() => setInteractionIndex((current) => index === passageState.activeIndex ? index : current)}
+                onInteractionEnd={() => setInteractionIndex(null)}
+                // Keyboard focus is deliberate, so it does retarget.
+                onFocusWithin={(target) => {
+                  setFeaturedNavigation({ index, scrollY: journey.scrollY });
+                  setInteractionIndex(index);
+                  focusFeatured(index, target);
+                }}
               />
             </div>;
           })}
@@ -446,6 +579,6 @@ export default function TransformationGallery({ allowPending = false }: Props) {
         </div>
       </div>
     </section>
-    <p className="transformation-gallery__source">Source images are from the public <a href="https://www.finalfinishepoxy.ca/projects">Final Finish Epoxy project archive</a>. {allowPending ? 'Pairings shown in this review are pending publication approval.' : 'Only publication-approved pairings are shown.'}</p>
+    <p className="transformation-gallery__source">Source images are from the public <a href="https://www.finalfinishepoxy.ca/projects">Final Finish Epoxy project archive</a>. {render.reviewBadge ? 'Pairings shown in this review are pending publication approval.' : 'Only publication-approved pairings are shown.'}</p>
   </section>;
 }
