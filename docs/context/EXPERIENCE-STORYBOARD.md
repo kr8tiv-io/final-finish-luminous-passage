@@ -140,3 +140,18 @@ Existing ids used above (`line-rise`, `lateral-curtain`, `depth-settle`, `epoxy-
 | `caption-drift` | text | 0.5 s, 0.12 s lag behind parent | `power2.out` | 12 px translate along the axis of travel + opacity | Static | isladjan per-layer lag | `EditorialMotion.tsx` |
 
 Every id above has a reduced-motion equivalent that still shows the content; none of them moves a hit target; none of them writes a value another owner already tracks.
+
+---
+
+## 8. Implementation directives (reconciled with `MOTION-BIBLE.md`, 2026-09-18)
+
+The research pass probed eight 2025–2026 Awwwards winners live. Five ship no Three.js; the reigning architecture Site of the Month runs 156 ScrollTriggers with zero pins and zero snaps; the two closest stack peers (Montfort, Oryzo) are Astro on native scroll with one persistent canvas. These directives bind every Phase 3 agent; where the scroll map above says "pinned", read it through directive 2.
+
+1. **Reveal density is the spine.** Target ≥ 120 scroll-linked entrances on the homepage: SplitText line masks on every heading, clip-path scrub wrappers with counter-parallax on every photograph, captions and labels that arrive from the direction of travel. Batch with `ScrollTrigger.batch`; entrances use `toggleActions`, scrub is reserved for scene-linked media.
+2. **Sticky before pin.** Acts 3, 4, 7 and 8 hold on `position: sticky` hosts (sticky-in-flow, `100lvh`, transforms driven from the director), not GSAP pins. `pin` is allowed only on the inner wrapper of Act 5 (cylinder) and Act 7 (resin mask) when sticky cannot meet the gate, never on `.journey` or a chapter ancestor, and never with `snap`. Sustained axis capture is punished by the jury; Acts 4 and 5 are the two horizontal bays and the page returns to vertical after them.
+3. **Native scroll only.** No Lenis, no ScrollSmoother, no `normalizeScroll`, no drei `ScrollControls`. Smoothness comes from `scrub: 0.6–1` on media and damped uniforms on the canvas.
+4. **One persistent canvas, plus inline canvases only where a set piece needs its own.** `SurfaceCanvas` (Step 15) never unmounts; FilmVeil becomes a view inside it; the visualizer keeps its own canvas on its route.
+5. **Act 6 lattice is DOM first.** An infinite two-axis parallax grid of real `<img alt>` tiles (one 8×12 block of uniques wrapping on both axes) is the base experience and the SEO surface; the WebGL flyover over a ≤ 2048 px atlas is a `full`-tier enhancement layered on it, never the only path. Tile → full-bleed uses Flip.
+6. **Video residency.** Only the current and adjacent films are decoded; the pour is scrubbed behind sticky copy (Terminal Industries pattern); all other films play only inside their hold-window.
+7. **Copy rhythm.** One huge statement, one quiet caption, one number per act; `COPY-DECK.md` is the only source of lines.
+8. **Phone is a first-class jury device (Usability 30%).** Section 6's phone plan per act is mandatory, and every gate is measured at 390 px as well as 1440 px.
