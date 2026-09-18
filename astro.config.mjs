@@ -16,7 +16,17 @@ export default defineConfig({
   site: deployment.site.toString(),
   // Keep the client-facing local review free of developer overlays.
   devToolbar: { enabled: false },
-  integrations: [react(), mdx(), ...(deployment.crawlAllowed ? [sitemap()] : [])],
+  integrations: [
+    react(),
+    mdx(),
+    // Sitemap only in production (staging is noindex/disallow-all — see src/lib/deployment.js
+    // robotsText). `filter` excludes the local-review-only `/dev/*` tree (already 404s in
+    // production, see src/pages/dev/surface.astro) and the 404 page itself, in case a future
+    // Astro/integration version ever starts treating error pages as normal routes.
+    ...(deployment.crawlAllowed ? [sitemap({
+      filter: (page) => !new URL(page).pathname.startsWith('/dev/') && new URL(page).pathname !== '/404',
+    })] : []),
+  ],
 
   // Trust forwarded host/client-IP headers only for this exact deployment origin.
   security: { allowedDomains: [astroAllowedDomain(deployment)] },
