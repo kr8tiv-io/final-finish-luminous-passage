@@ -128,6 +128,12 @@ export interface SurfaceSnapshot {
    * slab the band used to paint over every media chapter.
    */
   readonly presence: number;
+  /**
+   * The horizon line's row is free of words, so the line may be drawn. `false` while
+   * text sits under it — see `horizonRowClear`. It gates only the 1 px line; the plane,
+   * its presence and its feathers are untouched by it.
+   */
+  readonly horizonClear: boolean;
   readonly camera: SurfaceCameraMode;
   readonly renderer: SurfaceRenderer;
   readonly settled: boolean;
@@ -156,6 +162,13 @@ export interface SurfaceDriver {
    * started; only a horizon flip asks for one.
    */
   readonly setPresence: (value: number, duration: number) => void;
+  /**
+   * The occlusion gate on the 1 px line, as a factor the floor multiplies into the line's
+   * own opacity. A separate lever from `setHorizon`/`setPresence` on purpose: those say
+   * how strong the line wants to be, this says whether it is allowed on screen at all,
+   * and the two must be able to move without cancelling each other's tweens.
+   */
+  readonly setHorizonClear: (clear: boolean, duration: number) => void;
   readonly setCamera: (mode: SurfaceCameraMode) => void;
   readonly sweep: (duration: number) => void;
   readonly settle: (duration: number) => void;
@@ -321,6 +334,147 @@ const MEDIA_CHAPTERS: ReadonlySet<JourneyChapterId> = new Set<JourneyChapterId>(
   'portico', 'foundation', 'garage', 'vault', 'finish-hall', 'commercial', 'consultation',
 ]);
 
+/* -------------------------------------------------------------------------- */
+/* The horizon line's occlusion rule — pure half                               */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * WHERE THE LINE IS ALLOWED TO BE.
+ *
+ * The 1 px cobalt line sits at a fixed 62 % of the viewport (`--surface-horizon`) while
+ * the page scrolls past it, so sooner or later every row of the document passes under it.
+ * Storyboard §2 wants it in the silences (S1, S2) and on empty paper (Act 2's reflection,
+ * Act 9) — never across words, where a horizontal rule at x-height is a strikethrough and
+ * not a horizon. Measured at 1440 it drew straight through Act 2's intro paragraph and
+ * through the review cards' text.
+ *
+ * The decision is a hit test, not a guess, and it is split in two so the rule itself stays
+ * pure and testable here while the DOM reading stays with the component that is allowed to
+ * do it (DEV-CONTRACT: this store never reads the DOM; `SurfaceCanvas`/`SurfaceFloor` may
+ * read layout). `SurfaceCanvas` does the reading; the answer comes back in through
+ * `setHorizonClear` and leaves again as one uniform and one attribute.
+ *
+ * TWO PASSES, AND WHY IT IS NOT A GRID OF SAMPLE POINTS.
+ *
+ * The obvious test — `elementsFromPoint` at nine x positions across the band — was tried
+ * and measured, and it cannot do this job. The narrowest *glyph* runs that cross this
+ * page's horizon row are 3–12 px wide (a `·` in a phone caption, an `↗` on a link, the
+ * `12` of a date), so a grid leaves gaps two orders of magnitude wider than the thing it
+ * is looking for. Measured over the homepage at 1440 / 768 / 390 in 160 px steps, the
+ * number of rows a grid missed was 2 / 0 / 6 at nine points and 1 / 0 / 0 at forty-nine —
+ * not converging, just landing differently. Any sample count would have been a number
+ * chosen to make one run pass.
+ *
+ * So the first pass is exhaustive and geometric: every text-bearing element (623 of them
+ * on this page — one `querySelectorAll` and a rect each, all reads, no writes) against the
+ * row. That has no gap by construction.
+ *
+ * The second pass is the hit test, aimed at the few candidates the first pass returns
+ * rather than at the band. It is what tells apart "words at this row" from "a rect at this
+ * row": the two rows this rule first got wrong were a 1 px-wide paragraph parked at
+ * x = −1 inside an `overflow: hidden` reader, and copy clipped out of a collapsed panel.
+ * Geometry alone calls both of those words; `elementsFromPoint` at a point inside the
+ * candidate's own box knows that neither is on screen. Short-circuits on the first
+ * blocker, so the usual cost is one rect pass and nought to three hit tests.
+ */
+
+/** Tags that carry words. A rule through any of them reads as a strikethrough. */
+export const HORIZON_TEXT_TAGS: ReadonlySet<string> = new Set([
+  'P', 'H1', 'H2', 'H3', 'H4', 'H5', 'H6', 'LI', 'BLOCKQUOTE', 'FIGCAPTION',
+  'A', 'SPAN', 'BUTTON', 'LABEL', 'STRONG', 'EM', 'SMALL', 'TIME', 'DT', 'DD',
+  'TD', 'TH', 'CAPTION', 'LEGEND', 'SUMMARY', 'CITE', 'CODE', 'ABBR',
+]);
+
+/**
+ * Form controls block on sight. Their text is in a value or a placeholder rather than a
+ * child text node, so the `text` term below would let an empty-looking field through.
+ */
+export const HORIZON_FIELD_TAGS: ReadonlySet<string> = new Set(['INPUT', 'TEXTAREA', 'SELECT']);
+
+/** Opt-out any element can wear: "the line must not cross me", whatever my tag is. */
+export const HORIZON_AVOID_ATTRIBUTE = 'data-horizon-avoid';
+
+/** The line eases out and back over this, unless the visitor asked for no motion. */
+export const HORIZON_CLEAR_FADE = 0.25;
+
+/**
+ * The first pass's query: everything that could be carrying words. Built from the two tag
+ * sets so the selector and the rule can never drift apart.
+ */
+export const HORIZON_CANDIDATE_SELECTOR: string = [...HORIZON_TEXT_TAGS, ...HORIZON_FIELD_TAGS]
+  .map((tag) => tag.toLowerCase())
+  .concat(`[${HORIZON_AVOID_ATTRIBUTE}]`)
+  .join(',');
+
+/** One element under one sample point, reduced to the three things the rule asks about. */
+export interface HorizonHit {
+  /** `tagName`, i.e. already uppercase for HTML elements. */
+  readonly tag: string;
+  /** This element has visible words of its own (its own text nodes, not a descendant's). */
+  readonly text: boolean;
+  /** This element, or an ancestor in the same hit stack, carries `data-horizon-avoid`. */
+  readonly avoid: boolean;
+}
+
+/**
+ * Does this one element forbid the line?
+ *
+ * `text` is deliberately about the element's *own* text nodes. A card wrapped in an `<a>`
+ * would otherwise veto the line across its whole box including the photograph, and the
+ * storyboard wants the line under the cards — it is only the words it must not cross.
+ * The descendant that does hold the words is in the same hit stack whenever the sample
+ * point is actually inside it, so nothing is lost.
+ */
+export function horizonHitBlocks(hit: HorizonHit): boolean {
+  if (hit.avoid) return true;
+  if (HORIZON_FIELD_TAGS.has(hit.tag)) return true;
+  return hit.text && HORIZON_TEXT_TAGS.has(hit.tag);
+}
+
+/** The row is clear when not one candidate blocks it. */
+export function horizonRowClear(candidates: readonly HorizonHit[]): boolean {
+  return !candidates.some(horizonHitBlocks);
+}
+
+/** The smallest rectangle a `getBoundingClientRect` gives, as this module needs it. */
+export interface HorizonBox {
+  readonly left: number;
+  readonly right: number;
+  readonly top: number;
+  readonly bottom: number;
+}
+
+/**
+ * Pass one: does this box put anything on the line's row, on screen?
+ *
+ * Degenerate and off-screen boxes are rejected here rather than in the hit test, because
+ * they are the common case — a page this size keeps hundreds of elements parked at
+ * x = −1 or collapsed to nothing, and a rect comparison is far cheaper than a hit test.
+ */
+export function horizonRowCrossing(box: HorizonBox, y: number, viewportWidth: number): boolean {
+  if (box.right - box.left < 1 || box.bottom - box.top < 1) return false;
+  if (box.right <= 0 || box.left >= viewportWidth) return false;
+  return box.top <= y && box.bottom >= y;
+}
+
+/**
+ * Pass two: where to aim the hit test inside a candidate that pass one kept.
+ *
+ * Three points — just inside each end of the visible part of the box, and its middle — so
+ * a candidate that is half off screen, or half clipped by an `overflow: hidden` ancestor,
+ * is still confirmed from the half that is showing. Clamped into the viewport, because
+ * `elementsFromPoint` outside it returns nothing and would read as "not on screen".
+ */
+export function horizonProbePoints(box: HorizonBox, viewportWidth: number): readonly number[] {
+  const left = Math.max(0, Math.min(viewportWidth - 1, box.left));
+  const right = Math.max(0, Math.min(viewportWidth - 1, box.right));
+  const lo = Math.round(Math.min(left, right));
+  const hi = Math.round(Math.max(left, right));
+  if (hi - lo < 2) return [lo];
+  const inner = [lo + 1, Math.round((lo + hi) / 2), hi - 1];
+  return [...new Set(inner)];
+}
+
 export function surfaceChapterStates(id: JourneyChapterId): readonly [SurfaceStateId, SurfaceStateId] {
   return CHAPTER_STATES[id] ?? CHAPTER_STATES.portico;
 }
@@ -450,6 +604,7 @@ const EMPTY_SNAPSHOT: SurfaceSnapshot = Object.freeze({
   mix: 0,
   horizon: false,
   presence: SURFACE_PRESENCE.full,
+  horizonClear: true,
   camera: 'standing',
   renderer: 'none',
   settled: true,
@@ -478,6 +633,7 @@ export function createSurfaceStore() {
       || merged.mix !== snapshot.mix
       || merged.horizon !== snapshot.horizon
       || merged.presence !== snapshot.presence
+      || merged.horizonClear !== snapshot.horizonClear
       || merged.camera !== snapshot.camera
       || merged.renderer !== snapshot.renderer
       || merged.settled !== snapshot.settled
@@ -497,6 +653,10 @@ export function createSurfaceStore() {
     band.dataset.surfaceState = String(state);
     band.dataset.surfaceName = SURFACE_MATERIALS[state].name;
     band.dataset.surfaceHorizon = snapshot.horizon ? 'on' : 'off';
+    // One decision, two consumers: the WebGL line reads it as a uniform through the
+    // driver, the CSS fallback line reads this attribute (surface.css). Written here
+    // because this is already the single writer of the band's dataset.
+    band.dataset.horizonLine = snapshot.horizonClear ? 'visible' : 'hidden';
     // The CSS tier reads the same presence the plane does, so a `balanced` visitor sees
     // the same sheen-not-slab relationship to the film rather than a full-strength
     // gradient the WebGL tier no longer paints (surface.css).
@@ -569,6 +729,7 @@ export function createSurfaceStore() {
         next.setMix(snapshot.mix);
         next.setPresence(snapshot.presence, 0);
         next.setHorizon(snapshot.menuOpen ? false : snapshot.horizon, 0);
+        next.setHorizonClear(snapshot.horizonClear, 0);
         next.setCamera(snapshot.camera);
         next.invalidate();
       }
@@ -691,6 +852,21 @@ export function createSurfaceStore() {
       if (snapshot.horizon === horizon) return;
       publish({ horizon });
       driver?.setHorizon(horizon, SURFACE_MORPH_DURATION);
+    },
+
+    /**
+     * The occlusion answer, from the one component allowed to ask the DOM the question.
+     *
+     * `duration` is the caller's, not this store's: the fade is 0.25 s for a visitor who
+     * asked for motion and 0 for one who did not, and only `SurfaceCanvas` knows which
+     * this is. `publish` short-circuits when nothing changed, so a test that keeps
+     * returning the same answer costs one comparison and no tween.
+     */
+    setHorizonClear: (clear: boolean, duration: number = HORIZON_CLEAR_FADE) => {
+      if (snapshot.horizonClear === clear) return;
+      publish({ horizonClear: clear });
+      driver?.setHorizonClear(clear, duration);
+      driver?.invalidate();
     },
 
     /** `settle` — every live uniform damps to rest and the horizon line comes up. */

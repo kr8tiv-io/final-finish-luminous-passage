@@ -73,6 +73,22 @@ function floorLineOpacity(horizon: boolean, presence: number): number {
   return horizon ? 1 : HORIZON_FLOOR_OPACITY * Math.min(1, Math.max(0, presence));
 }
 
+/**
+ * TWO LEVERS, ONE UNIFORM.
+ *
+ * `uHorizonOpacity` answers two questions that must not overwrite each other. `base` is
+ * how strong the line wants to be (`floorLineOpacity` — crisp in the silences, a whisper
+ * over a film), and it is tweened by `setPresence`, `setHorizon` and `settle`, all of
+ * which pass `overwrite: true` because a newer answer to that question must cancel the
+ * older one. `clear` is whether the line is allowed on screen at all — the occlusion gate
+ * decided in `SurfaceCanvas` — and it has to survive every one of those tweens.
+ *
+ * gsap's `overwrite: true` kills other tweens of the same *target object*, not the same
+ * property, so the two levers are two objects. The uniform is their product and nothing
+ * else writes it: `SurfaceFloor` stays the single owner of the floor's GPU state.
+ */
+interface HorizonLever { value: number }
+
 function lensFades(height: number, pitchDeg: number, fov: number): { near: number; far: number } {
   const halfFov = (fov / 2) * (Math.PI / 180);
   const pitch = pitchDeg * (Math.PI / 180);
@@ -287,6 +303,17 @@ function SurfaceFloorScene({ viewElement }: { readonly viewElement: HTMLElement 
     uHorizonWidth: { value: 0.004 },
   }), []);
 
+  const horizonBase = useMemo<HorizonLever>(() => ({ value: floorLineOpacity(false, SURFACE_PRESENCE.full) }), []);
+  const horizonClear = useMemo<HorizonLever>(() => ({ value: 1 }), []);
+  /** The only write of `uHorizonOpacity`. Both levers go through here or not at all. */
+  const writeHorizonOpacity = useCallback(() => {
+    horizonUniforms.uHorizonOpacity.value = horizonBase.value * horizonClear.value;
+  }, [horizonBase, horizonClear, horizonUniforms]);
+  const onHorizonTween = useCallback(() => {
+    writeHorizonOpacity();
+    invalidate();
+  }, [invalidate, writeHorizonOpacity]);
+
   const material = useMemo(() => {
     const next = new THREE.MeshPhysicalMaterial({
       color: '#ffffff',
@@ -418,10 +445,11 @@ function SurfaceFloorScene({ viewElement }: { readonly viewElement: HTMLElement 
           // Scroll-linked, exactly like setMix: no tween may survive a director publish.
           gsap.killTweensOf(uniforms.uPlanePresence);
           gsap.killTweensOf(uniforms.uGlossLift);
-          gsap.killTweensOf(horizonUniforms.uHorizonOpacity);
+          gsap.killTweensOf(horizonBase);
           uniforms.uPlanePresence.value = presence;
           uniforms.uGlossLift.value = lift;
-          horizonUniforms.uHorizonOpacity.value = lineTarget;
+          horizonBase.value = lineTarget;
+          writeHorizonOpacity();
           invalidate();
           return;
         }
@@ -431,8 +459,8 @@ function SurfaceFloorScene({ viewElement }: { readonly viewElement: HTMLElement 
         gsap.to(uniforms.uGlossLift, {
           value: lift, duration, ease: SURFACE_MORPH_EASE, overwrite: true, onUpdate: invalidate,
         });
-        gsap.to(horizonUniforms.uHorizonOpacity, {
-          value: lineTarget, duration, ease: SURFACE_MORPH_EASE, overwrite: true, onUpdate: invalidate,
+        gsap.to(horizonBase, {
+          value: lineTarget, duration, ease: SURFACE_MORPH_EASE, overwrite: true, onUpdate: onHorizonTween,
         });
       },
       setHorizon: (horizon, duration) => {
@@ -440,15 +468,32 @@ function SurfaceFloorScene({ viewElement }: { readonly viewElement: HTMLElement 
         const lineTarget = floorLineOpacity(horizon, surfaceStore.getSnapshot().presence);
         if (duration <= 0) {
           uniforms.uPlaneOpacity.value = planeTarget;
-          horizonUniforms.uHorizonOpacity.value = lineTarget;
+          gsap.killTweensOf(horizonBase);
+          horizonBase.value = lineTarget;
+          writeHorizonOpacity();
           invalidate();
           return;
         }
         gsap.to(uniforms.uPlaneOpacity, {
           value: planeTarget, duration, ease: SURFACE_MORPH_EASE, overwrite: true, onUpdate: invalidate,
         });
-        gsap.to(horizonUniforms.uHorizonOpacity, {
-          value: lineTarget, duration, ease: SURFACE_MORPH_EASE, overwrite: true, onUpdate: invalidate,
+        gsap.to(horizonBase, {
+          value: lineTarget, duration, ease: SURFACE_MORPH_EASE, overwrite: true, onUpdate: onHorizonTween,
+        });
+      },
+      setHorizonClear: (clear, duration) => {
+        // The gate's own lever. `overwrite: true` here is scoped to `horizonClear`, so it
+        // cancels a half-finished fade of its own and nothing of the line's strength.
+        const target = clear ? 1 : 0;
+        if (duration <= 0) {
+          gsap.killTweensOf(horizonClear);
+          horizonClear.value = target;
+          writeHorizonOpacity();
+          invalidate();
+          return;
+        }
+        gsap.to(horizonClear, {
+          value: target, duration, ease: SURFACE_MORPH_EASE, overwrite: true, onUpdate: onHorizonTween,
         });
       },
       setCamera: applyCamera,
@@ -482,12 +527,12 @@ function SurfaceFloorScene({ viewElement }: { readonly viewElement: HTMLElement 
         gsap.to(uniforms.uGlossLift, {
           value: surfaceGlossLift(presence), duration, ease: 'power2.out', overwrite: true, onUpdate: invalidate,
         });
-        gsap.to(horizonUniforms.uHorizonOpacity, {
+        gsap.to(horizonBase, {
           value: floorLineOpacity(horizon, presence),
           duration,
           ease: 'power2.out',
           overwrite: true,
-          onUpdate: invalidate,
+          onUpdate: onHorizonTween,
         });
       },
       invalidate,
@@ -501,9 +546,10 @@ function SurfaceFloorScene({ viewElement }: { readonly viewElement: HTMLElement 
       gsap.killTweensOf(uniforms.uPlaneOpacity);
       gsap.killTweensOf(uniforms.uPlanePresence);
       gsap.killTweensOf(uniforms.uGlossLift);
-      gsap.killTweensOf(horizonUniforms.uHorizonOpacity);
+      gsap.killTweensOf(horizonBase);
+      gsap.killTweensOf(horizonClear);
     };
-  }, [applyCamera, horizonUniforms, invalidate, uniforms]);
+  }, [applyCamera, horizonBase, horizonClear, invalidate, onHorizonTween, uniforms, writeHorizonOpacity]);
 
   /* ---- view registration: this floor owns the band's rectangle ---- */
   useEffect(() => {

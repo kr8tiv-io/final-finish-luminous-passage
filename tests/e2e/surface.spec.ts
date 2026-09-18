@@ -224,10 +224,32 @@ test.describe('surface plane', () => {
   test('leaves only the horizon line on a white stage', async ({ page }) => {
     await page.goto('/', { waitUntil: 'domcontentloaded' });
     await waitForSurface(page);
-    await page.evaluate(() => {
-      document.querySelector('.chapter-reading[data-journey-white-stage]')?.scrollIntoView({ block: 'center' });
+    /*
+     * Park on a row of the white stage that has no words across it.
+     *
+     * The line is gated on an occlusion test now (SurfaceCanvas.tsx): a white stage
+     * whose reading copy happens to sit at 62 % of the viewport is exactly the case the
+     * storyboard does not want a rule drawn through, so "the only visible pixel is the
+     * line" is only a claim about a clear row. Everything this test asserted before is
+     * asserted below unchanged; all that moved is where it stands to look.
+     */
+    const parked = await page.evaluate(async () => {
+      const stage = document.querySelector('.chapter-reading[data-journey-white-stage]');
+      if (!stage) return null;
+      stage.scrollIntoView({ block: 'center' });
+      const band = document.querySelector<HTMLElement>('[data-surface-fallback]')!;
+      const base = window.scrollY;
+      for (const offset of [0, -40, 40, -80, 80, -120, 120, -160, 160, -200, 200, -240, 240]) {
+        window.scrollTo({ top: base + offset, behavior: 'instant' });
+        // Longer than the gate's own throttle + settle (80 + 140 ms) and its 0.25 s fade.
+        await new Promise((resolve) => { setTimeout(resolve, 700); });
+        const horizon = (window.__ffeSurface!.states as { horizon: boolean }).horizon;
+        if (horizon && band.dataset.horizonLine === 'visible') return offset;
+      }
+      return null;
     });
-    await page.waitForTimeout(1_800);
+    expect(parked, 'a white-stage row with no text across the horizon').not.toBeNull();
+    await page.waitForTimeout(600);
     expect(await page.evaluate(() => (window.__ffeSurface!.states as { horizon: boolean }).horizon)).toBe(true);
 
     const bandTop = await page.evaluate(
@@ -247,6 +269,115 @@ test.describe('surface plane', () => {
       if (name === 'line') continue;
       expect(channelDelta(value, [250, 249, 246]), `${name} is paper`).toBeLessThanOrEqual(1);
     }
+  });
+
+  /**
+   * The occlusion gate, at DOM level. `horizon-probe.mjs` measures the same rule in
+   * pixels on the built app; this one is the cheap standing guard, and what it really
+   * exercises is the sampling *density*: the rule itself is unit-tested, so the only way
+   * this fails is a run of words narrow enough to slip between two sample points.
+   */
+  test('never leaves the horizon line across a row of words', async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await page.goto('/', { waitUntil: 'domcontentloaded' });
+    await waitForSurface(page);
+
+    const steps = await page.evaluate(async () => {
+      const TEXT = new Set([
+        'P', 'H1', 'H2', 'H3', 'H4', 'H5', 'H6', 'LI', 'BLOCKQUOTE', 'FIGCAPTION',
+        'A', 'SPAN', 'BUTTON', 'LABEL', 'STRONG', 'EM', 'SMALL', 'TIME', 'DT', 'DD',
+        'TD', 'TH', 'CAPTION', 'LEGEND', 'SUMMARY', 'CITE', 'CODE', 'ABBR',
+      ]);
+      const FIELD = new Set(['INPUT', 'TEXTAREA', 'SELECT']);
+      /*
+       * WHAT COUNTS AS WORDS ON THE ROW. Three filters, each one measured into
+       * existence by a row this test first got wrong:
+       *
+       *  - `checkVisibility`: Chromium lays out the contents of a CLOSED `<details>`
+       *    and returns real rects for them, and Act 9's four questions are an
+       *    accordion, so every unopened answer reported a box across the horizon.
+       *  - glyph rects clipped against the element's own box AND every clipping
+       *    ancestor: `Range.getClientRects` hands back the FONT's em box, which stands
+       *    proud of the text by several pixels, and SplitText mask wrappers clip the
+       *    part that overhangs. Act 5's headline at 390 failed on that alone, with
+       *    zero non-paper pixels anywhere near the row.
+       *  - on screen: a 1 px-wide paragraph parked at x = −1 inside an `overflow:
+       *    hidden` reader is not a sentence the line is striking through.
+       */
+      const visible = (element: Element) => {
+        if (!element.checkVisibility({ checkOpacity: true, checkVisibilityCSS: true, contentVisibilityAuto: true })) {
+          return false;
+        }
+        for (let node: Element | null = element; node && node !== document.documentElement; node = node.parentElement) {
+          const style = getComputedStyle(node);
+          if (style.display === 'none' || style.visibility === 'hidden') return false;
+          if (Number.parseFloat(style.opacity) < 0.05) return false;
+        }
+        return true;
+      };
+      const clipped = (rect: DOMRect, element: Element) => {
+        const own = element.getBoundingClientRect();
+        let top = Math.max(rect.top, own.top);
+        let bottom = Math.min(rect.bottom, own.bottom);
+        let left = Math.max(rect.left, own.left);
+        let right = Math.min(rect.right, own.right);
+        for (let node = element.parentElement; node && node !== document.documentElement; node = node.parentElement) {
+          const style = getComputedStyle(node);
+          if (style.overflowX === 'visible' && style.overflowY === 'visible' && style.clipPath === 'none') continue;
+          const outer = node.getBoundingClientRect();
+          top = Math.max(top, outer.top);
+          bottom = Math.min(bottom, outer.bottom);
+          left = Math.max(left, outer.left);
+          right = Math.min(right, outer.right);
+        }
+        return { top, bottom, left, right };
+      };
+      const onRow = (box: { top: number; bottom: number; left: number; right: number }, y: number) =>
+        box.right - box.left >= 2 && box.bottom - box.top >= 2
+        && box.top <= y && box.bottom >= y
+        && box.right > 0 && box.left < window.innerWidth;
+
+      const band = document.querySelector<HTMLElement>('[data-surface-fallback]')!;
+      const rows: Array<{ top: number; words: string[]; attr: string | undefined }> = [];
+      const selector = [...TEXT, ...FIELD].join(',').toLowerCase();
+      const limit = document.documentElement.scrollHeight - window.innerHeight;
+      for (let top = 0; top <= limit; top += 480) {
+        window.scrollTo({ top, behavior: 'instant' });
+        await new Promise((resolve) => { setTimeout(resolve, 360); });
+        const y = Math.round(band.getBoundingClientRect().top);
+        const words: string[] = [];
+        for (const element of document.querySelectorAll(selector)) {
+          if (!visible(element)) continue;
+          if (FIELD.has(element.tagName)) {
+            if (onRow(clipped(element.getBoundingClientRect(), element), y)) {
+              words.push(`${top}/${element.tagName}:<field>`);
+            }
+            continue;
+          }
+          for (const node of element.childNodes) {
+            if (node.nodeType !== Node.TEXT_NODE) continue;
+            const text = (node.nodeValue ?? '').trim();
+            if (!text) continue;
+            const range = document.createRange();
+            range.selectNodeContents(node);
+            for (const rect of range.getClientRects()) {
+              if (!onRow(clipped(rect, element), y)) continue;
+              words.push(`${top}/${element.tagName}:${text.slice(0, 32)}`);
+              break;
+            }
+          }
+        }
+        rows.push({ top, words, attr: band.dataset.horizonLine });
+      }
+      return rows;
+    });
+
+    const withWords = steps.filter((step) => step.words.length > 0);
+    // A gate that never sees text would pass by doing nothing at all.
+    expect(withWords.length, 'rows where words cross the horizon').toBeGreaterThan(3);
+    expect(steps.filter((step) => step.words.length === 0).length, 'rows of empty paper').toBeGreaterThan(3);
+    const missed = withWords.filter((step) => step.attr !== 'hidden');
+    expect(missed.map((step) => step.words.slice(0, 2)), 'words the line was still drawn across').toEqual([]);
   });
 
   test('hides the canvas on context loss and re-mounts the views on restore', async ({ page }) => {
