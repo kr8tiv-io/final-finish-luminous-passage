@@ -43,10 +43,35 @@
   bottom: 0;
   /* The band is also the canvas view's rectangle: one geometry, one owner. */
   opacity: 1;
+  transition: opacity 300ms ease;
+}
+
+/*
+ * THE GRADIENT, AND WHY IT IS A PSEUDO-ELEMENT NOW.
+ *
+ * The band paints over the same films the WebGL plane does, so it owes them the same
+ * two things: a feathered far edge and a presence.
+ *
+ *  - FEATHER. The mask used to start at `#000 0%` — fully opaque at the band's top
+ *    edge — which is a hard horizontal cut straight across the picture at 62 % height,
+ *    the CSS twin of the seam the plane was cutting. It now fades in over the first
+ *    14 %, so the gradient dissolves into the horizon line instead of beginning at it.
+ *    The mask has to live here rather than on the band, because a mask on the band
+ *    would also erase `::before` — and `::before` IS the horizon line.
+ *  - PRESENCE. `--surface-presence` is written by the surface store (the same number
+ *    that multiplies the plane's alpha), so a `balanced` visitor sees the same
+ *    sheen-over-the-film relationship a `full` one does rather than a full-strength
+ *    gradient the WebGL tier has stopped painting.
+ */
+.surface-band::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  opacity: var(--surface-presence, 1);
   transition: opacity 300ms ease, background-image 300ms ease;
   background-image: linear-gradient(180deg, rgba(111, 166, 202, .18), rgba(222, 217, 207, .26) 50%, rgba(236, 234, 228, .12));
-  mask-image: linear-gradient(180deg, #000 0%, #000 46%, transparent 96%);
-  -webkit-mask-image: linear-gradient(180deg, #000 0%, #000 46%, transparent 96%);
+  mask-image: linear-gradient(180deg, transparent 0%, #000 14%, #000 46%, transparent 96%);
+  -webkit-mask-image: linear-gradient(180deg, transparent 0%, #000 14%, #000 46%, transparent 96%);
 }
 
 .surface-band::before {
@@ -58,25 +83,27 @@
   right: 0;
   height: 1px;
   background: var(--cobalt);
-  opacity: .12;
+  /* Same rule as `floorLineOpacity` in SurfaceFloor.tsx: a whisper over a film, and a
+     crisp full line in the silences, where the line is the whole scene. */
+  opacity: calc(.06 * var(--surface-presence, 1));
   transition: opacity 300ms ease;
 }
 
-.surface-band[data-surface-horizon='on'] {
+.surface-band[data-surface-horizon='on']::after {
   background-image: none;
 }
 
 .surface-band[data-surface-horizon='on']::before { opacity: 1; }
 
 /* Material states 0–7 — the `material-morph` fallback: a colour swap on a .3 s fade. */
-.surface-band[data-surface-state='0'] { background-image: linear-gradient(180deg, rgba(22, 79, 131, .20), rgba(231, 227, 218, .34) 46%, rgba(207, 215, 222, .16)); }
-.surface-band[data-surface-state='1'] { background-image: linear-gradient(180deg, rgba(93, 104, 108, .26), rgba(141, 138, 131, .20) 52%, rgba(118, 114, 104, .10)); }
-.surface-band[data-surface-state='2'] { background-image: linear-gradient(180deg, rgba(111, 166, 202, .18), rgba(222, 217, 207, .26) 50%, rgba(236, 234, 228, .12)); }
-.surface-band[data-surface-state='3'] { background-image: linear-gradient(180deg, rgba(22, 79, 131, .20), rgba(216, 209, 195, .28) 48%, rgba(93, 104, 108, .14)); }
-.surface-band[data-surface-state='4'] { background-image: linear-gradient(180deg, rgba(154, 154, 151, .26), rgba(143, 143, 140, .20) 55%, rgba(165, 165, 161, .10)); }
-.surface-band[data-surface-state='5'] { background-image: linear-gradient(180deg, rgba(43, 54, 64, .30), rgba(22, 79, 131, .26) 47%, rgba(169, 191, 208, .12)); }
-.surface-band[data-surface-state='6'] { background-image: linear-gradient(180deg, rgba(125, 134, 136, .24), rgba(154, 160, 163, .18) 52%, rgba(179, 183, 184, .09)); }
-.surface-band[data-surface-state='7'] { background-image: none; }
+.surface-band[data-surface-state='0']::after { background-image: linear-gradient(180deg, rgba(22, 79, 131, .20), rgba(231, 227, 218, .34) 46%, rgba(207, 215, 222, .16)); }
+.surface-band[data-surface-state='1']::after { background-image: linear-gradient(180deg, rgba(93, 104, 108, .26), rgba(141, 138, 131, .20) 52%, rgba(118, 114, 104, .10)); }
+.surface-band[data-surface-state='2']::after { background-image: linear-gradient(180deg, rgba(111, 166, 202, .18), rgba(222, 217, 207, .26) 50%, rgba(236, 234, 228, .12)); }
+.surface-band[data-surface-state='3']::after { background-image: linear-gradient(180deg, rgba(22, 79, 131, .20), rgba(216, 209, 195, .28) 48%, rgba(93, 104, 108, .14)); }
+.surface-band[data-surface-state='4']::after { background-image: linear-gradient(180deg, rgba(154, 154, 151, .26), rgba(143, 143, 140, .20) 55%, rgba(165, 165, 161, .10)); }
+.surface-band[data-surface-state='5']::after { background-image: linear-gradient(180deg, rgba(43, 54, 64, .30), rgba(22, 79, 131, .26) 47%, rgba(169, 191, 208, .12)); }
+.surface-band[data-surface-state='6']::after { background-image: linear-gradient(180deg, rgba(125, 134, 136, .24), rgba(154, 160, 163, .18) 52%, rgba(179, 183, 184, .09)); }
+.surface-band[data-surface-state='7']::after { background-image: none; }
 
 /* WebGL is live: the band keeps its rectangle (it is the view host) but shows nothing. */
 html[data-surface='webgl'] .surface-band { opacity: 0; }
@@ -150,6 +177,7 @@ html[data-surface='webgl'] .nav-menu:has(.nav-menu__floor[data-nav-floor-view='l
 @media (prefers-reduced-motion: reduce) {
   .surface-band { transition: none; }
   .surface-band::before { transition: none; }
+  .surface-band::after { transition: none; }
 }
 
 html[data-journey-motion='still'] .surface-band { opacity: 0; }

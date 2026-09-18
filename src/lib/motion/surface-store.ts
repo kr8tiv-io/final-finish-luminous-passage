@@ -6,7 +6,8 @@
  *  - This store owns the *material* state (`a`, `b`, `mix`, horizon mode, camera mode)
  *    and the registry of canvas regions.
  *  - `SurfaceFloor` owns the GPU uniforms; it binds a driver here and is the only
- *    writer of `uMix`/`uSweep`/`uPlaneOpacity`. The store asks, the driver tweens.
+ *    writer of `uMix`/`uSweep`/`uPlaneOpacity`/`uPlanePresence`. The store asks, the
+ *    driver tweens.
  *  - `SurfaceCanvas` owns the renderer mode (`webgl` / `fallback` / `none`) and the
  *    `[data-surface-fallback]` band's state attribute is written from here, once.
  *
@@ -62,6 +63,7 @@ import type { WebGLRenderer } from 'three';
 import {
   dominantSurfaceState,
   isSurfaceStateId,
+  SURFACE_GLOSS_LIFT,
   SURFACE_MATERIALS,
   SURFACE_MORPH_DURATION,
   SURFACE_MORPH_EASE,
@@ -119,6 +121,13 @@ export interface SurfaceSnapshot {
   readonly mix: number;
   /** Storyboard S1/S2/Act 9: plane hidden, the 1 px cobalt line is the whole scene. */
   readonly horizon: boolean;
+  /**
+   * How much of the picture behind the band the plane is allowed to spend, 0–1. See
+   * `SURFACE_PRESENCE`. It multiplies the plane's alpha (and the floor-mode horizon
+   * line with it) and is the difference between a sheen on a film's own floor and the
+   * slab the band used to paint over every media chapter.
+   */
+  readonly presence: number;
   readonly camera: SurfaceCameraMode;
   readonly renderer: SurfaceRenderer;
   readonly settled: boolean;
@@ -141,6 +150,12 @@ export interface SurfaceDriver {
   readonly setMix: (value: number) => void;
   readonly setStates: (a: SurfaceStateId, b: SurfaceStateId) => void;
   readonly setHorizon: (horizon: boolean, duration: number) => void;
+  /**
+   * `uPlanePresence`, and the floor-mode horizon line that scales with it. Scroll-driven
+   * like `setMix`, so the director's own progress passes `duration: 0` and no tween is
+   * started; only a horizon flip asks for one.
+   */
+  readonly setPresence: (value: number, duration: number) => void;
   readonly setCamera: (mode: SurfaceCameraMode) => void;
   readonly sweep: (duration: number) => void;
   readonly settle: (duration: number) => void;
@@ -152,6 +167,12 @@ export interface SurfaceTarget {
   readonly b: SurfaceStateId;
   readonly mix: number;
   readonly horizon: boolean;
+  /**
+   * Optional so a caller with no film behind the band — `/dev/surface`, the resting
+   * target on a route with no `.journey` — can leave it out and get the plane at full
+   * strength. `chapterSurfaceTarget` always supplies it; the store normalises.
+   */
+  readonly presence?: number;
 }
 
 export interface SurfaceCapabilities {
@@ -252,6 +273,54 @@ const CHAPTER_STATES: Readonly<Record<JourneyChapterId, readonly [SurfaceStateId
 /** Fraction of `portico` spent liquid before the pour cures into state 2. */
 const PORTICO_CURE_START = 0.8;
 
+/**
+ * Plane presence — the one number that decides whether the floor is a sheen or a slab.
+ *
+ * The plane's alpha used to be governed entirely by the material's own `opacity` and
+ * the depth/screen fades, which is a rule about *where* it paints and says nothing about
+ * *what is behind it*. Behind every media chapter is a film with a floor of its own, and
+ * at full strength state 5 (metallic) took the finish-hall film's floor from 246 to 200
+ * in the top of the band: the garage film's reflection and the car in it disappeared
+ * behind a washed-out plane. Presence is the missing term — measured as a multiplier on
+ * the plane's alpha, so the material table, the depth profile and the horizon rule all
+ * keep their existing owners.
+ *
+ * Storyboard §2/§4: over a film the plane is "the film's own floor" (a sheen, the
+ * footage reads through); in the silences and the reading asides it is a faint
+ * reflection under the cards; across a boundary the material morph *is* the subject and
+ * it may come up. Never a slab pasted over the footage.
+ */
+export const SURFACE_PRESENCE: Readonly<{
+  sheen: number;
+  reflection: number;
+  boundary: number;
+  full: number;
+}> = Object.freeze({
+  /**
+   * Over a film or a still: gloss on the footage's own floor. Measured at the top of the
+   * usable range rather than the middle — at 0.28 the plane stops contributing anything
+   * readable over the bright pearl films (garage, finish-hall), and an invisible floor
+   * passes a "stay close to the film" gate for the wrong reason.
+   */
+  sheen: 0.35,
+  /** White stages and reading asides — storyboard Act 2's "faint reflection". */
+  reflection: 0.06,
+  /** Mid-boundary, where the material change is the thing being shown. */
+  boundary: 0.6,
+  /** Nothing behind the band: `/dev/surface`, `/services`, the menu's own field. */
+  full: 1,
+});
+
+/**
+ * Chapters that play a film or a still behind the band. Every chapter on the homepage
+ * except `proof` does (`proof` is a white stage and is governed by `horizon`), so this
+ * set exists to be *read*, not to be clever: a chapter added later with nothing behind
+ * it stays at full presence by omission.
+ */
+const MEDIA_CHAPTERS: ReadonlySet<JourneyChapterId> = new Set<JourneyChapterId>([
+  'portico', 'foundation', 'garage', 'vault', 'finish-hall', 'commercial', 'consultation',
+]);
+
 export function surfaceChapterStates(id: JourneyChapterId): readonly [SurfaceStateId, SurfaceStateId] {
   return CHAPTER_STATES[id] ?? CHAPTER_STATES.portico;
 }
@@ -259,6 +328,26 @@ export function surfaceChapterStates(id: JourneyChapterId): readonly [SurfaceSta
 export function surfaceChapterEdge(id: JourneyChapterId, edge: 'start' | 'end'): SurfaceStateId {
   const [start, end] = surfaceChapterStates(id);
   return edge === 'start' ? start : end;
+}
+
+/**
+ * A chapter's interior presence, ignoring white stages and boundaries.
+ *
+ * `portico` is the one chapter with a ramp rather than a level: storyboard Act 1 says the
+ * plane is *born* in the last 20 % of the pour and that before then "the canvas paints
+ * only the veil". It rises on the same window as the cure blend, so the floor arrives
+ * with the material rather than sitting over the pour film from the first frame.
+ */
+export function surfaceChapterPresence(id: JourneyChapterId, chapterProgress: number): number {
+  if (id === 'portico') {
+    return SURFACE_PRESENCE.sheen * clamp01((chapterProgress - PORTICO_CURE_START) / (1 - PORTICO_CURE_START));
+  }
+  return MEDIA_CHAPTERS.has(id) ? SURFACE_PRESENCE.sheen : SURFACE_PRESENCE.full;
+}
+
+/** The presence a chapter hands to (or takes from) a boundary. */
+export function surfaceChapterPresenceEdge(id: JourneyChapterId, edge: 'start' | 'end'): number {
+  return surfaceChapterPresence(id, edge === 'start' ? 0 : 1);
 }
 
 function interiorMix(id: JourneyChapterId, chapterProgress: number): number {
@@ -276,15 +365,31 @@ export function chapterSurfaceTarget(snapshot: Pick<
   const horizon = snapshot.whiteStageActive;
   const transitioning = snapshot.transitionProgress > 0 && snapshot.transitionProgress < 1;
   if (transitioning && snapshot.fromChapter !== snapshot.toChapter) {
+    const t = clamp01(snapshot.transitionProgress);
+    // The interior values of the two chapters, joined. A bump on top of that — zero at
+    // either end, so the boundary starts and finishes exactly where the chapters are and
+    // nothing steps — lifts the plane while the morph is on screen.
+    const ends = surfaceChapterPresenceEdge(snapshot.fromChapter, 'end') * (1 - t)
+      + surfaceChapterPresenceEdge(snapshot.toChapter, 'start') * t;
+    const bumped = ends + (SURFACE_PRESENCE.boundary - ends) * Math.sin(Math.PI * t);
     return {
       a: surfaceChapterEdge(snapshot.fromChapter, 'end'),
       b: surfaceChapterEdge(snapshot.toChapter, 'start'),
-      mix: clamp01(snapshot.transitionProgress),
+      mix: t,
       horizon,
+      presence: horizon ? SURFACE_PRESENCE.reflection : Math.max(ends, bumped),
     };
   }
   const [a, b] = surfaceChapterStates(snapshot.activeChapter);
-  return { a, b, mix: interiorMix(snapshot.activeChapter, snapshot.chapterProgress), horizon };
+  return {
+    a,
+    b,
+    mix: interiorMix(snapshot.activeChapter, snapshot.chapterProgress),
+    horizon,
+    presence: horizon
+      ? SURFACE_PRESENCE.reflection
+      : surfaceChapterPresence(snapshot.activeChapter, snapshot.chapterProgress),
+  };
 }
 
 /** Effective single state for the fallback band and for `morphTo` continuity. */
@@ -292,8 +397,34 @@ export function effectiveSurfaceState(target: Pick<SurfaceTarget, 'a' | 'b' | 'm
   return dominantSurfaceState(target.a, target.b, target.mix);
 }
 
+/**
+ * The gloss lift that goes with a presence.
+ *
+ * The lift and the presence answer the same question — "is there a film behind this
+ * band?" — so they cannot be set independently without drifting apart. At full presence
+ * nothing is behind the band (`/dev/surface`, `/services`, the menu's own field) and the
+ * plane *is* the picture: lift 0, an ordinary `over`, byte-for-byte what Step 18a
+ * shipped and what surface.spec's `morphTo` delta measures. At the sheen it is fully on,
+ * because that is where the plane is a guest on someone else's floor. In between — the
+ * boundary bump at 0.6 — it eases off, which is right: mid-morph the material change is
+ * the subject and is allowed to assert itself.
+ */
+export function surfaceGlossLift(presence: number): number {
+  const subordinate = clamp01((1 - clamp01(presence)) / (1 - SURFACE_PRESENCE.sheen));
+  return SURFACE_GLOSS_LIFT * subordinate;
+}
+
+/** An unspecified presence means "nothing is behind the band" — the plane at full. */
+export function surfaceTargetPresence(target: Pick<SurfaceTarget, 'presence'>): number {
+  return clamp01(target.presence ?? SURFACE_PRESENCE.full);
+}
+
 export function surfaceTargetsEqual(a: SurfaceTarget, b: SurfaceTarget): boolean {
-  return a.a === b.a && a.b === b.b && a.mix === b.mix && a.horizon === b.horizon;
+  return a.a === b.a
+    && a.b === b.b
+    && a.mix === b.mix
+    && a.horizon === b.horizon
+    && surfaceTargetPresence(a) === surfaceTargetPresence(b);
 }
 
 /* -------------------------------------------------------------------------- */
@@ -306,6 +437,7 @@ const EMPTY_SNAPSHOT: SurfaceSnapshot = Object.freeze({
   b: 0,
   mix: 0,
   horizon: false,
+  presence: SURFACE_PRESENCE.full,
   camera: 'standing',
   renderer: 'none',
   settled: true,
@@ -333,6 +465,7 @@ export function createSurfaceStore() {
       || merged.b !== snapshot.b
       || merged.mix !== snapshot.mix
       || merged.horizon !== snapshot.horizon
+      || merged.presence !== snapshot.presence
       || merged.camera !== snapshot.camera
       || merged.renderer !== snapshot.renderer
       || merged.settled !== snapshot.settled
@@ -352,6 +485,10 @@ export function createSurfaceStore() {
     band.dataset.surfaceState = String(state);
     band.dataset.surfaceName = SURFACE_MATERIALS[state].name;
     band.dataset.surfaceHorizon = snapshot.horizon ? 'on' : 'off';
+    // The CSS tier reads the same presence the plane does, so a `balanced` visitor sees
+    // the same sheen-not-slab relationship to the film rather than a full-strength
+    // gradient the WebGL tier no longer paints (surface.css).
+    band.style.setProperty('--surface-presence', String(snapshot.presence));
     document.documentElement.dataset.surface = snapshot.renderer;
   };
 
@@ -396,6 +533,7 @@ export function createSurfaceStore() {
       if (next) {
         next.setStates(snapshot.a, snapshot.b);
         next.setMix(snapshot.mix);
+        next.setPresence(snapshot.presence, 0);
         next.setHorizon(snapshot.menuOpen ? false : snapshot.horizon, 0);
         next.setCamera(snapshot.camera);
         next.invalidate();
@@ -451,13 +589,19 @@ export function createSurfaceStore() {
         return;
       }
       const current: SurfaceTarget = {
-        a: snapshot.a, b: snapshot.b, mix: snapshot.mix, horizon: snapshot.horizon,
+        a: snapshot.a, b: snapshot.b, mix: snapshot.mix, horizon: snapshot.horizon, presence: snapshot.presence,
       };
       if (surfaceTargetsEqual(current, target)) return;
       const horizonChanged = current.horizon !== target.horizon;
-      publish({ a: target.a, b: target.b, mix: target.mix, horizon: target.horizon, settled: false });
+      const presence = surfaceTargetPresence(target);
+      publish({
+        a: target.a, b: target.b, mix: target.mix, horizon: target.horizon, presence, settled: false,
+      });
       driver?.setStates(target.a, target.b);
       driver?.setMix(target.mix);
+      // Scroll-linked, so no tween — except across a horizon flip, where presence and
+      // the plane's own opacity have to move together or the product pops.
+      driver?.setPresence(presence, horizonChanged ? SURFACE_MORPH_DURATION : 0);
       if (horizonChanged) driver?.setHorizon(target.horizon, SURFACE_MORPH_DURATION);
       driver?.invalidate();
     },
@@ -478,7 +622,9 @@ export function createSurfaceStore() {
       const open = element !== null;
       if (snapshot.menuOpen === open) return;
       if (open) {
-        parkedTarget = { a: snapshot.a, b: snapshot.b, mix: snapshot.mix, horizon: snapshot.horizon };
+        parkedTarget = {
+          a: snapshot.a, b: snapshot.b, mix: snapshot.mix, horizon: snapshot.horizon, presence: snapshot.presence,
+        };
         publish({ menuOpen: true });
         // The plane has to be on screen whatever the journey left behind it — a menu
         // opened over a white stage would otherwise show the horizon line and no floor.

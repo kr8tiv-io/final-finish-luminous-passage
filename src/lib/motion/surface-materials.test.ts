@@ -5,6 +5,11 @@ import {
   dominantSurfaceState,
   isSurfaceStateId,
   srgbToLinear,
+  SURFACE_EDGE_FEATHER,
+  SURFACE_FAR_FEATHER,
+  SURFACE_FRAGMENT_COLOR,
+  SURFACE_FRAGMENT_GLOSS,
+  SURFACE_GLOSS_LIFT,
   SURFACE_HORIZON_COLOR,
   SURFACE_HORIZON_FADE,
   SURFACE_HORIZON_VH,
@@ -12,8 +17,12 @@ import {
   SURFACE_MATERIALS,
   SURFACE_MORPH_DURATION,
   SURFACE_MORPH_EASE,
+  SURFACE_UNIFORM_NAMES,
+  surfaceCoverAlpha,
   surfaceDepthAlpha,
+  surfaceEdgeAlpha,
   surfaceFallbackGradient,
+  surfaceFarAlpha,
   surfaceMaterial,
   surfaceScreenAlpha,
 } from './surface-materials';
@@ -158,6 +167,80 @@ describe('surfaceScreenAlpha', () => {
   it('clamps out-of-range screen positions', () => {
     expect(surfaceScreenAlpha(-1)).toBe(1);
     expect(surfaceScreenAlpha(4)).toBe(0);
+  });
+});
+
+describe('surfaceFarAlpha', () => {
+  it('feathers the far edge of the plane instead of ending it', () => {
+    expect(surfaceFarAlpha(0)).toBe(1);
+    expect(surfaceFarAlpha(1 - SURFACE_FAR_FEATHER)).toBe(1);
+    expect(surfaceFarAlpha(1)).toBe(0);
+  });
+
+  it('spends at least a third of the depth range on the fade', () => {
+    expect(SURFACE_FAR_FEATHER).toBeGreaterThanOrEqual(0.3);
+    expect(SURFACE_FAR_FEATHER).toBeLessThanOrEqual(0.35);
+    const samples = [0.68, 0.8, 0.9, 0.99, 1].map(surfaceFarAlpha);
+    for (let i = 1; i < samples.length; i += 1) expect(samples[i]).toBeLessThan(samples[i - 1]);
+  });
+});
+
+describe('surfaceEdgeAlpha', () => {
+  it('feathers both sides of the view rectangle', () => {
+    expect(surfaceEdgeAlpha(0)).toBe(0);
+    expect(surfaceEdgeAlpha(1)).toBe(0);
+    expect(surfaceEdgeAlpha(0.5)).toBe(1);
+    expect(surfaceEdgeAlpha(SURFACE_EDGE_FEATHER / 2)).toBeGreaterThan(0);
+    expect(surfaceEdgeAlpha(SURFACE_EDGE_FEATHER / 2)).toBeLessThan(1);
+  });
+
+  it('is 4-6 % of the rectangle, and a zero feather is an off switch', () => {
+    expect(SURFACE_EDGE_FEATHER).toBeGreaterThanOrEqual(0.04);
+    expect(SURFACE_EDGE_FEATHER).toBeLessThanOrEqual(0.06);
+    // The menu's floor passes 0: its rectangle is the menu's own geometry.
+    expect(surfaceEdgeAlpha(0.01, 0)).toBe(1);
+  });
+});
+
+describe('surfaceCoverAlpha', () => {
+  it('is a plain `over` at zero lift and spends less of the picture above it', () => {
+    expect(surfaceCoverAlpha(0.4, 0)).toBeCloseTo(0.4, 6);
+    expect(surfaceCoverAlpha(0.4)).toBeLessThan(0.4);
+    expect(surfaceCoverAlpha(0.4, 1)).toBe(0);
+  });
+
+  it('keeps the lift in a range that still carries the finish colour', () => {
+    // 0 is the slab this step removed; 1 is pure add, where a dark metallic floor stops
+    // being metallic. The chosen value has to sit between them, nearer the material end.
+    expect(SURFACE_GLOSS_LIFT).toBeGreaterThan(0);
+    expect(SURFACE_GLOSS_LIFT).toBeLessThan(0.5);
+  });
+});
+
+describe('SURFACE_FRAGMENT_COLOR', () => {
+  it('multiplies presence into the plane alpha and reads the view rect as a vec4', () => {
+    expect(SURFACE_FRAGMENT_COLOR).toContain('uPlaneOpacity * uPlanePresence');
+    expect(SURFACE_FRAGMENT_COLOR).toContain('gl_FragCoord.y - uViewport.y');
+    expect(SURFACE_FRAGMENT_COLOR).toContain('gl_FragCoord.x - uViewport.x');
+  });
+
+  it('applies the far feather and the side feather as well as the screen fade', () => {
+    expect(SURFACE_FRAGMENT_COLOR).toContain(`smoothstep(${(1 - SURFACE_FAR_FEATHER).toFixed(2)}, 1.0, ffeT)`);
+    expect(SURFACE_FRAGMENT_COLOR).toContain('smoothstep(0.0, ffeEdgeWidth, ffeAcross)');
+    expect(SURFACE_FRAGMENT_COLOR).toContain(`smoothstep(${SURFACE_HORIZON_FADE.toFixed(2)}, 0.99, ffeScreen)`);
+  });
+
+  it('binds every uniform the patched shader declares', () => {
+    for (const name of ['uPlanePresence', 'uEdgeFeather', 'uGlossLift', 'uViewport']) {
+      expect(SURFACE_UNIFORM_NAMES).toContain(name);
+    }
+  });
+});
+
+describe('SURFACE_FRAGMENT_GLOSS', () => {
+  it('premultiplies the colour and spends only part of the alpha on covering', () => {
+    expect(SURFACE_FRAGMENT_GLOSS).toContain('gl_FragColor.rgb *= gl_FragColor.a;');
+    expect(SURFACE_FRAGMENT_GLOSS).toContain('gl_FragColor.a *= 1.0 - clamp(uGlossLift, 0.0, 1.0);');
   });
 });
 
