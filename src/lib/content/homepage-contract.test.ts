@@ -31,9 +31,9 @@ describe('Follow the Floor semantic fallback', () => {
       '03 / Beneath the surface',
       '04 / Reclaim · garage',
       '04 / Reclaim · basement',
+      '05 / See the difference',
       '07 / Your finish',
       '08 / Commercial',
-      '05 / See the difference',
       '10 / Talk to Denis',
     ]);
     expect(homepage).not.toContain('06 / ');

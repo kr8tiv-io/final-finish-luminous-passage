@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import {
   resolveJourneyTransition,
@@ -55,11 +56,40 @@ describe('authored journey transitions', () => {
     expect(resolveJourneyTransition('garage', 'vault')).toEqual({ mode: 1, direction: 1, kind: 'aperture' });
   });
 
-  it('alternates restrained lateral folds across the remaining authored boundaries', () => {
-    expect(resolveJourneyTransition('vault', 'finish-hall')).toEqual({ mode: 2, direction: -1, kind: 'fold' });
+  /**
+   * Step 11b: `proof` is act 05, so it sits between Reclaim and Your finish.
+   * Both of its boundaries are placeholders wearing an existing veil mode until
+   * Step 23 (`shrink-to-card`) and Step 24 (`resin-layer-mask`) author their own.
+   */
+  it('closes the aperture from the basement into the gallery and opens on paper again', () => {
+    expect(resolveJourneyTransition('vault', 'proof')).toEqual({ mode: 1, direction: -1, kind: 'aperture' });
+    expect(resolveJourneyTransition('proof', 'finish-hall')).toEqual({ mode: 0, direction: 1, kind: 'white-dissolve' });
+  });
+
+  it('keeps the restrained lateral folds on the last two authored boundaries', () => {
     expect(resolveJourneyTransition('finish-hall', 'commercial')).toEqual({ mode: 2, direction: 1, kind: 'fold' });
-    expect(resolveJourneyTransition('commercial', 'proof')).toEqual({ mode: 2, direction: -1, kind: 'fold' });
-    expect(resolveJourneyTransition('proof', 'consultation')).toEqual({ mode: 2, direction: 1, kind: 'fold' });
+    expect(resolveJourneyTransition('commercial', 'consultation')).toEqual({ mode: 2, direction: 1, kind: 'fold' });
+  });
+
+  /**
+   * The table's keys, in the order they are authored, are the contract
+   * `boundaries.spec` checks against the rendered breaths — a stale key is a
+   * boundary the page no longer has, and `resolveJourneyTransition` cannot show
+   * that on its own because a retired key can share the default style. So read
+   * the literal, the same way the e2e spec does.
+   */
+  it('authors exactly the seven storyboard adjacencies, in page order', () => {
+    const source = readFileSync(new URL('./journey-transitions.ts', import.meta.url), 'utf8');
+    const keys = [...source.matchAll(/^ {2}'([a-z-]+:[a-z-]+)': Object\.freeze/gm)].map(([, key]) => key);
+    expect(keys).toEqual([
+      'portico:foundation',
+      'foundation:garage',
+      'garage:vault',
+      'vault:proof',
+      'proof:finish-hall',
+      'finish-hall:commercial',
+      'commercial:consultation',
+    ]);
   });
 
   it('keys a boundary independently of scroll direction', () => {

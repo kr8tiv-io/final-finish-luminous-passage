@@ -20,14 +20,28 @@ export interface JourneyTransitionFrame {
 
 const DEFAULT_STYLE: JourneyTransitionStyle = Object.freeze({ kind: 'fold', mode: 2, direction: 1 });
 
+/**
+ * One entry per `.journey-breath[data-hall-from][data-hall-to]`, in the order
+ * `index.astro` renders them — `boundaries.spec` reads the keys straight out of
+ * this literal and asserts them against the rendered breaths, so the order here
+ * is part of the contract, not decoration.
+ *
+ * Step 11b put the page in storyboard order (`proof` = act 05, between Reclaim
+ * and Your finish). Two of these are placeholders wearing an existing veil mode
+ * until their own step authors the real mechanic:
+ * - `vault:proof` reuses `aperture` until Step 23 lands `shrink-to-card`.
+ * - `proof:finish-hall` reuses `white-dissolve` until Step 24 lands
+ *   `resin-layer-mask`. It leaves a white stage, so paper-to-room is the honest
+ *   stand-in rather than a fold that would deform the gallery's own paper.
+ */
 const TRANSITIONS: Readonly<Record<string, JourneyTransitionStyle>> = Object.freeze({
   'portico:foundation': Object.freeze({ kind: 'white-dissolve', mode: 0, direction: 1 }),
   'foundation:garage': Object.freeze({ kind: 'preparation-curl', mode: 4, direction: 1 }),
   'garage:vault': Object.freeze({ kind: 'aperture', mode: 1, direction: 1 }),
-  'vault:finish-hall': Object.freeze({ kind: 'fold', mode: 2, direction: -1 }),
+  'vault:proof': Object.freeze({ kind: 'aperture', mode: 1, direction: -1 }),
+  'proof:finish-hall': Object.freeze({ kind: 'white-dissolve', mode: 0, direction: 1 }),
   'finish-hall:commercial': Object.freeze({ kind: 'fold', mode: 2, direction: 1 }),
-  'commercial:proof': Object.freeze({ kind: 'fold', mode: 2, direction: -1 }),
-  'proof:consultation': Object.freeze({ kind: 'fold', mode: 2, direction: 1 }),
+  'commercial:consultation': Object.freeze({ kind: 'fold', mode: 2, direction: 1 }),
 });
 
 const WHITE_TARGET_TRANSITIONS: Readonly<Record<JourneyWhiteTargetId, JourneyTransitionStyle>> = Object.freeze({

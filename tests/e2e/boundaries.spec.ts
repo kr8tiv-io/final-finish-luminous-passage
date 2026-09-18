@@ -40,9 +40,11 @@ const CONTROL_PIXEL_FLOOR = 0.2;
  * A flash is a frame that jumps away from the trend and straight back, so the
  * frame must be a local extremum AND differ from both neighbours by more than
  * this. Requiring the extremum matters: on a plain "differs from both
- * neighbours" rule the steepest part of a perfectly smooth ramp trips it — the
- * measured vault:finish-hall walk reads 163.6 -> 152.9 -> 142.4, a straight
- * line, which that rule scores at 6.9%.
+ * neighbours" rule the steepest part of a perfectly smooth ramp trips it — a
+ * real walk measured on this build (the pre-Step-11b vault:finish-hall exit,
+ * kept as the fixture below because it is real data, not because that boundary
+ * still exists) reads 163.6 -> 152.9 -> 142.4, a straight line, which that rule
+ * scores at 6.9%.
  */
 const FLASH_BUDGET = 0.06;
 const SCAN_FRAMES = 40;
@@ -420,10 +422,26 @@ test('the flash detector catches a flash and ignores a steep ramp', () => {
   expect(caught.at).toBe(10);
 });
 
+/**
+ * The seven adjacencies of the storyboard's act order (§2), after Step 11b put
+ * `proof` (act 05) between Reclaim and Your finish. Spelled out rather than
+ * counted: a table that reorders itself and a page that reorders with it would
+ * both satisfy a length check while the acts came out in the wrong sequence.
+ */
+const EXPECTED_BOUNDARY_KEYS = [
+  'portico:foundation',
+  'foundation:garage',
+  'garage:vault',
+  'vault:proof',
+  'proof:finish-hall',
+  'finish-hall:commercial',
+  'commercial:consultation',
+] as const;
+
 test('the transition table and the rendered journey agree on every boundary', async ({ page }) => {
   await openJourney(page);
   const boundaries = await readBoundaries(page);
-  expect(BOUNDARY_KEYS).toHaveLength(7);
+  expect(BOUNDARY_KEYS).toEqual([...EXPECTED_BOUNDARY_KEYS]);
   expect(boundaries.map((boundary) => boundary.key)).toEqual(BOUNDARY_KEYS);
 });
 

@@ -1,13 +1,21 @@
 import { dissolveWeight } from './journey-media';
 
+/**
+ * Storyboard act order (`EXPERIENCE-STORYBOARD.md` §2), which is also the DOM
+ * order of `index.astro`. Two things read the order rather than the membership:
+ * `chapterIndex` publishes `activeIndex`/`fromIndex`/`toIndex` from it, and
+ * `measure()` walks it to build the chapter and reading metrics. Step 11b moved
+ * `proof` (act 05) above `finish-hall` (07) in both places at once — if the DOM
+ * and this list ever disagree, `boundaries.spec` fails on the very first test.
+ */
 export const JOURNEY_CHAPTER_IDS = [
   'portico',
   'foundation',
   'garage',
   'vault',
+  'proof',
   'finish-hall',
   'commercial',
-  'proof',
   'consultation',
 ] as const;
 
