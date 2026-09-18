@@ -1,0 +1,122 @@
+/*
+ * The surface plane and its fallback band.
+ *
+ * Z-ORDER (read from journey.css / global.css, neither of which is edited here):
+ *   .skip-link                 1000
+ *   .journey-motion-control      60
+ *   .site-header                 50   (position: fixed)
+ *   --> .surface-canvas-host      1   and .surface-band 1
+ *   .journey                   auto   (position: relative; isolation: isolate)
+ *   html/body background       paper
+ *
+ * `.journey` opens its own stacking context, so a layout-level fixed canvas can only
+ * sit wholly under it or wholly over it — it cannot be interleaved between
+ * `.journey-chapter::after` (the paper wash, z-index 2 inside `.journey`) and
+ * `.chapter-content` (z-index 5 inside `.journey`) without editing journey.css.
+ * Under `.journey` the plane would be invisible on every white stage, because
+ * `.white-stage` paints an opaque `var(--paper)` background over the viewport — and
+ * the storyboard requires the horizon line to be on screen during S1, S2 and Act 9.
+ *
+ * So the band sits above `.journey` and below the header, and it earns that place by
+ * geometry instead of z-index: it occupies only the bottom 38 % of the viewport, and
+ * the plane's alpha is strongest where the floor recedes toward the horizon and falls
+ * to nothing at the viewer's feet — the band's bottom edge, where the hero proof line
+ * and the chapter index live. Text and floor never share pixels.
+ */
+
+:root {
+  /* Storyboard S1/S2/Act 9: the plane reads as a line at 62 % of viewport height. */
+  --surface-horizon: 62svh;
+}
+
+.surface-band,
+.surface-canvas-host {
+  position: fixed;
+  z-index: 1;
+  left: 0;
+  right: 0;
+  pointer-events: none;
+}
+
+.surface-band {
+  top: var(--surface-horizon);
+  bottom: 0;
+  /* The band is also the canvas view's rectangle: one geometry, one owner. */
+  opacity: 1;
+  transition: opacity 300ms ease, background-image 300ms ease;
+  background-image: linear-gradient(180deg, rgba(111, 166, 202, .18), rgba(222, 217, 207, .26) 50%, rgba(236, 234, 228, .12));
+  mask-image: linear-gradient(180deg, #000 0%, #000 46%, transparent 96%);
+  -webkit-mask-image: linear-gradient(180deg, #000 0%, #000 46%, transparent 96%);
+}
+
+.surface-band::before {
+  /* The CSS twin of the WebGL horizon line, so balanced/still tiers keep the beat. */
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: var(--cobalt);
+  opacity: .12;
+  transition: opacity 300ms ease;
+}
+
+.surface-band[data-surface-horizon='on'] {
+  background-image: none;
+}
+
+.surface-band[data-surface-horizon='on']::before { opacity: 1; }
+
+/* Material states 0–7 — the `material-morph` fallback: a colour swap on a .3 s fade. */
+.surface-band[data-surface-state='0'] { background-image: linear-gradient(180deg, rgba(22, 79, 131, .20), rgba(231, 227, 218, .34) 46%, rgba(207, 215, 222, .16)); }
+.surface-band[data-surface-state='1'] { background-image: linear-gradient(180deg, rgba(93, 104, 108, .26), rgba(141, 138, 131, .20) 52%, rgba(118, 114, 104, .10)); }
+.surface-band[data-surface-state='2'] { background-image: linear-gradient(180deg, rgba(111, 166, 202, .18), rgba(222, 217, 207, .26) 50%, rgba(236, 234, 228, .12)); }
+.surface-band[data-surface-state='3'] { background-image: linear-gradient(180deg, rgba(22, 79, 131, .20), rgba(216, 209, 195, .28) 48%, rgba(93, 104, 108, .14)); }
+.surface-band[data-surface-state='4'] { background-image: linear-gradient(180deg, rgba(154, 154, 151, .26), rgba(143, 143, 140, .20) 55%, rgba(165, 165, 161, .10)); }
+.surface-band[data-surface-state='5'] { background-image: linear-gradient(180deg, rgba(43, 54, 64, .30), rgba(22, 79, 131, .26) 47%, rgba(169, 191, 208, .12)); }
+.surface-band[data-surface-state='6'] { background-image: linear-gradient(180deg, rgba(125, 134, 136, .24), rgba(154, 160, 163, .18) 52%, rgba(179, 183, 184, .09)); }
+.surface-band[data-surface-state='7'] { background-image: none; }
+
+/* WebGL is live: the band keeps its rectangle (it is the view host) but shows nothing. */
+html[data-surface='webgl'] .surface-band { opacity: 0; }
+
+.surface-canvas-host {
+  top: 0;
+  bottom: 0;
+  contain: layout paint;
+}
+
+/*
+ * Context lost. The element stays in the DOM — a removed <canvas> can never receive
+ * `webglcontextrestored` — but nothing of it is painted, and the store has already
+ * switched the band back on underneath.
+ */
+.surface-canvas-host[data-surface-lost] { visibility: hidden; }
+
+/*
+ * react-three-fiber writes `pointer-events: auto` inline on its own wrapper element,
+ * which overrides the `none` inherited from the host and makes the full-viewport canvas
+ * swallow every click on the page underneath it (caught on /floor-visualizer, where it
+ * blocked the finish buttons). An inline style can only be beaten by !important, and
+ * this plane must never take a pointer on any route.
+ */
+.surface-canvas-host,
+.surface-canvas-host * {
+  pointer-events: none !important;
+  touch-action: auto !important;
+}
+
+.surface-canvas-host canvas {
+  display: block;
+  width: 100% !important;
+  height: 100% !important;
+}
+
+/* No plane for anyone who asked for less motion, and none on a phone. */
+@media (prefers-reduced-motion: reduce) {
+  .surface-band { transition: none; }
+  .surface-band::before { transition: none; }
+}
+
+html[data-journey-motion='still'] .surface-band { opacity: 0; }

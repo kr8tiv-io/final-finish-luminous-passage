@@ -1,6 +1,8 @@
 ---
 import '../styles/global.css';
 import '../styles/readable-experience.css';
+import '../styles/surface.css';
+import SurfaceCanvas from '../components/motion/SurfaceCanvas';
 import { deploymentSettings } from '../lib/deployment.js';
 
 interface Props {
@@ -93,6 +95,10 @@ const siteSchema = {
   </head>
   <body>
     <a class="skip-link" href="#main-content">Skip to content</a>
+    <!-- The one floor: a CSS band on balanced/still tiers, and the WebGL view's
+         rectangle when SurfaceCanvas is admitted. See src/styles/surface.css. -->
+    <div class="surface-band" data-surface-fallback data-surface-state="2" aria-hidden="true"></div>
+    <SurfaceCanvas client:idle={{ timeout: 2000 }} probe={deployment.environment !== 'production'} />
     <slot />
   </body>
 </html>

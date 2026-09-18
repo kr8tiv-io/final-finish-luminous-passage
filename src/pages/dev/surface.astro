@@ -1,0 +1,142 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { SURFACE_MATERIALS } from '../../lib/motion/surface-materials';
+
+export const prerender = false;
+
+// Staging/dev only. The client route never serves this page.
+if (import.meta.env.SITE_ENV === 'production') {
+  return new Response('Not found', { status: 404, headers: { 'content-type': 'text/plain' } });
+}
+---
+
+<BaseLayout
+  title="Surface plane — local review"
+  description="Local instrument for the SurfaceFloor material states. Not a client route."
+  canonicalPath="/dev/surface"
+  noindex
+>
+  <main id="main-content" class="surface-dev">
+    <p class="surface-dev-note">Local instrument · visual direction not approved · not a client route</p>
+    <h1>SurfaceFloor material states</h1>
+
+    <section aria-labelledby="states-heading">
+      <h2 id="states-heading">States</h2>
+      <div class="surface-dev-buttons" data-surface-dev-states>
+        {SURFACE_MATERIALS.map((spec) => (
+          <button type="button" data-surface-dev-state={spec.id}>
+            <span class="surface-dev-index">{spec.id}</span>
+            <span>{spec.name}</span>
+          </button>
+        ))}
+      </div>
+    </section>
+
+    <section aria-labelledby="morph-heading">
+      <h2 id="morph-heading">Morph</h2>
+      <label class="surface-dev-field" for="surface-dev-mix">
+        Blend A → B
+        <input id="surface-dev-mix" type="range" min="0" max="1" step="0.01" value="0" data-surface-dev-mix />
+      </label>
+      <div class="surface-dev-buttons">
+        <button type="button" data-surface-dev-camera>Camera: standing</button>
+        <button type="button" data-surface-dev-horizon>Horizon: off</button>
+        <button type="button" data-surface-dev-sweep>Sweep</button>
+        <button type="button" data-surface-dev-settle>Settle</button>
+      </div>
+    </section>
+
+    <section aria-labelledby="readout-heading">
+      <h2 id="readout-heading">Readout</h2>
+      <dl class="surface-dev-readout">
+        <div><dt>Frames</dt><dd data-surface-dev-frames>—</dd></div>
+        <div><dt>State</dt><dd data-surface-dev-readout>—</dd></div>
+        <div><dt>Renderer</dt><dd data-surface-dev-renderer>—</dd></div>
+      </dl>
+    </section>
+  </main>
+</BaseLayout>
+
+<style>
+  .surface-dev { max-width: 52rem; margin: 0 auto; padding: 7rem var(--gutter) 46svh; }
+  .surface-dev-note { margin: 0 0 1.5rem; font-size: .68rem; letter-spacing: .12em; text-transform: uppercase; color: var(--cobalt); }
+  .surface-dev h1 { font-size: clamp(2rem, 4vw, 3rem); font-weight: 450; letter-spacing: -.045em; margin: 0 0 2.5rem; }
+  .surface-dev h2 { font-size: .7rem; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); margin: 2.5rem 0 .9rem; }
+  .surface-dev-buttons { display: flex; flex-wrap: wrap; gap: .5rem; }
+  .surface-dev-buttons button { display: inline-flex; align-items: center; gap: .55rem; min-height: 44px; padding: .55rem 1rem; border: 1px solid var(--line); border-radius: 999px; background: var(--paper-bright); color: var(--ink); font-size: .74rem; cursor: pointer; }
+  .surface-dev-buttons button[aria-pressed='true'] { border-color: var(--cobalt); color: var(--cobalt); }
+  .surface-dev-index { font-variant-numeric: tabular-nums; font-weight: 700; color: var(--cobalt); }
+  .surface-dev-field { display: grid; gap: .5rem; max-width: 26rem; font-size: .74rem; }
+  .surface-dev-field input { width: 100%; min-height: 44px; }
+  .surface-dev-readout { display: grid; grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr)); gap: 1rem; margin: 0; }
+  .surface-dev-readout dt { font-size: .62rem; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
+  .surface-dev-readout dd { margin: .2rem 0 0; font-size: .82rem; font-variant-numeric: tabular-nums; }
+</style>
+
+<script>
+  type SurfaceProbe = NonNullable<Window['__ffeSurface']>;
+
+  const ready = (): SurfaceProbe | null => window.__ffeSurface ?? null;
+  const stateButtons = [...document.querySelectorAll<HTMLButtonElement>('[data-surface-dev-state]')];
+  const mix = document.querySelector<HTMLInputElement>('[data-surface-dev-mix]');
+  const cameraButton = document.querySelector<HTMLButtonElement>('[data-surface-dev-camera]');
+  const horizonButton = document.querySelector<HTMLButtonElement>('[data-surface-dev-horizon]');
+  const sweepButton = document.querySelector<HTMLButtonElement>('[data-surface-dev-sweep]');
+  const settleButton = document.querySelector<HTMLButtonElement>('[data-surface-dev-settle]');
+  const frames = document.querySelector<HTMLElement>('[data-surface-dev-frames]');
+  const readout = document.querySelector<HTMLElement>('[data-surface-dev-readout]');
+  const renderer = document.querySelector<HTMLElement>('[data-surface-dev-renderer]');
+
+  stateButtons.forEach((button) => {
+    button.addEventListener('click', () => {
+      const id = Number(button.dataset.surfaceDevState);
+      ready()?.morphTo(id as Parameters<SurfaceProbe['morphTo']>[0]);
+      if (mix) mix.value = '1';
+    });
+  });
+
+  mix?.addEventListener('input', () => {
+    const probe = ready();
+    if (!probe) return;
+    const states = probe.states as { a: number; b: number; horizon: boolean };
+    probe.applyTarget({
+      a: states.a as Parameters<SurfaceProbe['morphTo']>[0],
+      b: states.b as Parameters<SurfaceProbe['morphTo']>[0],
+      mix: Number(mix.value),
+      horizon: states.horizon,
+    });
+  });
+
+  cameraButton?.addEventListener('click', () => {
+    const next = cameraButton.dataset.mode === 'kneeling' ? 'standing' : 'kneeling';
+    cameraButton.dataset.mode = next;
+    cameraButton.textContent = `Camera: ${next}`;
+    ready()?.setCamera(next);
+  });
+
+  horizonButton?.addEventListener('click', () => {
+    const next = horizonButton.dataset.mode !== 'on';
+    horizonButton.dataset.mode = next ? 'on' : 'off';
+    horizonButton.textContent = `Horizon: ${next ? 'on' : 'off'}`;
+    ready()?.setHorizon(next);
+  });
+
+  sweepButton?.addEventListener('click', () => ready()?.sweep(2));
+  settleButton?.addEventListener('click', () => ready()?.settle());
+
+  window.setInterval(() => {
+    const probe = ready();
+    if (!probe) return;
+    const states = probe.states as {
+      a: number; b: number; mix: number; horizon: boolean; camera: string; renderer: string;
+    };
+    if (frames) frames.textContent = String(probe.frames);
+    if (readout) readout.textContent = `${states.a} → ${states.b} · mix ${states.mix.toFixed(2)} · ${states.horizon ? 'horizon' : 'floor'} · ${states.camera}`;
+    if (renderer) renderer.textContent = states.renderer;
+    stateButtons.forEach((button) => {
+      const id = Number(button.dataset.surfaceDevState);
+      const dominant = states.mix < 0.5 ? states.a : states.b;
+      button.setAttribute('aria-pressed', String(id === dominant));
+    });
+  }, 250);
+</script>
