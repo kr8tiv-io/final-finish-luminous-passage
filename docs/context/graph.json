@@ -1019,7 +1019,7 @@
       "id": "step-25",
       "type": "step",
       "title": "Finish alcove and visualizer: entrance from finish chapter, env map + flake sparkle, mobile editor gaps closed",
-      "status": "doing",
+      "status": "done",
       "phase": "phase-3",
       "tier": "O",
       "owner": "ui",

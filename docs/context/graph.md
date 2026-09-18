@@ -38,7 +38,7 @@ flowchart TD
     step-23["step-23: See the difference: pin the inner passage, jh3y "]:::stDoing
     step-23b["step-23b: Archive lattice (Act 6): cylinder cards unwrap i"]:::stTodo
     step-24["step-24: Epoxy layer-mask headline (Creative Ocean): resi"]:::stDoing
-    step-25["step-25: Finish alcove and visualizer: entrance from fini"]:::stDoing
+    step-25["step-25: Finish alcove and visualizer: entrance from fini"]:::stDone
     step-26["step-26: Commercial chapter: poster becomes a DepthPlate "]:::stTodo
     step-27["step-27: Consultation: single poster, wash only behind wo"]:::stTodo
     step-28["step-28: Micro-interactions and grade: hover vocabulary s"]:::stTodo
@@ -482,7 +482,7 @@ flowchart TD
 - **Phase:** phase-3
 - **Tier:** O
 - **Owner(s):** ui
-- **Status:** doing
+- **Status:** done
 - **Files:** src/components/visualizer/*
 - **Inputs (informs):** S7
 - **Constraints (locks):** none recorded
