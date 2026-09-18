@@ -24,11 +24,6 @@ const currentRating = ratingIsCurrent(customerProof.rating.verifiedAt, customerP
 const ratingDate = new Intl.DateTimeFormat('en-CA', {month:'short',day:'numeric',year:'numeric',timeZone:'America/Edmonton'}).format(new Date(customerProof.rating.verifiedAt));
 // Keep unapproved spatial work available for local review, not the client route.
 const thresholdStudy = import.meta.env.DEV && Astro.url.searchParams.get('study') === 'threshold';
-const chapterLinks = [
-  ['portico', 'Surface'], ['foundation', 'Preparation'], ['garage', 'Your space'],
-  ['vault', 'Basement'], ['finish-hall', 'Finishes'], ['commercial', 'Commercial'],
-  ['proof', 'Projects'], ['consultation', 'Denis'],
-];
 ---
 
 <BaseLayout title={title} description={description}>
@@ -77,12 +72,12 @@ const chapterLinks = [
         </div>
         <nav class="hero-ribbon" data-hero-ribbon aria-label="Follow the floor chapters">
           <span class="hero-ribbon-line" aria-hidden="true"></span>
-          <a href="#portico"><span>01</span>The pour</a><a href="#customer-reviews"><span>02</span>The proof</a><a href="#proof"><span>03</span>Transformations</a><a href="#finish-hall"><span>04</span>Your finish</a>
+          <a href="#portico"><span>01</span>The pour</a><a href="#customer-reviews"><span>02</span>The proof</a><a href="#proof"><span>05</span>See the difference</a><a href="#finish-hall"><span>07</span>Your finish</a>
         </nav>
       </div>
 
       <a class="hero-proof" href="#customer-reviews">{currentRating ? <><span aria-hidden="true">★★★★★</span> {customerProof.rating.value.toFixed(1)} · {customerProof.rating.count}+ Google reviews <small>Checked {ratingDate}</small></> : 'Hear from our customers'} <span aria-hidden="true">↓</span></a>
-      <p class="chapter-index">01 / Follow the floor <span>Material concept film</span></p>
+      <p class="chapter-index" data-act-label>01 / The pour <span>Material concept film</span></p>
     </section>
 
     <SocialProof />
@@ -103,10 +98,10 @@ const chapterLinks = [
         <div class="material-lens-glass"><img src="/images/brand/pearl-stair-v2.webp" alt="Detail of the softly reflective pearl-grey concept floor" width="1672" height="941" loading="lazy" /></div>
         <figcaption><span>01 / Surface study</span><strong>Pearl grey</strong><small>Illustrative material · not an installed project</small></figcaption>
       </figure>
-      <p class="chapter-index" aria-hidden="true">02 / Beneath the finish <span>Architectural concept</span></p>
+      <p class="chapter-index" data-act-label aria-hidden="true">03 / Beneath the surface <span>Architectural concept</span></p>
     </section>
 
-    <ChapterReading id="foundation" number="01" label="What happens beneath the finish" href="/services/concrete-solutions" link="Explore concrete preparation">
+    <ChapterReading id="foundation" number="03" label="What happens beneath the finish" href="/services/concrete-solutions" link="Explore concrete preparation">
       <p>A beautiful finish starts with the concrete underneath. Discuss existing coatings, cracks, contamination, and moisture concerns with Denis before choosing a coating system.</p>
       <p>The assessment guides the preparation. It is the part you may not see in the finished photograph, but it deserves just as much attention.</p>
       <PreparationLayers />
@@ -128,10 +123,10 @@ const chapterLinks = [
         <h2 id="garage-title" class="chapter-title">Reclaim your garage or basement.</h2>
         </div>
       </div>
-      <p class="chapter-index" aria-hidden="true">03 / Your space</p>
+      <p class="chapter-index" data-act-label aria-hidden="true">04 / Reclaim · garage <span>Architectural concept</span></p>
     </section>
 
-    <ChapterReading id="garage" number="02" label="Make room for what you love" href="/services/residential-epoxy-flooring" link="Explore residential floors">
+    <ChapterReading id="garage" number="04" label="Make room for what you love" href="/services/residential-epoxy-flooring" link="Explore residential floors">
       <p>A workshop for the weekend. A place to train. Space for a hobby that has outgrown the kitchen table. The floor can be the starting point for making an underused room feel considered.</p>
       <p>Tell us what the space needs to accommodate: vehicles, storage, equipment, or everyday use. That conversation helps narrow the finish choices before you settle on a colour.</p>
     </ChapterReading>
@@ -152,10 +147,10 @@ const chapterLinks = [
         <h2 id="vault-title" class="chapter-title">The space was always there.</h2>
         </div>
       </div>
-      <p class="chapter-index" aria-hidden="true">03 / Another possibility</p>
+      <p class="chapter-index" data-act-label aria-hidden="true">04 / Reclaim · basement <span>Architectural concept</span></p>
     </section>
 
-    <ChapterReading id="vault" number="03" label="A more useful basement" href="/contact#quote" link="Discuss your space with Denis">
+    <ChapterReading id="vault" number="04" label="A more useful basement" href="/contact#quote" link="Discuss your space with Denis">
       <p>A calmer hobby room, a home fitness area, or simply a more useful basement. Start by discussing the condition of the slab and how the room will be used.</p>
       <p>A coating is one part of a room transformation. It does not replace moisture remediation, ventilation, heating, or a complete renovation.</p>
     </ChapterReading>
@@ -185,12 +180,12 @@ const chapterLinks = [
         </div>
         </div>
       </div>
-      <p class="chapter-index" aria-hidden="true">04 / The material studio</p>
+      <p class="chapter-index" data-act-label aria-hidden="true">07 / Your finish <span>Material concept film</span></p>
     </section>
 
     <ResinReveal />
 
-    <ChapterReading id="finish-hall" number="04" label="A finish, not just a colour" href="/floor-visualizer" link="Preview your own floor">
+    <ChapterReading id="finish-hall" number="07" label="A finish, not just a colour" href="/floor-visualizer" link="Preview your own floor">
       <p>Quiet stone tones. An expressive flake blend. A softer metallic surface. Explore 30 inspiration finishes and compare favourites in the floor studio.</p>
       <p>Your screen is a starting point, not a physical sample. Confirm available materials, texture, and the right coating system with Denis before choosing.</p>
     </ChapterReading>
@@ -207,10 +202,10 @@ const chapterLinks = [
         <h2 id="commercial-title" class="chapter-title">Built around your working day.</h2>
         </div>
       </div>
-      <p class="chapter-index" aria-hidden="true">A route for business</p>
+      <p class="chapter-index" data-act-label aria-hidden="true">08 / Commercial <span>Architectural concept</span></p>
     </section>
 
-    <ChapterReading id="commercial" number="05" label="Plan around the working day" href="/services/commercial-epoxy-flooring" link="Explore commercial floors">
+    <ChapterReading id="commercial" number="08" label="Plan around the working day" href="/services/commercial-epoxy-flooring" link="Explore commercial floors">
       <p>A shop floor, a showroom, a shared corridor. The right recommendation starts with how the space operates: traffic, cleaning, access, and the time you can set aside for installation.</p>
       <p>Discuss equipment, operating conditions, and areas that must remain accessible. Preparation and return-to-use requirements belong in the project conversation, not a blanket promise.</p>
     </ChapterReading>
@@ -220,6 +215,7 @@ const chapterLinks = [
     <section class="journey-chapter proof-chapter white-stage" id="proof" tabindex="-1" data-journey-chapter="proof" data-journey-white-stage aria-label="Real Final Finish transformations">
       <TransformationGallery client:visible={{ rootMargin: '800px' }} allowPending={import.meta.env.DEV || import.meta.env.SITE_ENV === 'staging'} />
       <div class="gallery-project-link editorial-width"><a class="chapter-link" href="/projects">Explore the project archive <span aria-hidden="true">↗</span></a></div>
+      <p class="chapter-index" data-act-label aria-hidden="true">05 / See the difference <span>Edmonton project archive</span></p>
     </section>
 
     <ProjectStory story={projectStories[2]} />
@@ -245,10 +241,10 @@ const chapterLinks = [
         </div>
         </div>
       </div>
-      <p class="chapter-index" aria-hidden="true">06 / Talk to Denis</p>
+      <p class="chapter-index" data-act-label aria-hidden="true">10 / Talk to Denis</p>
     </section>
 
-    <ChapterReading id="consultation" number="06" label="A useful first conversation" href="/contact#quote" link="Tell us about your project">
+    <ChapterReading id="consultation" number="10" label="A useful first conversation" href="/contact#quote" link="Tell us about your project">
       <p>Tell Denis where the space is, how you use it, and what you would like to change. An approximate size and any concerns about the concrete help start a useful conversation.</p>
       <p>Preparation, repairs, finish choice, and access all shape the quote. Bring your questions and any shortlisted finishes; there is no need to have every detail worked out.</p>
     </ChapterReading>

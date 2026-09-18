@@ -6,199 +6,27 @@ import {
   useState,
   useSyncExternalStore,
   type CSSProperties,
-  type FocusEvent,
-  type PointerEvent,
 } from 'react';
-import { selectedProjectPhotos, transformations, type ImageVariant, type Transformation } from '../../data/transformation-gallery';
+import { selectedProjectPhotos, transformations } from '../../data/transformation-gallery';
 import { journeyControls } from '../../lib/motion/journey-controls';
 import { journeyDirector } from '../../lib/motion/journey-director';
 import { getArcCardState, getImageLoadingState, resolveGalleryRender } from '../../lib/projects/gallery';
 import {
-  clampReveal,
   getFeaturedPassageState,
   getFeaturedScrollTarget,
   getGalleryScrollTarget,
   isFeaturedPassageAdmissible,
-  normalizeImageTransform,
-  resolveDragOwner,
   resolveFeaturedPresentation,
   type FeaturedNavigation,
 } from '../../lib/projects/transformation-gallery';
+import Comparison, { Picture } from './Comparison';
 import './transformation-gallery.css';
 
 type Props = { allowPending?: boolean };
-type PointerStart = { x: number; y: number; pointerId: number; owner: 'comparison' | 'page' | null } | null;
 type PassageGeometry = { start: number; travel: number; contentHeight: number };
 
 const INITIAL_REVEAL = 50;
 const PROJECT_ARCHIVE_PATH = '/projects';
-
-function Picture({ image, full, loading }: { image: ImageVariant; full: boolean; loading: 'eager' | 'lazy' }) {
-  const crop = normalizeImageTransform(image.crop);
-  const cropStyle = {
-    objectPosition: image.crop.objectPosition,
-    transform: `translate3d(${crop.translateX}%, ${crop.translateY}%, 0) rotate(${crop.rotate}deg) scale(${crop.scale})`,
-  };
-  if (!full) {
-    return <img
-      src={image.thumbnail}
-      alt={image.alt}
-      width={image.width}
-      height={image.height}
-      loading="lazy"
-      decoding="async"
-      draggable={false}
-      data-image-quality="thumbnail"
-      style={cropStyle}
-    />;
-  }
-  return <picture data-image-quality="full">
-    <source type="image/avif" srcSet={image.avif} />
-    <source type="image/webp" srcSet={image.webp} />
-    <img src={image.jpeg} alt={image.alt} width={image.width} height={image.height} loading={loading} decoding="async" draggable={false} style={cropStyle} />
-  </picture>;
-}
-
-function valueText(reveal: number): string {
-  if (reveal === 0) return 'After photograph fully visible';
-  if (reveal === 100) return 'Before photograph fully visible';
-  return `${reveal}% before photograph on the left and ${100 - reveal}% after photograph on the right`;
-}
-
-function Comparison({
-  project,
-  instance,
-  reveal,
-  onReveal,
-  hydrated,
-  full,
-  loading,
-  onInteractionStart,
-  onInteractionEnd,
-  onFocusWithin,
-}: {
-  project: Transformation;
-  instance: string;
-  reveal: number;
-  onReveal: (value: number) => void;
-  hydrated: boolean;
-  full: boolean;
-  loading: 'eager' | 'lazy';
-  onInteractionStart?: () => void;
-  onInteractionEnd?: () => void;
-  onFocusWithin?: (target: HTMLElement | null) => void;
-}) {
-  const stageRef = useRef<HTMLDivElement>(null);
-  const pointerStart = useRef<PointerStart>(null);
-  const [hoverReveal, setHoverReveal] = useState<number | null>(null);
-  const displayedReveal = hoverReveal ?? reveal;
-  const titleId = `${instance}-${project.id}-title`;
-  const style = { '--reveal': `${displayedReveal}%` } as CSSProperties;
-
-  const commitReveal = (value: number) => {
-    setHoverReveal(null);
-    onReveal(clampReveal(value));
-  };
-  const revealFromPointer = (clientX: number) => {
-    const bounds = stageRef.current?.getBoundingClientRect();
-    return bounds ? clampReveal(((clientX - bounds.left) / Math.max(1, bounds.width)) * 100) : reveal;
-  };
-  const isControlTarget = (target: EventTarget | null) => target instanceof Element && Boolean(target.closest('button,input'));
-  const onPointerDown = (event: PointerEvent<HTMLDivElement>) => {
-    if (!hydrated || isControlTarget(event.target)) return;
-    setHoverReveal(null);
-    pointerStart.current = { x: event.clientX, y: event.clientY, pointerId: event.pointerId, owner: null };
-    onInteractionStart?.();
-  };
-  const onPointerMove = (event: PointerEvent<HTMLDivElement>) => {
-    const start = pointerStart.current;
-    if (!start) {
-      if (isControlTarget(event.target)) {
-        setHoverReveal(null);
-        return;
-      }
-      if (event.pointerType === 'mouse' && event.buttons === 0 && !stageRef.current?.contains(document.activeElement)) {
-        setHoverReveal(revealFromPointer(event.clientX));
-        onInteractionStart?.();
-      }
-      return;
-    }
-    const owner = start.owner ?? resolveDragOwner({ startsInComparison: true, deltaX: event.clientX - start.x, deltaY: event.clientY - start.y });
-    if (owner === 'undecided') return;
-    start.owner = owner === 'comparison' ? 'comparison' : 'page';
-    if (owner !== 'comparison') return;
-    if (!stageRef.current?.hasPointerCapture(event.pointerId)) stageRef.current?.setPointerCapture(event.pointerId);
-    event.preventDefault();
-    commitReveal(revealFromPointer(event.clientX));
-  };
-  const onPointerEnd = (event: PointerEvent<HTMLDivElement>) => {
-    if (!pointerStart.current) return;
-    if (stageRef.current?.hasPointerCapture(event.pointerId)) stageRef.current.releasePointerCapture(event.pointerId);
-    pointerStart.current = null;
-    setHoverReveal(null);
-    onInteractionEnd?.();
-  };
-  const onPointerLeave = () => {
-    if (pointerStart.current) return;
-    setHoverReveal(null);
-    if (!stageRef.current?.contains(document.activeElement)) onInteractionEnd?.();
-  };
-  const onFocus = (event: FocusEvent<HTMLDivElement>) => {
-    setHoverReveal(null);
-    onInteractionStart?.();
-    onFocusWithin?.(event.target instanceof HTMLElement ? event.target : null);
-  };
-  const onBlur = (event: FocusEvent<HTMLDivElement>) => {
-    if (event.relatedTarget instanceof Node && event.currentTarget.contains(event.relatedTarget)) return;
-    onInteractionEnd?.();
-  };
-
-  return <article className="transformation-comparison" aria-labelledby={titleId}>
-    <div
-      ref={stageRef}
-      className="transformation-stage"
-      style={style}
-      data-comparison
-      data-static-fallback="side-by-side"
-      data-displayed-reveal={displayedReveal}
-      onPointerDown={onPointerDown}
-      onPointerEnter={onPointerMove}
-      onPointerMove={onPointerMove}
-      onPointerUp={onPointerEnd}
-      onPointerCancel={onPointerEnd}
-      onLostPointerCapture={onPointerEnd}
-      onPointerLeave={onPointerLeave}
-      onFocusCapture={onFocus}
-      onBlurCapture={onBlur}
-    >
-      <div className="transformation-photo transformation-photo--before"><Picture image={project.before} full={full} loading={loading} /></div>
-      <div className="transformation-photo transformation-photo--after"><Picture image={project.after} full={full} loading={loading} /></div>
-      <span className="transformation-label transformation-label--before">Before</span>
-      <span className="transformation-label transformation-label--after">After</span>
-      <span className="transformation-divider" aria-hidden="true"><i>↔</i></span>
-      <input
-        className="transformation-range"
-        type="range"
-        min="0"
-        max="100"
-        step="1"
-        value={reveal}
-        aria-label={`Move the before and after divider for ${project.title}`}
-        aria-valuetext={valueText(reveal)}
-        disabled={!hydrated}
-        onInput={(event) => commitReveal(Number(event.currentTarget.value))}
-      />
-      <div className="transformation-stage__actions" aria-label={`Comparison controls for ${project.title}`}>
-        <button type="button" aria-label="Show before photograph" disabled={!hydrated} onClick={() => commitReveal(100)}>Before</button>
-        <button type="button" aria-label="Show after photograph" disabled={!hydrated} onClick={() => commitReveal(0)}>After</button>
-      </div>
-    </div>
-    <div className="transformation-caption">
-      <div><p className="transformation-index">{project.tabLabel}</p><h3 id={titleId}>{project.title}</h3></div>
-      <p className="transformation-rationale">{project.homeownerCaption}</p>
-    </div>
-  </article>;
-}
 
 /**
  * Production fallback. Never an empty section and never an "archive" apology:
