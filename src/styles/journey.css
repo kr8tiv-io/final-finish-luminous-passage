@@ -1,27 +1,28 @@
+@import './reading-zones.css';
 /* One luminous stage. The director owns motion; CSS owns composition. */
 .journey { position: relative; isolation: isolate; overflow: clip; }
 html { scroll-padding-block: 6rem 5rem; }
 .journey-chapter { position: relative; min-height: 115svh; display: grid; align-content: center; padding: clamp(8rem, 17svh, 12rem) var(--gutter); scroll-margin-top: 5rem; }
 .journey-chapter:focus { outline: none; }
-.journey-chapter::after { content: ''; position: absolute; inset: 0; z-index: 1; pointer-events: none; background: linear-gradient(90deg,rgba(250,249,246,.93),rgba(250,249,246,.79) 27%,rgba(250,249,246,.28) 53%,transparent 77%); mask-image: linear-gradient(180deg,transparent,#000 18%,#000 74%,transparent); }
+.journey-chapter::after { content: ''; position: absolute; inset: 0; z-index: 1; pointer-events: none; background: linear-gradient(90deg,rgb(var(--paper-rgb) / .93),rgb(var(--paper-rgb) / .79) 27%,rgb(var(--paper-rgb) / .28) 53%,transparent 77%); mask-image: linear-gradient(180deg,transparent,#000 18%,#000 74%,transparent); }
 .journey-chapter:not(.hero-chapter):not(.white-stage)::after { display: none; }
 .chapter-copy-surface { position: relative; isolation: isolate; width: min(100%,38rem); }
 .chapter-copy-surface::before { display: none; }
 .hero-chapter::after { display: none; }
 /* Only a trace of light at the glyph edge: never a white panel or section wash. */
-.journey .chapter-content :is(.display-title,.chapter-title,.lead,.eyebrow) { width: fit-content; text-shadow: 0 1px 4px rgba(250,249,246,.45); }
+.journey .chapter-content :is(.display-title,.chapter-title,.lead,.eyebrow) { width: fit-content; text-shadow: 0 1px 4px rgb(var(--paper-rgb) / .45); }
 .journey .chapter-content [data-headline-style] { text-wrap: wrap; }
 .headline-line-mask { overflow: clip; }
 .journey .chapter-content { position: relative; z-index: 3; width: min(100%,var(--max)); margin-inline: auto; }
 .journey .hero-content { padding-right: 44%; }
 .journey .display-title { max-width: 12ch; font-family: var(--sans); font-size: clamp(3.25rem,6.5vw,7rem); line-height: 1.04; font-weight: 480; letter-spacing: -.07em; text-wrap: balance; }
 .journey .chapter-title { max-width: 13ch; font-family: var(--sans); font-size: clamp(3rem,5.8vw,6.5rem); font-weight: 450; line-height: 1.06; letter-spacing: -.065em; text-wrap: balance; }
-.journey .lead { max-width: 31rem; margin-top: 1.8rem; font-size: clamp(.98rem,1.16vw,1.16rem); line-height: 1.75; color: #3f4e57; }
+.journey .lead { max-width: 31rem; margin-top: 1.8rem; font-size: clamp(.98rem,1.16vw,1.16rem); line-height: 1.75; color: var(--ink-body); }
 .journey .eyebrow { font-size: .65rem; font-weight: 700; letter-spacing: .14em; margin-bottom: 1.6rem; }
 .journey .button-row { gap: .8rem; margin-top: 2rem; }
 .journey .button { min-height: 48px; padding: .85rem 1.4rem; border-radius: 999px; font-size: .76rem; gap: 1.4rem; letter-spacing: .015em; }
 .journey .button-primary::before { display: none; }
-.journey .button-secondary { background: rgba(250,249,246,.55); border-color: rgba(23,34,42,.25); }
+.journey .button-secondary { background: rgb(var(--paper-rgb) / .55); border-color: rgb(var(--ink-rgb) / .25); }
 .chapter-link { display: inline-flex; gap: 1.25rem; align-items: center; min-height: 44px; margin-top: 1.5rem; color: var(--cobalt); font-size: .85rem; text-underline-offset: .45rem; text-decoration-thickness: 1px; }
 .text-call { display: inline-flex; align-items: center; flex-wrap: wrap; gap: .5rem; min-height: 44px; font-size: .74rem; text-underline-offset: .3rem; }
 .text-call span { color: var(--muted); }
@@ -56,7 +57,7 @@ html { scroll-padding-block: 6rem 5rem; }
    is scoped to that tier, so it can never reach a `full` or `balanced` page. */
 html[data-journey-tier='still'] .journey .pour-stage video,
 html[data-journey-tier='still'] .journey .floor-film video { display: none; }
-.journey-motion-control { position: fixed; right: 1.2rem; bottom: max(1rem,env(safe-area-inset-bottom)); z-index: 60; display: inline-flex; align-items: center; gap: .7rem; min-height: 44px; padding: .65rem 1rem; border: 1px solid rgba(23,34,42,.17); border-radius: 999px; background: rgba(250,249,246,.94); color: var(--cobalt); font: 600 .68rem/1.3 var(--sans); cursor: pointer; }
+.journey-motion-control { position: fixed; right: 1.2rem; bottom: max(1rem,env(safe-area-inset-bottom)); z-index: 60; display: inline-flex; align-items: center; gap: .7rem; min-height: 44px; padding: .65rem 1rem; border: 1px solid rgb(var(--ink-rgb) / .17); border-radius: 999px; background: rgb(var(--paper-rgb) / .94); color: var(--cobalt); font: 600 .68rem/1.3 var(--sans); cursor: pointer; }
 .journey-breath { position: relative; min-height: 56svh; pointer-events: none; }
 .journey[data-threshold-study] .journey-breath[data-hall-from='garage'][data-hall-to='vault'] { min-height: 90svh; }
 .threshold-study-note { position: fixed; z-index: 60; bottom: 1rem; left: 1rem; padding: .6rem .8rem; background: var(--paper); color: var(--ink); font-size: .65rem; }
@@ -64,24 +65,25 @@ html[data-journey-tier='still'] .journey .floor-film video { display: none; }
 .chapter-index { position: absolute; z-index: 3; bottom: 2.5rem; left: var(--gutter); right: var(--gutter); display: flex; justify-content: space-between; margin: 0; font-size: .58rem; text-transform: uppercase; letter-spacing: .13em; color: var(--muted); }
 .chapter-index span { font-size: .55rem; }
 .hero-proof { position: absolute; z-index: 5; left: var(--gutter); bottom: 5.8rem; display: inline-flex; flex-wrap: wrap; gap: .65rem 1.1rem; align-items: center; min-height: 44px; font-size: .7rem; text-decoration: none; color: var(--ink); }
-.hero-proof small { font-size: .59rem; color: #54666f; }
+.hero-proof small { font-size: .59rem; color: var(--ink-quiet); }
 .hero-chapter { min-height: 112svh; padding-bottom: 14rem; }
 .hero-ribbon { --ribbon-progress: 0; position: relative; display: grid; grid-template-columns: repeat(4,minmax(0,1fr)); width: min(52rem,calc(100vw - 2 * var(--gutter))); margin-top: clamp(2.5rem,5svh,5rem); padding-block: .6rem; isolation: isolate; }
 .hero-ribbon a { position: relative; display: flex; flex-direction: column; justify-content: center; gap: .8rem; min-height: 76px; padding: .75rem 1rem; color: var(--ink); text-decoration: none; font-size: clamp(.64rem,.9vw,.77rem); font-weight: 600; }
-.hero-ribbon a span { color: #697881; font-size: .55rem; font-variant-numeric: tabular-nums; letter-spacing: .12em; }
+/* `.hero-ribbon a span` lived here until Step 16. Step 17 rebuilt the ribbon as four
+   plain links with no act numerals, and the only span left inside one is the empty
+   `.intent-glint` that `src/scripts/intent-motion.ts` appends at runtime — a decorative
+   box with no text, which a colour, a font-size and tabular figures cannot reach. */
 .hero-ribbon a::after { content: ''; position: absolute; bottom: -.6rem; left: 1rem; right: 1rem; height: 2px; background: var(--cobalt); transform: scaleX(0); transform-origin: left; transition: transform .35s cubic-bezier(.22,1,.36,1); }
 .hero-ribbon a:hover::after,.hero-ribbon a:focus-visible::after { transform: scaleX(1); }
 .hero-ribbon a:focus-visible { outline: 2px solid var(--cobalt); outline-offset: -2px; border-radius: .3rem; }
-.hero-ribbon-line { position: absolute; bottom: 0; left: 1rem; right: 1rem; height: 1px; background: rgba(23,34,42,.15); overflow: hidden; }
-.hero-ribbon-line::after { content: ''; display: block; height: 100%; background: linear-gradient(90deg,var(--cobalt),#b4946b); transform: scaleX(var(--ribbon-progress)); transform-origin: left; }
+.hero-ribbon-line { position: absolute; bottom: 0; left: 1rem; right: 1rem; height: 1px; background: rgb(var(--ink-rgb) / .15); overflow: hidden; }
+.hero-ribbon-line::after { content: ''; display: block; height: 100%; background: linear-gradient(90deg,var(--cobalt),var(--bronze-tint)); transform: scaleX(var(--ribbon-progress)); transform-origin: left; }
 .foundation-chapter { min-height: 125svh; }
 .journey-breath[data-hall-to='foundation'],.journey-breath[data-hall-from='foundation'] { min-height: 72svh; }
-.journey-swatches { display: flex; gap: .65rem; }
-.journey-swatches button { min-width: 54px; min-height: 54px; padding: 5px; border: 1px solid transparent; border-radius: 50%; background: rgba(250,249,246,.75); cursor: pointer; transition: border-color 180ms; }
-.journey-swatches button[aria-pressed='true'] { border-color: var(--cobalt); }
-.journey-swatches button span { display: block; width: 42px; height: 42px; border-radius: 50%; background: var(--swatch); }
-.motion-choice { display: inline-flex; align-items: center; gap: .7rem; min-height: 44px; padding: .5rem 0; margin-top: .5rem; border: 0; background: none; font-size: .68rem; color: var(--cobalt); cursor: pointer; }
-.motion-choice::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+/* `.journey-swatches` (four rules) and `.motion-choice` (two) lived here until Step 16.
+   Neither class appears anywhere in `src/` any more — the finish swatches belong to the
+   visualizer's own stylesheet and the motion choice is `MotionPreferenceControl`'s
+   `.journey-motion-control`. A DOM scan of the built homepage finds zero matches. */
 .journey .interlude-title { margin: 0; font-family: var(--sans); font-size: clamp(2.5rem,4.8vw,5rem); font-weight: 450; line-height: 1.08; letter-spacing: -.055em; }
 .editorial-width { width: min(100%,var(--max)); margin-inline: auto; }
 /* Stable, asymmetric feathering: no animated noise or moving mask texture. */
@@ -93,40 +95,42 @@ html[data-journey-tier='still'] .journey .floor-film video { display: none; }
 .google-rating { display: grid; justify-items: start; }
 .rating-number { display: flex; align-items: baseline; font: 450 clamp(6rem,11vw,11rem)/1 var(--sans); letter-spacing: -.08em; color: var(--ink); text-decoration: none; }
 .rating-number span { font-size: 1rem; color: var(--muted); margin-left: 1.3rem; letter-spacing: 0; }
-.review-stars { display: block; color: #967144; font-size: .9rem; letter-spacing: .13em; white-space: nowrap; }
+.review-stars { display: block; color: var(--bronze); font-size: .9rem; letter-spacing: .13em; white-space: nowrap; }
 .google-rating > .review-stars { margin: 1rem 0 .8rem; font-size: 1.3rem; }
 .rating-count { font-size: .95rem; text-decoration: none; display: inline-flex; gap: 1.2rem; min-height: 44px; align-items: center; }
-.google-rating small,.review-link-help { display: block; font-size: .63rem; line-height: 1.7; color: #627079; }
+.google-rating small,.review-link-help { display: block; font-size: .63rem; line-height: 1.7; color: var(--ink-quiet); }
 .social-intro > p:not(.eyebrow) { font-size: .95rem; line-height: 1.75; max-width: 28rem; margin-top: 1.5rem; }
 .social-intro .chapter-link { margin-top: .3rem; }
 .review-window { margin-inline: calc(-1 * var(--gutter)); mask-image: linear-gradient(90deg,transparent,#000 3%,#000 97%,transparent); }
 .review-gallery { display: flex; gap: 1.5rem; overflow-x: auto; overscroll-behavior-x: contain; scroll-snap-type: x proximity; scroll-padding-inline: var(--gutter); scrollbar-width: none; padding: 2rem var(--gutter); }
 .review-gallery::-webkit-scrollbar { display: none; }
 .review-gallery:focus-visible { outline: 2px solid var(--cobalt); outline-offset: -3px; }
-.review-card { box-sizing: border-box; flex: 0 0 clamp(20rem,28vw,27rem); min-height: 20rem; align-self: stretch; display: flex; flex-direction: column; scroll-snap-align: start; margin: 0; padding: clamp(1.4rem,2vw,2rem); background: linear-gradient(165deg,#fff 18%,rgba(255,255,255,.8) 58%,rgba(250,249,246,.35)); border-radius: 1rem; box-shadow: 0 0 0 1px rgba(23,34,42,.025),0 12px 36px rgba(23,34,42,.025); }
-.review-card-top { display: flex; align-items: center; justify-content: space-between; gap: 2rem; font-size: .65rem; color: #54666f; }
+.review-card { box-sizing: border-box; flex: 0 0 clamp(20rem,28vw,27rem); min-height: 20rem; align-self: stretch; display: flex; flex-direction: column; scroll-snap-align: start; margin: 0; padding: clamp(1.4rem,2vw,2rem); background: linear-gradient(165deg,var(--paper-bright) 18%,rgb(var(--paper-bright-rgb) / .8) 58%,rgb(var(--paper-rgb) / .35)); border-radius: 1rem; box-shadow: 0 0 0 1px rgb(var(--ink-rgb) / .025),0 12px 36px rgb(var(--ink-rgb) / .025); }
+.review-card-top { display: flex; align-items: center; justify-content: space-between; gap: 2rem; font-size: .65rem; color: var(--ink-quiet); }
 .review-card > p { margin: 1.4rem 0; font: 450 clamp(1.06rem,1.3vw,1.3rem)/1.55 var(--sans); letter-spacing: -.025em; text-wrap: pretty; }
 .review-card footer { margin-top: auto; display: grid; gap: .4rem; }
 .review-card footer strong { font-size: .76rem; font-weight: 650; }
-.review-card footer a { display: flex; align-items: center; font-size: .61rem; color: #63717a; text-decoration: none; min-height: 44px; }
+.review-card footer a { display: flex; align-items: center; font-size: .61rem; color: var(--ink-quiet); text-decoration: none; min-height: 44px; }
 .review-card footer a:focus-visible { outline: 2px solid var(--cobalt); outline-offset: 4px; }
 .review-person { display: flex; align-items: center; gap: .85rem; }
-.review-monogram { flex: 0 0 2.5rem; display: grid; place-items: center; width: 2.5rem; height: 2.5rem; border-radius: 50%; color: #547084; background: #edf1f2; font-size: .63rem; font-weight: 650; letter-spacing: .04em; }
-.review-topic { display: flex; gap: .65rem; align-items: center; border-top: 1px solid rgba(23,34,42,.08); margin: .7rem 0 0; padding-top: 1.2rem; color: #61717a; font-size: .6rem; letter-spacing: .04em; }
-.review-topic > span { width: 1.5rem; height: 1px; background: #b49875; }
+/* The monogram's own `color` was `#547084` and had never rendered: the caption rule in
+   `readable-experience.css` reaches it at (0,3,2) and this rule at (0,1,0). It now says
+   what is actually painted, so the two files agree. */
+.review-monogram { flex: 0 0 2.5rem; display: grid; place-items: center; width: 2.5rem; height: 2.5rem; border-radius: 50%; color: var(--ink-body); background: var(--paper-cool); font-size: .63rem; font-weight: 650; letter-spacing: .04em; }
+/* `.review-topic` and `.review-topic > span` lived here until Step 16. The card's meta
+   row is `.review-meta` now (`SocialProof.astro` / `review-stage.css`, Step 19) and a
+   DOM scan of the built homepage finds zero matches for either selector. */
 .review-bottom { display: flex; align-items: center; justify-content: space-between; gap: 2rem; margin-top: 1rem; }
 .review-bottom p { font-size: .71rem; margin-bottom: .5rem; }
 .review-bottom a { display: inline-block; font-size: .71rem; text-underline-offset: .3rem; min-height: 44px; padding-top: .35rem; }
-.review-controls { display: flex; gap: .55rem; align-items: center; padding-right: 10rem; }
-.review-controls button { width: 48px; height: 48px; border: 1px solid rgba(23,34,42,.16); border-radius: 50%; background: transparent; cursor: pointer; color: var(--cobalt); font-size: 1rem; transition: background-color 180ms,color 180ms; }
-.review-controls button:hover:not(:disabled) { background: var(--cobalt); color: white; }
-.review-controls button:disabled { opacity: .3; cursor: default; }
-.review-position { white-space: nowrap; min-width: 5rem; margin-right: 1rem; font-size: .64rem; font-variant-numeric: tabular-nums; }
-.review-progress { height: 1px; margin-top: 2rem; background: rgba(23,34,42,.1); }
-.review-progress span { display: block; height: 1px; background: var(--cobalt); transform: scaleX(0); transform-origin: left; }
+/* `.review-controls`, `.review-position` and `.review-progress` lived here until
+   Step 16. Act 2 is a grid of seventeen still cards now (Step 19 / `review-stage.css`),
+   not a carousel: `SocialProof.astro` renders no prev/next buttons, no position
+   readout and no progress rail, and a DOM scan of the built homepage finds zero
+   matches for all three. Restoring the carousel means restoring the markup first. */
 .story-heading { display: grid; grid-template-columns: 1.1fr 1fr; gap: clamp(3rem,9vw,9rem); align-items: end; margin-bottom: 5rem; }
 .story-heading .interlude-title { max-width: 12ch; }
-.story-intro,.story-detail p { font-size: .97rem; line-height: 1.85; color: #44545d; text-wrap: pretty; }
+.story-intro,.story-detail p { font-size: .97rem; line-height: 1.85; color: var(--ink-body); text-wrap: pretty; }
 .story-photographs { display: grid; grid-template-columns: .8fr 1.2fr; gap: clamp(1.5rem,5vw,5rem); align-items: start; }
 .story-photo { margin: 0; min-width: 0; }
 .story-photo--preparation { padding-top: clamp(2rem,10vw,9rem); }
@@ -135,18 +139,17 @@ html[data-journey-tier='still'] .journey .floor-film video { display: none; }
 .story-photo img { display: block; width: 100%; height: auto; }
 .story-photo a { display: block; }
 .story-photo a:focus-visible { outline: 2px solid var(--cobalt); outline-offset: 6px; }
-.story-photo figcaption { display: flex; flex-wrap: wrap; gap: .5rem 1rem; justify-content: space-between; padding: .8rem .5rem 0; font-size: .58rem; line-height: 1.7; letter-spacing: .06em; color: #54666f; }
-.story-photo figcaption span:last-child { color: #54666f; }
+.story-photo figcaption { display: flex; flex-wrap: wrap; gap: .5rem 1rem; justify-content: space-between; padding: .8rem .5rem 0; font-size: .58rem; line-height: 1.7; letter-spacing: .06em; color: var(--ink-quiet); }
 .story-detail { display: grid; grid-template-columns: 1fr 1fr; gap: clamp(2rem,8vw,8rem); align-items: center; margin-top: 3rem; }
-.story-detail small { display: block; max-width: 28rem; font-size: .63rem; line-height: 1.65; color: #67767e; margin-top: 1rem; }
+.story-detail small { display: block; max-width: 28rem; font-size: .63rem; line-height: 1.65; color: var(--ink-quiet); margin-top: 1rem; }
 .story-detail .chapter-link { margin-top: 0; }
 .material-lens { position: absolute; z-index: 3; right: max(11vw,6rem); bottom: 12svh; margin: 0; width: clamp(10rem,17vw,19rem); }
-.material-lens-glass { position: relative; aspect-ratio: 1; overflow: hidden; border-radius: .3rem; padding: 2px; background: rgba(255,255,255,.4); box-shadow: 0 0 0 1px rgba(255,255,255,.7),0 16px 65px rgba(48,51,54,.1); }
+.material-lens-glass { position: relative; aspect-ratio: 1; overflow: hidden; border-radius: .3rem; padding: 2px; background: rgb(var(--paper-bright-rgb) / .4); box-shadow: 0 0 0 1px rgb(var(--paper-bright-rgb) / .7),0 16px 65px rgb(var(--ink-rgb) / .1); }
 .material-lens-glass img { width: 100%; height: 100%; object-fit: cover; object-position: 50% 100%; transform: scale(2.2); transform-origin: 50% 100%; }
 .material-lens figcaption { padding: 1rem 0; display: grid; gap: .5rem; }
 .material-lens figcaption span { font-size: .58rem; text-transform: uppercase; letter-spacing: .12em; }
 .material-lens figcaption strong { font-size: 1.1rem; font-weight: 500; }
-.material-lens figcaption small { font-size: .6rem; line-height: 1.5; color: #5a6d78; }
+.material-lens figcaption small { font-size: .6rem; line-height: 1.5; color: var(--ink-quiet); }
 .proof-chapter.white-stage { display: block; min-height: auto; padding: 0; }
 .proof-chapter.white-stage::after { top: auto; z-index: -1; mask-image: none; }
 .gallery-project-link { padding: 0 var(--gutter) 3rem; }
@@ -167,7 +170,9 @@ html[data-journey-tier='still'] .journey .floor-film video { display: none; }
    8.04:1 on paper, at both widths. If a white stage is ever put back directly
    after `#proof`, this guard has to come back with it. */
 .proof-chapter > .chapter-index { position: static; padding: 0 var(--gutter) 2.5rem; }
-.proof-copy { order: -1; }
+/* `.proof-copy { order: -1 }` lived here until Step 16: zero matches on the built
+   homepage. `#proof` renders the gallery, a project link and the act label, in that
+   order, with no copy block to hoist. */
 .consultation-chapter { padding-top: 12rem; }
 .consultation-content { text-align: center; }
 .consultation-content .chapter-copy-surface { width: min(100%,46rem); margin-inline: auto; }
@@ -180,17 +185,17 @@ html[data-journey-motion='still'] .journey .journey-breath[data-hall-from] { min
 .journey .chapter-content { contain: layout style; }
 .planning-layout { display: grid; grid-template-columns: 1fr 1.1fr; align-items: start; gap: clamp(3rem,8vw,9rem); }
 .planning-intro .interlude-title { max-width: 12ch; }
-.planning-intro > p:last-child { max-width: 28rem; margin-top: 1.6rem; color: #44545d; font-size: .98rem; line-height: 1.8; }
-.planning-answers details { border-bottom: 1px solid rgba(23,34,42,.14); }
+.planning-intro > p:last-child { max-width: 28rem; margin-top: 1.6rem; color: var(--ink-body); font-size: .98rem; line-height: 1.8; }
+.planning-answers details { border-bottom: 1px solid rgb(var(--ink-rgb) / .14); }
 .planning-answers summary { display: flex; align-items: baseline; gap: 1rem; position: relative; list-style: none; min-height: 68px; padding: 1.4rem 2rem 1.4rem 0; cursor: pointer; font-size: 1rem; font-weight: 550; line-height: 1.55; }
 .planning-answers summary::-webkit-details-marker { display: none; }
 .planning-answers summary::after { content: '+'; position: absolute; right: .25rem; color: var(--cobalt); font-size: 1.35rem; line-height: 1; }
 .planning-answers details[open] summary::after { content: '−'; }
 .planning-answers summary:focus-visible { outline: 2px solid var(--cobalt); outline-offset: 5px; }
-.planning-answers summary .planning-number { color: #71808a; font-size: .63rem; font-variant-numeric: tabular-nums; }
+.planning-answers summary .planning-number { color: var(--ink-quiet); font-size: .63rem; font-variant-numeric: tabular-nums; }
 .planning-plus { display: none; }
 .planning-answer { padding: 0 1.8rem 1.8rem; }
-.planning-answer p { margin: 0; font-size: .9rem; line-height: 1.8; color: #44545d; }
+.planning-answer p { margin: 0; font-size: .9rem; line-height: 1.8; color: var(--ink-body); }
 .planning-answer a { display: inline-flex; min-height: 44px; align-items: center; margin-top: .65rem; font-size: .8rem; color: var(--cobalt); text-underline-offset: .35rem; }
 @media (min-width: 1500px) { .journey .chapter-content { padding-left: 3rem; } }
 @media (max-width: 1000px) {
@@ -200,7 +205,7 @@ html[data-journey-motion='still'] .journey .journey-breath[data-hall-from] { min
   .journey-motion-control { top: .8rem; left: calc(var(--gutter) + 3.25rem); right: auto; bottom: auto; width: 44px; height: 44px; padding: 0; justify-content: center; gap: 0; font-size: .85rem; }
   .journey-motion-control .motion-control-label { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
   .journey-chapter { min-height: 100svh; padding: 8rem var(--gutter) 7rem; align-content: end; }
-  .journey-chapter::after { background: linear-gradient(180deg,transparent,rgba(250,249,246,.22) 17%,rgba(250,249,246,.95) 48%,var(--paper) 93%); }
+  .journey-chapter::after { background: linear-gradient(180deg,transparent,rgb(var(--paper-rgb) / .22) 17%,rgb(var(--paper-rgb) / .95) 48%,var(--paper) 93%); }
   .journey .hero-content { padding: 0; }
   .journey .display-title { font-size: clamp(2.8rem,10.5vw,4.2rem); max-width: 12ch; }
   .journey .chapter-title { font-size: clamp(2.7rem,10vw,4rem); max-width: 14ch; }
@@ -217,8 +222,6 @@ html[data-journey-motion='still'] .journey .journey-breath[data-hall-from] { min
   .planning-answer { padding-inline: 0; }
   .hero-frame img,.pour-stage img,.pour-stage video { object-position: 63% 50%; }
   .hero-proof { position: relative; inset: auto; margin-top: 1.3rem; }
-  .journey-swatches button { min-width: 48px; min-height: 48px; }
-  .journey-swatches button span { width: 36px; height: 36px; }
   .journey .button-row { align-items: flex-start; }
   .journey .text-call { flex-basis: 100%; }
   .chapter-index { bottom: 1.6rem; font-size: .53rem; }
@@ -238,8 +241,6 @@ html[data-journey-motion='still'] .journey .journey-breath[data-hall-from] { min
   .review-card > p { font-size: 1.12rem; }
   .review-card footer a { min-height: 44px; display: flex; align-items: center; }
   .review-bottom { align-items: flex-start; gap: 1rem; }
-  .review-controls { flex-wrap: wrap; justify-content: flex-end; max-width: 112px; padding-right: 0; }
-  .review-position { flex-basis: 100%; margin: 0 0 .3rem; text-align: right; }
   .review-bottom > div:first-child { max-width: 56%; }
   .story-heading { display: block; margin-bottom: 2rem; }
   .story-intro { margin-top: 1.5rem; font-size: .92rem; }
@@ -257,3 +258,63 @@ html[data-journey-motion='still'] .journey .journey-breath[data-hall-from] { min
   .journey .journey-breath[data-hall-from][data-hall-to] { min-height: 0 !important; }
   .pour-stage video,.floor-film video { display: none; }
 }
+
+/* ── READING ZONES (Step 16) ─────────────────────────────────────────────────
+ *
+ * The numbers are in `reading-zones.css`, generated from
+ * `src/lib/motion/reading-zones.ts` and imported at the top of this file. Nothing
+ * below states a zone; it states how a zone is PAINTED, once, for every act.
+ *
+ * Two gradient layers, and a per-zone list saying which of them this act uses:
+ *
+ *   --zone-band-wash    paper rising from the chapter's floor to `--zone-band`
+ *                       viewport heights above it, dissolving over `--zone-feather`.
+ *                       This is the settled reading band every floor-anchored act has
+ *                       always had; it is now a function of where the words are.
+ *   --zone-column-wash  paper from the left edge out to `--zone-column` viewport
+ *                       widths, dissolving over `--zone-edge`, for the act's full
+ *                       height. Act 1 only: the pour has to hold the right of frame.
+ *
+ * Both are declared HERE, on the chapter, and not on `.journey`, because a `var()`
+ * inside a custom property is substituted on the element the property is declared on —
+ * declaring the gradients higher up would bake in `.journey`'s defaults and no
+ * per-chapter number would ever reach them.
+ *
+ * `100%` in the band is the chapter's own box (both painters are `inset: 0` of it) and
+ * the offsets are `svh`, so the band is the same height on every act regardless of how
+ * tall that act's box happens to be — which is what makes one set of numbers comparable
+ * across chapters at all.
+ *
+ * The wash is a gradient field, never a rectangle behind the glyphs: no halo, no
+ * frosted panel, no border, no blur (CLAUDE.md).
+ */
+.journey {
+  --zone-left: 0;
+  --zone-width: 1;
+  --zone-bottom: 0;
+  --zone-height: .3;
+  --zone-band: .32;
+  --zone-column: 0;
+  --zone-wash: 1;
+}
+.journey [data-journey-chapter] {
+  --zone-band-wash: linear-gradient(180deg,
+    transparent calc(100% - (var(--zone-band) + var(--zone-feather)) * 100svh),
+    rgb(var(--paper-rgb) / calc(var(--zone-wash) * .16)) calc(100% - (var(--zone-band) + var(--zone-feather) * .62) * 100svh),
+    rgb(var(--paper-rgb) / calc(var(--zone-wash) * .86)) calc(100% - (var(--zone-band) + var(--zone-feather) * .16) * 100svh),
+    rgb(var(--paper-rgb) / var(--zone-wash)) calc(100% - var(--zone-band) * 100svh));
+  --zone-column-wash: linear-gradient(90deg,
+    rgb(var(--paper-rgb) / var(--zone-wash)) 0,
+    rgb(var(--paper-rgb) / calc(var(--zone-wash) * .96)) calc((var(--zone-column) - var(--zone-edge) * .55) * 100vw),
+    rgb(var(--paper-rgb) / calc(var(--zone-wash) * .45)) calc(var(--zone-column) * 100vw),
+    transparent calc((var(--zone-column) + var(--zone-edge)) * 100vw));
+}
+/* The two painters. `::after` is every floor-anchored act; `.hero-light` is Act 1,
+   which has its own element because its chapter's `::after` is the hero's top feather
+   and cannot also be its wash. Both are `inset: 0` of the chapter and both stay in
+   flow with it, so the band travels with the copy instead of standing still under it.
+   `--zone-layers` is defaulted HERE rather than declared beside the gradients above:
+   the generated file sets it with the same specificity and is imported first, so a
+   default next to the gradients would silently outrank every zone in the file. */
+body .journey .journey-chapter:not(.hero-chapter):not(.white-stage)::after,
+body .journey .hero-light { background-image: var(--zone-layers, var(--zone-band-wash)); }

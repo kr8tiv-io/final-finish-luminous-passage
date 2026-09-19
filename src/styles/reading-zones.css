@@ -1,0 +1,48 @@
+/* GENERATED FILE — do not edit.
+ *
+ * Written by `scripts/build-reading-zones.mjs` from `src/lib/motion/reading-zones.ts`,
+ * the only place a reading zone is declared. `reading-zones.test.ts` fails when this
+ * file and that module disagree, so a hand edit here cannot survive a test run.
+ *
+ * The rules that USE these properties are authored in `src/styles/journey.css` under
+ * "READING ZONES". This file carries numbers and nothing else.
+ */
+
+:root {
+  --zone-feather: .5;
+  --zone-edge: .17;
+}
+
+@media (max-width: 680px) {
+  .journey [data-journey-chapter='portico'] { --zone-left: 0; --zone-width: 1; --zone-bottom: .17; --zone-height: .88; --zone-band: 1.05; --zone-column: 0; --zone-wash: 1; --zone-layers: var(--zone-band-wash); }
+  .journey [data-journey-chapter='foundation'] { --zone-left: 0; --zone-width: .86; --zone-bottom: .06; --zone-height: .2; --zone-band: .3; --zone-column: 0; --zone-wash: 1; --zone-layers: var(--zone-band-wash); }
+  .journey [data-journey-chapter='garage'] { --zone-left: 0; --zone-width: .96; --zone-bottom: .01; --zone-height: .26; --zone-band: .31; --zone-column: 0; --zone-wash: 1; --zone-layers: var(--zone-band-wash); }
+  .journey [data-journey-chapter='vault'] { --zone-left: 0; --zone-width: .96; --zone-bottom: .01; --zone-height: .26; --zone-band: .31; --zone-column: 0; --zone-wash: 1; --zone-layers: var(--zone-band-wash); }
+  .journey [data-journey-chapter='mancave'] { --zone-left: 0; --zone-width: .96; --zone-bottom: .01; --zone-height: .26; --zone-band: .31; --zone-column: 0; --zone-wash: 1; --zone-layers: var(--zone-band-wash); }
+  .journey [data-journey-chapter='finish-hall'] { --zone-left: 0; --zone-width: .8; --zone-bottom: .08; --zone-height: .23; --zone-band: .35; --zone-column: 0; --zone-wash: 1; --zone-layers: var(--zone-band-wash); }
+  .journey [data-journey-chapter='commercial'] { --zone-left: 0; --zone-width: .79; --zone-bottom: .06; --zone-height: .2; --zone-band: .3; --zone-column: 0; --zone-wash: 1; --zone-layers: var(--zone-band-wash); }
+  .journey [data-journey-chapter='consultation'] { --zone-left: 0; --zone-width: .92; --zone-bottom: .09; --zone-height: .39; --zone-band: .52; --zone-column: 0; --zone-wash: 1; --zone-layers: var(--zone-band-wash); }
+}
+
+@media (min-width: 681px) and (max-width: 1100px) {
+  .journey [data-journey-chapter='portico'] { --zone-left: 0; --zone-width: .95; --zone-bottom: .22; --zone-height: .58; --zone-band: .47; --zone-column: .62; --zone-wash: 1; --zone-layers: var(--zone-band-wash), var(--zone-column-wash); }
+  .journey [data-journey-chapter='foundation'] { --zone-left: 0; --zone-width: .52; --zone-bottom: .05; --zone-height: .18; --zone-band: .3; --zone-column: 0; --zone-wash: 1; --zone-layers: var(--zone-band-wash); }
+  .journey [data-journey-chapter='garage'] { --zone-left: 0; --zone-width: .97; --zone-bottom: .01; --zone-height: .23; --zone-band: .3; --zone-column: 0; --zone-wash: 1; --zone-layers: var(--zone-band-wash); }
+  .journey [data-journey-chapter='vault'] { --zone-left: 0; --zone-width: .97; --zone-bottom: .01; --zone-height: .23; --zone-band: .3; --zone-column: 0; --zone-wash: 1; --zone-layers: var(--zone-band-wash); }
+  .journey [data-journey-chapter='mancave'] { --zone-left: 0; --zone-width: .97; --zone-bottom: .01; --zone-height: .23; --zone-band: .3; --zone-column: 0; --zone-wash: 1; --zone-layers: var(--zone-band-wash); }
+  .journey [data-journey-chapter='finish-hall'] { --zone-left: 0; --zone-width: .44; --zone-bottom: .06; --zone-height: .2; --zone-band: .3; --zone-column: 0; --zone-wash: 1; --zone-layers: var(--zone-band-wash); }
+  .journey [data-journey-chapter='commercial'] { --zone-left: 0; --zone-width: .56; --zone-bottom: .05; --zone-height: .18; --zone-band: .3; --zone-column: 0; --zone-wash: 1; --zone-layers: var(--zone-band-wash); }
+  .journey [data-journey-chapter='consultation'] { --zone-left: 0; --zone-width: .54; --zone-bottom: .07; --zone-height: .34; --zone-band: .45; --zone-column: 0; --zone-wash: 1; --zone-layers: var(--zone-band-wash); }
+}
+
+@media (min-width: 1101px) {
+  .journey [data-journey-chapter='portico'] { --zone-left: 0; --zone-width: .53; --zone-bottom: .15; --zone-height: .8; --zone-band: 0; --zone-column: .58; --zone-wash: 1; --zone-layers: var(--zone-column-wash); }
+  .journey [data-journey-chapter='foundation'] { --zone-left: 0; --zone-width: .5; --zone-bottom: .06; --zone-height: .26; --zone-band: .34; --zone-column: 0; --zone-wash: 1; --zone-layers: var(--zone-band-wash); }
+  .journey [data-journey-chapter='garage'] { --zone-left: 0; --zone-width: .98; --zone-bottom: .01; --zone-height: .31; --zone-band: .36; --zone-column: 0; --zone-wash: 1; --zone-layers: var(--zone-band-wash); }
+  .journey [data-journey-chapter='vault'] { --zone-left: 0; --zone-width: .98; --zone-bottom: .01; --zone-height: .31; --zone-band: .36; --zone-column: 0; --zone-wash: 1; --zone-layers: var(--zone-band-wash); }
+  .journey [data-journey-chapter='mancave'] { --zone-left: 0; --zone-width: .98; --zone-bottom: .01; --zone-height: .31; --zone-band: .36; --zone-column: 0; --zone-wash: 1; --zone-layers: var(--zone-band-wash); }
+  .journey [data-journey-chapter='finish-hall'] { --zone-left: 0; --zone-width: .42; --zone-bottom: .07; --zone-height: .27; --zone-band: .38; --zone-column: 0; --zone-wash: 1; --zone-layers: var(--zone-band-wash); }
+  .journey [data-journey-chapter='commercial'] { --zone-left: 0; --zone-width: .45; --zone-bottom: .06; --zone-height: .26; --zone-band: .34; --zone-column: 0; --zone-wash: 1; --zone-layers: var(--zone-band-wash); }
+  .journey [data-journey-chapter='consultation'] { --zone-left: 0; --zone-width: .52; --zone-bottom: .08; --zone-height: .46; --zone-band: .58; --zone-column: 0; --zone-wash: 1; --zone-layers: var(--zone-band-wash); }
+}
+
