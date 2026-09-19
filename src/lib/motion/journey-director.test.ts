@@ -1,7 +1,10 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
   JOURNEY_CHAPTER_IDS,
+  JOURNEY_WHITE_TARGET_ACT_FRACTION,
   createJourneyDirector,
+  journeyActSpan,
+  journeyWhiteTargetDistance,
   removeJourneyEnhancement,
   sampleBayProgress,
   sampleJourneySnapshot,
@@ -26,6 +29,46 @@ const metrics: JourneyMetrics = {
     { id: 'garage', start: 3_320, end: 3_680 },
   ],
 };
+
+/**
+ * Act 1's scroll span and the resin-wipe band measured against it.
+ *
+ * The numbers below are the ones the built app produced before and after this
+ * step, so a regression in the act's geometry reads here as a failing ratio
+ * rather than as a capture that "looks a bit covered".
+ */
+describe('Act 1 span and the resin-wipe band', () => {
+  it('measures an act by the scroll range its progress actually runs over', () => {
+    // A 2790 px section at 1440x900: the director's progress line is the viewport
+    // centre, so the act ends half a viewport before the section does.
+    expect(journeyActSpan({ id: 'portico', start: 0, end: 2_790 }, 0, 900)).toBe(2_340);
+    // The old geometry, kept as the fixture it is: a ~990 px hero measured 540 px.
+    expect(journeyActSpan({ id: 'portico', start: 0, end: 990 }, 0, 900)).toBe(540);
+    // A chapter below the top of the journey starts from its own top, not from 0.
+    expect(journeyActSpan({ id: 'foundation', start: 4_000, end: 5_200 }, 0, 900)).toBe(1_200);
+  });
+
+  it('keeps the wipe inside a quarter of the act it ends', () => {
+    const wide = journeyWhiteTargetDistance({ viewportHeight: 900, actSpan: 2_340 });
+    expect(wide).toBe(306);
+    expect(wide / 2_340).toBeLessThanOrEqual(JOURNEY_WHITE_TARGET_ACT_FRACTION);
+    const phone = journeyWhiteTargetDistance({ viewportHeight: 844, actSpan: 1_857 });
+    expect(phone).toBeCloseTo(286.96, 2);
+    expect(phone / 1_857).toBeLessThanOrEqual(JOURNEY_WHITE_TARGET_ACT_FRACTION);
+
+    // Falsifiable: on the OLD 540 px act the same viewport band was 57% of the
+    // act, and the cap is what pulls it back to 25%. Without the cap this
+    // assertion would read 306.
+    expect(journeyWhiteTargetDistance({ viewportHeight: 900, actSpan: 540 })).toBe(135);
+    // An unmeasured act (no portico metric yet) falls back to the viewport band
+    // rather than to zero, so a first frame is never a wipe of no width.
+    expect(journeyWhiteTargetDistance({ viewportHeight: 900, actSpan: Number.POSITIVE_INFINITY })).toBe(306);
+    expect(journeyWhiteTargetDistance({ viewportHeight: 900, actSpan: 0 })).toBe(306);
+    // The viewport floor and ceiling survive the cap.
+    expect(journeyWhiteTargetDistance({ viewportHeight: 400, actSpan: 10_000 })).toBe(180);
+    expect(journeyWhiteTargetDistance({ viewportHeight: 2_000, actSpan: 10_000 })).toBe(420);
+  });
+});
 
 describe('native journey snapshots', () => {
   afterEach(() => vi.unstubAllGlobals());

@@ -81,7 +81,11 @@ test('unavailable WebGL leaves the first-paint poster and contact action usable'
 test('native video posters do not bypass the responsive image loading policy', async ({ page }) => {
   await page.goto('/');
   await expect(page.locator('.journey video[poster]')).toHaveCount(0);
-  await expect(page.locator('.pour-stage > .pour-poster')).toHaveAttribute('loading', 'eager');
+  // Descendant, not `>`: Motion A caps the phone's poster rung with a `<picture>`
+  // `media` source rather than a `sizes` figure that misdescribes a full-bleed
+  // plate, so the `<img>` now sits one level down — exactly as the foundation
+  // plate's poster already did.
+  await expect(page.locator('.pour-stage .pour-poster')).toHaveAttribute('loading', 'eager');
   for (const poster of await page.locator('.floor-film > .floor-film-poster').all()) {
     await expect(poster).toHaveAttribute('loading', 'lazy');
   }

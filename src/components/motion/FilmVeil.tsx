@@ -269,6 +269,23 @@ type PlateBinding = PlateDom & {
   posterTexture: THREE.Texture | null;
   videoTexture: THREE.VideoTexture | null;
   posterReady: boolean;
+  /**
+   * Has this room's `<video>` actually presented a frame to sample?
+   *
+   * Lock-on-entry (Motion A): jumping straight into a boundary — a deep link to
+   * `/#vault`, a ribbon anchor, then scrolling back up into `garage:vault` —
+   * used to be able to acquire a lock whose incoming plate had `readyState >= 2`
+   * and no presented frame, and `THREE.VideoTexture` then uploaded an undefined
+   * (black) surface for it. This is the fact `veilPlateChoice` needs to refuse
+   * that plate and let the DOM `--handoff` crossfade carry the boundary instead.
+   *
+   * Set from `requestVideoFrameCallback` where the browser has it — the only API
+   * that reports a frame was *presented* rather than merely available — and
+   * otherwise from `loadeddata`/`canplay`/`seeked`, each of which means a decoded
+   * frame is on the element. Cleared with the textures when the room leaves
+   * residency, and on `emptied`/`error`.
+   */
+  frameDecoded: boolean;
   resident: boolean;
   readonly cleanups: Array<() => void>;
 };
@@ -462,6 +479,7 @@ export default function FilmVeil({ host, motionEnabled }: {
       posterTexture: null,
       videoTexture: null,
       posterReady: false,
+      frameDecoded: false,
       resident: false,
       cleanups: [],
     }));
@@ -493,6 +511,7 @@ export default function FilmVeil({ host, motionEnabled }: {
         binding.posterTexture = null;
         binding.videoTexture = null;
         binding.posterReady = false;
+        binding.frameDecoded = false;
         return;
       }
 
@@ -519,13 +538,59 @@ export default function FilmVeil({ host, motionEnabled }: {
         binding.videoTexture.magFilter = THREE.LinearFilter;
         binding.videoTexture.generateMipmaps = false;
         const ready = () => setMediaRevision((revision) => revision + 1);
+        // Armed lazily so it can be re-armed after a loss; assigned below.
+        let armFrameCallback = () => undefined as void;
+        const decodedFrame = () => {
+          binding.frameDecoded = true;
+          ready();
+        };
+        const lostFrame = () => {
+          binding.frameDecoded = false;
+          ready();
+          armFrameCallback();
+        };
         // `data-video-ready` is what decides which plate this veil samples, and
         // `JourneyMotion` writes it from these same events, so the compositor has to
         // be woken by them too or it would keep the poster a frame or two too long.
-        ['loadeddata', 'canplay', 'resize', 'seeked'].forEach((event) => {
-          binding.video?.addEventListener(event, ready);
-          binding.cleanups.push(() => binding.video?.removeEventListener(event, ready));
+        // `loadeddata`/`canplay`/`seeked` additionally mean a decoded frame is on
+        // the element; `resize` does not, so it only wakes the compositor.
+        ['loadeddata', 'canplay', 'seeked'].forEach((event) => {
+          binding.video?.addEventListener(event, decodedFrame);
+          binding.cleanups.push(() => binding.video?.removeEventListener(event, decodedFrame));
         });
+        binding.video.addEventListener('resize', ready);
+        binding.cleanups.push(() => binding.video?.removeEventListener('resize', ready));
+        ['emptied', 'error'].forEach((event) => {
+          binding.video?.addEventListener(event, lostFrame);
+          binding.cleanups.push(() => binding.video?.removeEventListener(event, lostFrame));
+        });
+        // The authoritative signal where it exists: rVFC fires only once a frame
+        // has been *presented*, which is exactly the fact the lock needs and the
+        // one `readyState` cannot give.
+        //
+        // ONE-SHOT, deliberately. A self-rescheduling callback re-arms on every
+        // presented frame, and each one would push a `setMediaRevision` through
+        // React — a state update per scrubbed frame on every resident film, for a
+        // boolean that only ever needs establishing once. It is re-armed from
+        // `lostFrame` instead, which is the only event that makes it false again.
+        const video = binding.video as HTMLVideoElement & {
+          requestVideoFrameCallback?: (callback: () => void) => number;
+          cancelVideoFrameCallback?: (handle: number) => void;
+        };
+        if (typeof video.requestVideoFrameCallback === 'function') {
+          let handle = 0;
+          let cancelled = false;
+          armFrameCallback = () => {
+            if (cancelled) return;
+            video.cancelVideoFrameCallback?.(handle);
+            handle = video.requestVideoFrameCallback!(decodedFrame);
+          };
+          armFrameCallback();
+          binding.cleanups.push(() => {
+            cancelled = true;
+            video.cancelVideoFrameCallback?.(handle);
+          });
+        }
       }
     });
     setMediaRevision((revision) => revision + 1);
@@ -613,6 +678,7 @@ export default function FilmVeil({ host, motionEnabled }: {
           videoWidth: video.videoWidth,
           videoHeight: video.videoHeight,
           presented: video.hasAttribute('data-video-ready'),
+          frameDecoded: binding.frameDecoded,
         } : null,
       });
       if (choice === 'video') return binding.videoTexture;

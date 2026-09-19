@@ -240,6 +240,52 @@ export function sampleBayProgress(
   return 1;
 }
 
+/**
+ * How far back from `#customer-reviews` the Act 1 resin wipe reaches.
+ *
+ * The distance used to be viewport-only — `min(420, max(180, innerHeight*0.34))`
+ * — which is 306 px at 1440x900. That was 57% of Act 1's measured 540 px scroll
+ * span, so the compositor painted the wipe over the hero copy for most of the act
+ * it is supposed to END. Act 1 is now 2.6 vh (see `journey.css`), which fixes the
+ * ratio on its own; this cap makes it a property of the act rather than an
+ * accident of two numbers that happen to be far apart, so a future act length can
+ * never quietly put the wipe back over the reading.
+ *
+ * `actSpan` is the act's own SCROLL span — the range over which `chapterProgress`
+ * runs 0 to 1 — not the section's height, because that is what "25% of the act"
+ * has to mean for the fraction to be comparable with a progress sample.
+ *
+ * @motion resin-wipe
+ */
+export const JOURNEY_WHITE_TARGET_ACT_FRACTION = 0.25;
+
+export function journeyWhiteTargetDistance({ viewportHeight, actSpan }: {
+  readonly viewportHeight: number;
+  readonly actSpan: number;
+}): number {
+  const viewportBand = Math.min(420, Math.max(180, viewportHeight * 0.34));
+  const cap = Number.isFinite(actSpan) && actSpan > 0
+    ? actSpan * JOURNEY_WHITE_TARGET_ACT_FRACTION
+    : Number.POSITIVE_INFINITY;
+  return Math.min(viewportBand, cap);
+}
+
+/**
+ * The scroll range over which a chapter's `chapterProgress` runs 0 to 1.
+ *
+ * Kept next to the sampler that defines it (`progressStart`/`progressEnd` in
+ * `sampleJourneySnapshot`) so the two cannot drift: an act's published length and
+ * the band measured against it are the same arithmetic.
+ */
+export function journeyActSpan(
+  chapter: JourneyChapterMetric,
+  top: number,
+  viewportHeight: number,
+): number {
+  const start = Math.max(top, chapter.start - viewportHeight / 2);
+  return Math.max(1, (chapter.end - viewportHeight / 2) - start);
+}
+
 function closestChapter(metrics: JourneyMetrics, viewportCenter: number): JourneyChapterMetric {
   return metrics.chapters.reduce((closest, chapter) => {
     const center = (chapter.start + chapter.end) / 2;
@@ -456,8 +502,13 @@ export function createJourneyDirector(options: JourneyDirectorOptions = {}): Jou
     });
     const readings = JOURNEY_CHAPTER_IDS.flatMap((id) => {
       const node = chapterById.get(id);
+      // Descendant, not `:scope >`: Act 1's copy now lives inside the act's
+      // sticky-in-flow host (`.hero-stage`), so the chapter is no longer the
+      // copy's parent. Every chapter still contributes exactly one title —
+      // chapters do not nest, and the room titles carry their own class — so
+      // relaxing the combinator widens nothing but the hero.
       const title = node?.querySelector<HTMLElement>(
-        ':scope > .chapter-content > .display-title, :scope > .chapter-content > .chapter-copy-surface > .chapter-title',
+        '.chapter-content > .display-title, .chapter-content > .chapter-copy-surface > .chapter-title',
       );
       if (!title) return [];
       const rect = title.getBoundingClientRect();
@@ -477,10 +528,18 @@ export function createJourneyDirector(options: JourneyDirectorOptions = {}): Jou
       const rect = node.getBoundingClientRect();
       return { start: rect.top + scrollY, end: rect.bottom + scrollY };
     });
+    const journeyTop = journeyRect.top + scrollY;
+    const porticoMetric = chapters.find((chapter) => chapter.id === 'portico');
+    const porticoSpan = porticoMetric
+      ? journeyActSpan(porticoMetric, journeyTop, window.innerHeight)
+      : Number.POSITIVE_INFINITY;
     const whiteTargets = [...journey.querySelectorAll<HTMLElement>('#customer-reviews[data-journey-white-stage]')].map((node) => {
       const rect = node.getBoundingClientRect();
       const end = rect.top + scrollY;
-      const distance = Math.min(420, Math.max(180, window.innerHeight * 0.34));
+      const distance = journeyWhiteTargetDistance({
+        viewportHeight: window.innerHeight,
+        actSpan: porticoSpan,
+      });
       return { id: 'customer-reviews' as const, from: 'portico' as const, start: end - distance, end };
     });
     // Read from the DOM rather than hard-coded here: the bay's membership is a
@@ -490,7 +549,7 @@ export function createJourneyDirector(options: JourneyDirectorOptions = {}): Jou
       .map((node) => node.dataset.bayRoom)
       .filter(isChapterId);
     metrics = Object.freeze({
-      top: journeyRect.top + scrollY,
+      top: journeyTop,
       bottom: journeyRect.bottom + scrollY,
       chapters: Object.freeze(chapters),
       transitions: Object.freeze(transitions),

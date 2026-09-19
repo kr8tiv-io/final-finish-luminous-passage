@@ -67,6 +67,49 @@ html[data-journey-tier='still'] .journey .floor-film video { display: none; }
 .hero-proof { position: absolute; z-index: 5; left: var(--gutter); bottom: 5.8rem; display: inline-flex; flex-wrap: wrap; gap: .65rem 1.1rem; align-items: center; min-height: 44px; font-size: .7rem; text-decoration: none; color: var(--ink); }
 .hero-proof small { font-size: .59rem; color: var(--ink-quiet); }
 .hero-chapter { min-height: 112svh; padding-bottom: 14rem; }
+/* ---- Act 1: the pour, as a sticky-in-flow act -----------------------------
+   MEASURED PROBLEM. At 1440x900 the hero's scroll span was ~540 px (~1.1 vh)
+   against the storyboard's 2.6 vh, so the pour scrubbed through its whole film
+   in about one viewport and the 306 px resin-wipe band covered the copy for 57%
+   of the act. The section now carries the act's span and `.hero-stage` holds the
+   frame on screen across it; `journey-director.ts` caps the wipe band at 25% of
+   that span so the ratio is structural rather than a coincidence of two numbers.
+
+   SPECIFICITY. `readable-experience.css` owns the hero's type, wash and reading
+   zone at `body .journey .hero-chapter` (0,2,1). The act's GEOMETRY is owned
+   here, so these selectors carry (0,3,0) on purpose rather than by accident.
+   The block padding moved off the section and onto the host. A later retune of
+   the hero's block padding belongs on `.hero-stage`, not on `.hero-chapter`.
+
+   THE HOST MUST FIT THE VIEWPORT. A sticky host held by `top` puts everything
+   past `100lvh` permanently below the fold — measured on the first build of this
+   step, the act label sat at y = 950 in a 900 px viewport and was never
+   reachable at any scroll position. (`bottom` is not the escape: bottom-
+   stickiness only engages while scrolling UP, so a `bottom: 0` host simply
+   scrolls away — measured, hostTop tracked -scrollY exactly.) So the block
+   padding below is chosen so the host measures exactly `100lvh` at 1440x900:
+   content 670 px + 96 + 112 = 878, under the 900 floor, and the 6/7rem split
+   reproduces the 107 px content top the hero had before this step. Phone is a
+   different answer; see the `max-width: 680px` block.
+
+   WHY THE SECTION STRETCHES. `align-content: stretch` is load-bearing, not
+   tidying. A sticky item's containing block is its GRID AREA, and the hero's
+   inherited `align-content: center` sizes that area to the content — which would
+   have left a 3 vh act with 74 px of sticky travel. The row fills the section and
+   `align-self: start` keeps the host its own height inside it.
+
+   NO STACKING CONTEXT. The host sets no transform, filter, will-change or
+   z-index. `.pour-stage` (0), `.film-veil` (1), `.hero-light` (2) and
+   `.chapter-content` (3/5) interleave inside `.journey`'s own stacking context,
+   and a host that created one would flatten all four into a single layer.
+   @motion resin-wipe */
+.journey .hero-chapter[data-journey-chapter] { min-height: 310svh; padding: 0; align-content: stretch; }
+.journey .hero-chapter > .hero-stage { position: sticky; top: 0; align-self: start; min-height: 100lvh; display: grid; align-content: center; padding: 6rem var(--gutter) 7rem; }
+/* `still` never stages the plates, so the poster stays absolutely positioned
+   inside the host and a 3 vh act would scroll it away behind bare paper. That
+   tier keeps the single-viewport hero it has always had. */
+html[data-journey-tier='still'] .journey .hero-chapter[data-journey-chapter] { min-height: 100svh; align-content: center; }
+html[data-journey-tier='still'] .journey .hero-chapter > .hero-stage { position: relative; top: auto; align-self: auto; min-height: 0; }
 .hero-ribbon { --ribbon-progress: 0; position: relative; display: grid; grid-template-columns: repeat(4,minmax(0,1fr)); width: min(52rem,calc(100vw - 2 * var(--gutter))); margin-top: clamp(2.5rem,5svh,5rem); padding-block: .6rem; isolation: isolate; }
 .hero-ribbon a { position: relative; display: flex; flex-direction: column; justify-content: center; gap: .8rem; min-height: 76px; padding: .75rem 1rem; color: var(--ink); text-decoration: none; font-size: clamp(.64rem,.9vw,.77rem); font-weight: 600; }
 /* `.hero-ribbon a span` lived here until Step 16. Step 17 rebuilt the ribbon as four
@@ -79,6 +122,16 @@ html[data-journey-tier='still'] .journey .floor-film video { display: none; }
 .hero-ribbon-line { position: absolute; bottom: 0; left: 1rem; right: 1rem; height: 1px; background: rgb(var(--ink-rgb) / .15); overflow: hidden; }
 .hero-ribbon-line::after { content: ''; display: block; height: 100%; background: linear-gradient(90deg,var(--cobalt),var(--bronze-tint)); transform: scaleX(var(--ribbon-progress)); transform-origin: left; }
 .foundation-chapter { min-height: 125svh; }
+/* Act 3's `still` / pre-decode answer: the storyboard's scrubbed
+   `scale(1 -> 1.06)` on the walkway still. `--foundation-scrub` is published by
+   `JourneyMotion` from `journeyFilmProgress('foundation', …)` — the same
+   function the film clock reads — so the poster and the film never disagree
+   about where in the walk the act is. No reset rule is needed once the film
+   decodes: the video is later in the DOM, covers the plate and paints over it.
+   @motion stair-dolly */
+.journey .foundation-chapter .floor-film-poster { transform: scale(calc(1 + .06 * var(--foundation-scrub, 0))); transform-origin: 50% 62%; }
+/* `still` is a reduced-motion, Save-Data or 2G visit: it gets the still, still. */
+html[data-journey-tier='still'] .journey .foundation-chapter .floor-film-poster { transform: none; }
 .journey-breath[data-hall-to='foundation'],.journey-breath[data-hall-from='foundation'] { min-height: 72svh; }
 /* `.journey-swatches` (four rules) and `.motion-choice` (two) lived here until Step 16.
    Neither class appears anywhere in `src/` any more — the finish swatches belong to the
@@ -212,6 +265,26 @@ html[data-journey-motion='still'] .journey .journey-breath[data-hall-from] { min
   .journey .lead { font-size: .95rem; line-height: 1.7; margin-top: 1.35rem; }
   .journey .eyebrow { max-width: 29ch; font-size: .59rem; }
   .hero-chapter { min-height: 115svh; padding-top: 40svh; padding-bottom: 5rem; }
+  /* Phone: 2.2 vh of act (storyboard §2). 270svh less the 0.5 vh the director's
+     centre line costs = 2.20 vh of scroll span.
+     THE HOST DOES NOT STICK HERE, and that is a measurement, not an oversight.
+     The phone hero's in-flow copy block is 782 px of an 844 px viewport
+     (`.hero-content` 701 + the in-flow `.hero-proof` 57 + its 21 px margin), so
+     a `100lvh` host can hold EITHER the copy or the 48svh plate band above it,
+     never both: fitting the copy leaves 62 px of padding and puts the headline
+     under the header and on top of the film, where `.hero-light` has barely
+     begun its wash. The copy therefore keeps exactly the composition
+     `readable-experience.css` tuned for it, scrolls once, and the act's
+     remaining length is carried by the pour plate, which is `position: fixed`
+     the whole time. Flagged to the orchestrator as the one §6 deviation.
+     `align-content: start` and a `position: relative` host are both required:
+     centring a content-sized row in a 270svh section drops the headline 574 px
+     below the fold at scroll 0 (measured), and a static host would leave the
+     absolutely positioned act label anchored to the section — 2.2 viewports
+     below the hero it labels. */
+  .journey .hero-chapter[data-journey-chapter] { min-height: 270svh; align-content: start; }
+  .journey .hero-chapter > .hero-stage { position: relative; top: auto; align-self: auto; min-height: 0; padding: 32svh var(--gutter) 5rem; }
+  html[data-journey-tier='still'] .journey .hero-chapter[data-journey-chapter] { min-height: 100svh; align-content: center; }
   .hero-ribbon { grid-template-columns: repeat(2,minmax(0,1fr)); width: 100%; margin-top: 1.75rem; }
   .hero-ribbon a { min-height: 67px; padding: .75rem .4rem; gap: .45rem; }
   .hero-ribbon a::after { bottom: 0; left: .4rem; right: .6rem; }
@@ -255,6 +328,13 @@ html[data-journey-motion='still'] .journey .journey-breath[data-hall-from] { min
 @media (prefers-reduced-motion: reduce) {
   .journey-chapter { min-height: auto; padding-block: 7rem; }
   .hero-chapter { padding-top: 10rem; padding-bottom: 6rem; }
+  /* Reduced motion resolves to the `still` tier, but the tier attribute only
+     appears after hydration — this keeps the act one viewport from first paint.
+     The host takes the 10rem/6rem this block gave the section, because the
+     section's own padding is now 0 and the rule that sets it is (0,1,0). */
+  .journey .hero-chapter[data-journey-chapter] { min-height: auto; align-content: center; }
+  .journey .hero-chapter > .hero-stage { position: relative; top: auto; align-self: auto; min-height: 0; padding: 10rem var(--gutter) 6rem; }
+  .journey .foundation-chapter .floor-film-poster { transform: none; }
   .journey .journey-breath[data-hall-from][data-hall-to] { min-height: 0 !important; }
   .pour-stage video,.floor-film video { display: none; }
 }

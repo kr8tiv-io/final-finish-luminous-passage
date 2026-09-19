@@ -15,7 +15,10 @@ test('reduced motion leaves the full local-service narrative available', async (
   await expect(page.locator('html')).toHaveAttribute('data-journey-motion', 'still');
   await expect(page.getByRole('button', { name: 'Reduced motion is on', exact: true })).toBeDisabled();
   await expect(page.getByRole('heading', { name: 'Reclaim your garage or basement.' })).toBeAttached();
-  await expect(page.locator('.chapter-reading')).toHaveCount(5); // five since Step 22 folded Act 4 into one aside
+  // Five since Step 22 folded Act 4's two reading asides into the one the copy
+  // deck authors — `home.spec` asserts the same count on the enhanced page, and
+  // this file had been left on the pre-Step-22 six.
+  await expect(page.locator('.chapter-reading')).toHaveCount(5);
   expect(await page.evaluate(() => [...document.querySelectorAll('video')].every((video) => video.paused))).toBe(true);
 });
 

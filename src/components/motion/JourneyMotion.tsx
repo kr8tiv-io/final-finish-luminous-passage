@@ -8,7 +8,7 @@ import {
   type JourneyChapterId,
   type JourneySnapshot,
 } from '../../lib/motion/journey-director';
-import { journeyFilmTime } from '../../lib/motion/journey-film-timing';
+import { journeyFilmProgress, journeyFilmTime } from '../../lib/motion/journey-film-timing';
 import {
   HERO_SUPPORT_TIMING,
   headlineMotionMode,
@@ -21,8 +21,12 @@ import {
   type HeadlineStyle,
 } from '../../lib/motion/headline-motion';
 import {
+  SCROLL_INTENT_POINTER_PX,
+  filmDecodesOnTier,
+  isScrollIntentKey,
+  journeyFilmTopRung,
   journeyMediaResidents,
-  pourFilmSource,
+  mediaPromotionAllowed,
   shouldInvalidateForMediaReadiness,
   shouldRequestVideo,
   videoSeekTarget,
@@ -112,6 +116,22 @@ export default function JourneyMotion() {
     const pendingSeeks = new WeakSet<HTMLVideoElement>();
     let tier: JourneyTier = currentJourneyTier(journeyControls.getSnapshot().motionPreference);
     let presentationEnabled = tier !== 'still';
+    /**
+     * Has the visitor asked for the page to move yet?
+     *
+     * Nothing video is fetched before this flips. It is the gate on `promoteVideo`
+     * and therefore on every byte of film on the page: measured on the built app,
+     * an idle desktop session used to start the 5.1 MB 1080 pour at ~921 ms and a
+     * phone the 480 immediately, for a visitor who had only read the headline.
+     *
+     * `wheel`, `touchstart`, a scrolling key and the document's own first scroll
+     * are unambiguous. `pointermove` is included at a 4 px threshold because a
+     * mouse crossing the hero is the desktop tell that a visitor is engaging, and
+     * because the promotion has to be ahead of the wheel tick to scrub cleanly;
+     * a session with no input at all still fetches nothing, which is the rule
+     * this exists to keep.
+     */
+    let scrollIntent = false;
 
     /**
      * Act 4's horizontal bay. This island already owns `data-media-active` and
@@ -404,20 +424,23 @@ export default function JourneyMotion() {
       residentChapters: readonly JourneyChapterId[],
       documentActive: boolean,
     ) => {
-      if (!presentationEnabled || saveDataEnabled()) return;
+      if (!mediaPromotionAllowed({
+        presentationEnabled,
+        saveData: saveDataEnabled(),
+        scrollIntent,
+      })) return;
+      if (!filmDecodesOnTier(id, tier)) return;
       const video = videos.get(id);
       if (!video) return;
       if (shouldRequestVideo(requestedVideos.has(video), id, residentChapters, documentActive)) {
         requestedVideos.add(video);
-        // The pour's top rung is chosen here rather than by a `<source media>` query,
+        // A film's top rung is chosen here rather than by a `<source media>` query,
         // because the rung depends on the capability tier as well as the viewport and
         // only this module knows the tier. The markup keeps the 480/720 ladder as the
         // no-JS answer; `preload="none"` means nothing has been fetched yet, so
         // naming a `src` now costs no second download.
-        if (id === 'portico') {
-          const rung = pourFilmSource({ viewportWidth: window.innerWidth, tier });
-          if (rung && !video.currentSrc.endsWith(rung)) video.src = rung;
-        }
+        const rung = journeyFilmTopRung(id, { viewportWidth: window.innerWidth, tier });
+        if (rung && !video.currentSrc.endsWith(rung)) video.src = rung;
         video.preload = 'auto';
         if (video.readyState < 2) video.load();
       }
@@ -449,6 +472,18 @@ export default function JourneyMotion() {
       journey.toggleAttribute('data-journey-on-white', snapshot.whiteStageActive);
       journey.dataset.mediaOwner = snapshot.mediaOwner;
       journey.style.setProperty('--handoff', snapshot.handoff.toFixed(4));
+      // Act 3's `still`/`balanced` answer: the walkway poster carries the walk with
+      // the storyboard's scrubbed `scale(1 -> 1.06)` until — and only until — the
+      // film itself is the presented plate and paints over it. Published from
+      // `journeyFilmProgress`, the same function the film clock reads, so the
+      // poster and the film cannot disagree about where in the walk the act is.
+      // @motion stair-dolly
+      if (snapshot.activeChapter === 'foundation') {
+        journey.style.setProperty(
+          '--foundation-scrub',
+          journeyFilmProgress('foundation', snapshot.chapterProgress).toFixed(4),
+        );
+      }
       if (stageOwned) journey.dataset.mediaStage = tier;
       else delete journey.dataset.mediaStage;
       renderBay(snapshot, transitionInterior);
@@ -543,6 +578,45 @@ export default function JourneyMotion() {
       renderSnapshot();
     };
 
+    /**
+     * The first scroll-intent signal, and the only thing that opens the video tap.
+     *
+     * Every listener is passive and removes itself the moment one fires, so the
+     * cost to a visitor who never scrolls is four idle listeners and zero bytes.
+     * `renderSnapshot()` is called synchronously from the signal, so promotion
+     * happens inside the same task as the wheel tick rather than a frame later.
+     */
+    let pointerTravel = 0;
+    let pointerAt: { x: number; y: number } | null = null;
+    const noteScrollIntent = () => {
+      if (scrollIntent) return;
+      scrollIntent = true;
+      releaseIntentListeners();
+      renderSnapshot();
+    };
+    const onIntentPointerMove = (event: PointerEvent) => {
+      if (pointerAt) {
+        pointerTravel += Math.hypot(event.clientX - pointerAt.x, event.clientY - pointerAt.y);
+      }
+      pointerAt = { x: event.clientX, y: event.clientY };
+      if (pointerTravel >= SCROLL_INTENT_POINTER_PX) noteScrollIntent();
+    };
+    const onIntentKeyDown = (event: KeyboardEvent) => {
+      if (isScrollIntentKey(event.key)) noteScrollIntent();
+    };
+    const releaseIntentListeners = () => {
+      window.removeEventListener('wheel', noteScrollIntent);
+      window.removeEventListener('touchstart', noteScrollIntent);
+      window.removeEventListener('pointermove', onIntentPointerMove);
+      window.removeEventListener('keydown', onIntentKeyDown);
+      window.removeEventListener('scroll', noteScrollIntent);
+    };
+    window.addEventListener('wheel', noteScrollIntent, { passive: true });
+    window.addEventListener('touchstart', noteScrollIntent, { passive: true });
+    window.addEventListener('pointermove', onIntentPointerMove, { passive: true });
+    window.addEventListener('keydown', onIntentKeyDown, { passive: true });
+    window.addEventListener('scroll', noteScrollIntent, { passive: true });
+
     const unsubscribe = journeyDirector.subscribe(renderSnapshot);
     const unsubscribeControls = journeyControls.subscribe(applyMotionPreference);
     reducedQuery.addEventListener('change', applyMotionPreference);
@@ -557,6 +631,7 @@ export default function JourneyMotion() {
     // swap, not after it, or the outgoing page's splits and tweens outlive it.
     return onRouteTeardown(() => {
       disposed = true;
+      releaseIntentListeners();
       unsubscribe();
       unsubscribeControls();
       reducedQuery.removeEventListener('change', applyMotionPreference);
@@ -588,6 +663,7 @@ export default function JourneyMotion() {
       bayRooms.forEach((room) => delete room.dataset.roomPhase);
       journey.removeAttribute('data-journey-on-white');
       journey.style.removeProperty('--handoff');
+      journey.style.removeProperty('--foundation-scrub');
       journey.style.removeProperty('--bay-progress');
       delete journey.dataset.bayMode;
       delete journey.dataset.bayPhase;

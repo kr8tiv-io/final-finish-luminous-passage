@@ -37,20 +37,51 @@ const thresholdStudy = import.meta.env.DEV && Astro.url.searchParams.get('study'
     <EditorialMotion client:only="react" />
     <FilmVeilLoader client:only="react" enableThresholdStudy={thresholdStudy} />
     {thresholdStudy && <p class="threshold-study-note">Local 3D study · visual direction not approved</p>}
+    {/*
+      Act 1 is a sticky-in-flow act (storyboard §2 "Vertical, sticky · 2.6 vh
+      (phone 2.2)", §6 "Sticky-in-flow host, 100lvh, no fixed layers"). The
+      SECTION carries the act's scroll span — the director measures the chapter's
+      rect, so the span has to be the section's own height — and `.hero-stage` is
+      the one viewport the visitor looks at while that span runs. The reading layer
+      moves into it — the wash, the copy, the proof line and the act label — so a
+      2.6 vh act never stretches a one-viewport gradient across three of them, and
+      the absolutely positioned `.hero-proof` / `.chapter-index` keep resolving
+      `left: var(--gutter)` against a full-width box, exactly as before. The plate
+      stays outside it; see the note on it below.
+    */}
     <section class="journey-chapter hero-chapter" id="portico" tabindex="-1" data-journey-chapter="portico" aria-labelledby="hero-title">
+      {/*
+        The plate stays a DIRECT child of the chapter. `journey.css` and
+        `readable-experience.css` both stage it with `[data-media-active] > .pour-stage`
+        — one for `opacity`, one for `position: fixed` — and a plate moved inside the
+        host silently fails both: measured, the hero rendered as bare paper with the
+        copy floating on it. Once staged it is `position: fixed`, so the act's length
+        cannot reach it; while unstaged it keeps the `height: 99svh` top-of-act
+        framing `readable-experience.css` gives it for the LCP entry.
+      */}
       <div class="pour-stage" aria-hidden="true">
-        <img
-          class="pour-poster"
-          loading="eager"
-          fetchpriority="high"
-          src="/images/brand/follow-floor/720/epoxy-pour-pearl-poster.jpg"
-          srcset="/images/brand/follow-floor/480/epoxy-pour-pearl-poster.jpg 854w, /images/brand/follow-floor/720/epoxy-pour-pearl-poster.jpg 1280w, /images/brand/follow-floor/1080/epoxy-pour-pearl-poster.jpg 1920w"
-          sizes="100vw"
-          alt=""
-          width="1280"
-          height="720"
-          decoding="async"
-        />
+        {/*
+          The phone is capped at the 854w rung by a `media` source rather than by a
+          `sizes` figure that misdescribes a full-bleed plate. At 390 px / DPR 3 the
+          density ladder asked for 1170w and took the 1280w file (95,140 B); this
+          hands it the 480 rung (50,658 B) and leaves the ladder untouched on
+          desktop. The `<img>` keeps its own src/srcset and is still the LCP element.
+        */}
+        <picture>
+          <source media="(max-width: 680px)" srcset="/images/brand/follow-floor/480/epoxy-pour-pearl-poster.jpg" />
+          <img
+            class="pour-poster"
+            loading="eager"
+            fetchpriority="high"
+            src="/images/brand/follow-floor/720/epoxy-pour-pearl-poster.jpg"
+            srcset="/images/brand/follow-floor/480/epoxy-pour-pearl-poster.jpg 854w, /images/brand/follow-floor/720/epoxy-pour-pearl-poster.jpg 1280w, /images/brand/follow-floor/1080/epoxy-pour-pearl-poster.jpg 1920w"
+            sizes="100vw"
+            alt=""
+            width="1280"
+            height="720"
+            decoding="async"
+          />
+        </picture>
         <video
           class="pour-film"
           muted
@@ -62,6 +93,7 @@ const thresholdStudy = import.meta.env.DEV && Astro.url.searchParams.get('study'
           <source src="/videos/follow-floor/720/epoxy-pour-pearl.mp4" type="video/mp4" />
         </video>
       </div>
+      <div class="hero-stage">
       <div class="hero-light" aria-hidden="true"></div>
       <div class="chapter-content hero-content">
         <p class="eyebrow">Edmonton garage & commercial floor coatings</p>
@@ -80,6 +112,7 @@ const thresholdStudy = import.meta.env.DEV && Astro.url.searchParams.get('study'
 
       <a class="hero-proof" href="#customer-reviews">{currentRating ? <><span aria-hidden="true">★★★★★</span> {customerProof.rating.value.toFixed(1)} · {customerProof.rating.count}+ Google reviews <small>Checked {ratingDate}</small></> : 'Hear from our customers'} <span aria-hidden="true">↓</span></a>
       <p class="chapter-index" data-act-label>01 / The pour <span>Material concept film</span></p>
+      </div>
     </section>
 
     <SocialProof />
@@ -87,8 +120,20 @@ const thresholdStudy = import.meta.env.DEV && Astro.url.searchParams.get('study'
     <div class="journey-breath" data-hall-from="portico" data-hall-to="foundation" aria-hidden="true"></div>
 
     <section class="journey-chapter foundation-chapter" id="foundation" tabindex="-1" data-journey-chapter="foundation" aria-labelledby="foundation-title">
-      <div class="floor-film pearl-stair" aria-hidden="true" data-concept-still>
-        <picture><source type="image/avif" srcset="/images/brand/pearl-stair-v2.avif" /><source type="image/webp" srcset="/images/brand/pearl-stair-v2.webp" /><img class="floor-film-poster" loading="lazy" src="/images/brand/pearl-stair-v2.jpg" alt="" width="1672" height="941" decoding="async" /></picture>
+      {/*
+        Act 3, option A (storyboard §5, ASSET-LEDGER "pearl-graded walkway film"):
+        the stair is the pearl-graded walkway film scrubbed by scroll, the same
+        contract as the pour, with `FOUNDATION_STAIR_TIMING` as its window so the
+        act keeps coherent bookend frames around the authored walk. The poster is
+        frame 0 of that master, so poster and first scrubbed frame are the same
+        picture. Option B (the 2.5D `DepthPlate` stair) stays on `/lab/stairs`.
+      */}
+      <div class="floor-film pearl-walk" aria-hidden="true">
+        <img class="floor-film-poster" loading="lazy" src="/images/brand/epoxy-walkway-pearl-poster.jpg" alt="" width="1280" height="720" decoding="async" />
+        <video class="floor-film-video" muted playsinline disablepictureinpicture preload="none">
+          <source media="(max-width: 680px)" src="/videos/follow-floor/480/epoxy-walkway-pearl.mp4" type="video/mp4" />
+          <source src="/videos/follow-floor/720/epoxy-walkway-pearl.mp4" type="video/mp4" />
+        </video>
       </div>
       <div class="chapter-content offset-content">
         <div class="chapter-copy-surface">
