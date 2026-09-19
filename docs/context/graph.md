@@ -32,7 +32,7 @@ flowchart TD
     step-17["step-17: Opening: keep pearl pour scrub, add 1080 source,"]:::stDone
     step-18["step-18: 3D navigation: full-screen menu, Flip transition"]:::stDoing
     step-19["step-19: Social proof after the pour: scroll-linked revie"]:::stDone
-    step-20["step-20: Stair chapter: pearl-grade walkway film (A) vs 2"]:::stDoing
+    step-20["step-20: Stair chapter: pearl-grade walkway film (A) vs 2"]:::stDone
     step-21["step-21: Preparation cutaway: layered illustrative diagra"]:::stDoing
     step-22["step-22: Reclaim your garage or basement: garage, basemen"]:::stDone
     step-23["step-23: See the difference: pin the inner passage, jh3y "]:::stDone
@@ -404,7 +404,7 @@ flowchart TD
 - **Phase:** phase-3
 - **Tier:** O+ (spike first)
 - **Owner(s):** motion-b, mechanical
-- **Status:** doing
+- **Status:** done
 - **Files:** scripts/grade-stair-walk.mjs, StairAscent.tsx, DepthPlate.tsx, journey-film-timing.ts, assets/stair/
 - **Inputs (informs):** S7
 - **Constraints (locks):** M2
