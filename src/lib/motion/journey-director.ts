@@ -15,6 +15,7 @@ export const JOURNEY_CHAPTER_IDS = [
   'vault',
   'mancave',
   'proof',
+  'archive',
   'finish-hall',
   'commercial',
   'consultation',

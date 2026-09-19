@@ -40,6 +40,13 @@ const CHAPTER_STYLES: Readonly<Record<JourneyChapterId, HeadlineStyle>> = Object
   'finish-hall': 'epoxy-mask',
   commercial: 'lateral-curtain',
   proof: 'line-rise',
+  // Storyboard §3, Act 6: the archive's headline rises "from below, after the
+  // flyover slows". It is not a `.chapter-title` — `ArchiveLattice.tsx` owns
+  // the copy's arrival inside its own hold window, from the same act progress
+  // that freezes the drift — so `JourneyMotion`'s query never reaches it. The
+  // entry exists because this table has to stay total over `JourneyChapterId`,
+  // and it names the storyboard's own id rather than a placeholder.
+  archive: 'line-rise',
   consultation: 'depth-settle',
 });
 
