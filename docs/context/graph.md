@@ -48,7 +48,7 @@ flowchart TD
     step-30["step-30: Services as decision pages plus a dedicated Edmo"]:::stDone
     step-31["step-31: Guides: fix documented contradictions, truthful "]:::stDone
     step-32["step-32: Structured data and AI search: Service/LocalBusi"]:::stDone
-    step-33["step-33: Resilience pack: webglcontextrestored recovery, "]:::stDoing
+    step-33["step-33: Resilience pack: webglcontextrestored recovery, "]:::stDone
   end
   subgraph phase-5["phase-5"]
     step-34["step-34: Budgets enforced in CI: phone = 0.8MB, desktop ="]:::stDone
@@ -586,7 +586,7 @@ flowchart TD
 - **Phase:** phase-4
 - **Tier:** S
 - **Owner(s):** ui
-- **Status:** doing
+- **Status:** done
 - **Files:** SurfaceCanvas.tsx, loaders, docs/context/DECISIONS.md
 - **Inputs (informs):** none recorded
 - **Constraints (locks):** none recorded

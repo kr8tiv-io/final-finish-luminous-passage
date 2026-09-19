@@ -1197,7 +1197,7 @@
       "id": "step-33",
       "type": "step",
       "title": "Resilience pack: webglcontextrestored recovery, 2g -> still, bfcache test, analytics decision recorded",
-      "status": "doing",
+      "status": "done",
       "phase": "phase-4",
       "tier": "S",
       "owner": "ui",
