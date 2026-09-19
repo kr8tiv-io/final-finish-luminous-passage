@@ -117,11 +117,16 @@ body .journey .button-secondary { background: var(--paper); border-color: var(--
    is what the contrast report measures these spans at. Their tracking stays at
    the .015em a previous pass settled on rather than the caption token's .08em —
    these are sentence-case, not uppercase labels (`.chapter-index` is explicitly
-   `text-transform: none` below). Step 16 owns the backgrounds behind them. */
-body .journey :is(.text-call,.hero-proof,.hero-proof small,.chapter-index,.chapter-index span,.hero-ribbon a,.hero-ribbon a span) { font-size: var(--type-caption); letter-spacing: .015em; }
+   `text-transform: none` below). The backgrounds behind them are the act's
+   reading zone (`journey.css`, "READING ZONES"). `.hero-ribbon a span` is gone
+   from this list: Step 17 rebuilt the ribbon as four plain links. */
+body .journey :is(.text-call,.hero-proof,.hero-proof small,.chapter-index,.chapter-index span,.hero-ribbon a) { font-size: var(--type-caption); letter-spacing: .015em; }
 body .journey .hero-content { padding-right: 42%; padding-left: 0; }
 body .journey .hero-chapter { min-height: max(100svh,52rem); padding-top: 9rem; padding-bottom: 10rem; align-content: center; }
-body .journey .hero-light { display: block; position: absolute; inset: 0; z-index: 2; pointer-events: none; background: linear-gradient(90deg,var(--paper) 0%,rgba(250,249,246,.98) 33%,rgba(250,249,246,.9) 43%,rgba(250,249,246,.3) 65%,transparent 80%); }
+/* Act 1's wash element. Its geometry is here; the paper it paints comes from the act's
+   reading zone (`journey.css`, "READING ZONES"), which is also what decides whether Act
+   1 gets a column, a band, or — at 768 — both. */
+body .journey .hero-light { display: block; position: absolute; inset: 0; z-index: 2; pointer-events: none; }
 /* The opening plate is a band, not the page background.
    Chrome discards an image whose rect covers the WHOLE viewport as a background
    image, and it can then never be the LCP element — measured on this build at
@@ -138,9 +143,12 @@ body .journey .hero-ribbon { margin-top: 2.5rem; width: min(43rem,calc(100vw - 2
 body .journey .hero-ribbon a { padding-inline: .4rem; }
 body .journey .hero-proof { bottom: 4.5rem; }
 body .journey .chapter-index { bottom: 1.5rem; text-transform: none; }
-/* A settled lower reading region, not a glow attached to individual letters. */
+/* A settled lower reading region, not a glow attached to individual letters.
+   The stop list that used to live on the `::after` below (transparent 5 %, .12 at 24 %,
+   .85 at 51 %, paper at 72 % — percentages of whichever height the act happened to have)
+   is now the act's reading zone: `journey.css`, "READING ZONES". */
 body .journey .journey-chapter:not(.hero-chapter):not(.white-stage) { min-height: 110svh; align-content: end; padding: 50svh var(--gutter) 5rem; }
-body .journey .journey-chapter:not(.hero-chapter):not(.white-stage)::after { display: block; z-index: 2; inset: 0; background: linear-gradient(180deg,transparent 5%,rgba(250,249,246,.12) 24%,rgba(250,249,246,.85) 51%,var(--paper) 72%); mask-image: none; }
+body .journey .journey-chapter:not(.hero-chapter):not(.white-stage)::after { display: block; z-index: 2; inset: 0; mask-image: none; }
 body .journey .chapter-copy-surface { width: min(100%,56rem); }
 body .journey .foundation-chapter { min-height: 125svh; }
 body .journey .material-lens { right: var(--gutter); bottom: auto; top: 20svh; width: clamp(8rem,14vw,14rem); }
@@ -162,7 +170,7 @@ body .journey .chapter-reading::before { display: none; }
 .reading-label span { color: var(--cobalt); font-size: var(--type-caption); font-variant-numeric: tabular-nums; }
 .reading-label strong { font-size: var(--type-caption); font-weight: var(--weight-ui); line-height: var(--leading-caption); }
 .reading-body { max-width: var(--measure-body); }
-.reading-body p { font-size: var(--type-body); line-height: var(--leading-body); color: #3f4e57; margin: 0 0 var(--rhythm-paragraph); opacity: 1; }
+.reading-body p { font-size: var(--type-body); line-height: var(--leading-body); color: var(--ink-body); margin: 0 0 var(--rhythm-paragraph); opacity: 1; }
 .reading-body .chapter-link { margin-top: .25rem; }
 body .journey .journey-breath { min-height: 42svh; }
 body .journey .journey-breath[data-hall-to='foundation'], body .journey .journey-breath[data-hall-from='foundation'] { min-height: 56svh; }
@@ -172,25 +180,23 @@ body .journey .journey-breath--end { min-height: 2rem; }
 body .journey .social-heading { gap: clamp(2rem,7vw,8rem); padding-bottom: 2rem; }
 body .journey .rating-number { letter-spacing: -.045em; }
 body .journey .social-intro > p:not(.eyebrow) { font-size: var(--type-body); line-height: var(--leading-body); }
-body .journey :is(.google-rating small,.review-link-help,.review-card-top,.review-card footer strong,.review-card footer a,.review-topic,.review-position,.review-bottom p,.review-bottom a,.review-monogram) { font-size: var(--type-caption); letter-spacing: 0; color: #465761; }
+body .journey :is(.google-rating small,.review-link-help,.review-card-top,.review-card footer strong,.review-card footer a,.review-bottom p,.review-bottom a,.review-monogram) { font-size: var(--type-caption); letter-spacing: 0; color: var(--ink-body); }
 body .journey :is(.review-card footer strong,.review-monogram) { font-weight: var(--weight-ui); }
-body .journey .review-card { flex-basis: calc((100vw - 2 * var(--gutter) - 3rem) / 3); min-height: 0; padding: 1.5rem; border-radius: .35rem; background: linear-gradient(180deg,#fff,rgba(255,255,255,.65)); box-shadow: none; }
+body .journey .review-card { flex-basis: calc((100vw - 2 * var(--gutter) - 3rem) / 3); min-height: 0; padding: 1.5rem; border-radius: .35rem; background: linear-gradient(180deg,var(--paper-bright),rgb(var(--paper-bright-rgb) / .65)); box-shadow: none; }
 body .journey .review-card > p { font-size: var(--type-body); font-weight: var(--weight-body); line-height: var(--leading-body); letter-spacing: 0; }
-body .journey .review-topic { padding-top: .8rem; }
-body .journey .review-controls { padding-right: 0; }
-body .journey .review-position { min-width: 5rem; }
 body .journey .review-stars { color: var(--cobalt); }
 body .journey :is(.story-intro,.story-detail p,.planning-intro > p:last-child,.planning-answer p) { font-size: var(--type-body); line-height: var(--leading-body); }
 body .journey :is(.story-photo figcaption,.story-detail small,.planning-answer a,.planning-number) { font-size: var(--type-caption); letter-spacing: 0; }
 
 /* Tabular figures. The act numbers and the rating block are columns of digits
-   that have to hold their position while the film moves behind them and while
-   the carousel advances; Manrope's proportional figures let a 1 shrink the
-   column and the number appears to twitch. `.reading-label span`,
-   `.hero-ribbon a span`, `.review-position` and `.planning-number` already
-   carried this in their own files — the two title rules above used to reset it
-   through the `font:` shorthand, which is why it is stated once, here. */
-body .journey :is(.chapter-index,.chapter-index span,.hero-ribbon a span,.reading-label span,.planning-number,.review-position,.rating-number,.rating-number span,.rating-count,.google-rating small,.review-card-top,.material-lens figcaption) { font-variant-numeric: tabular-nums; }
+   that have to hold their position while the film moves behind them; Manrope's
+   proportional figures let a 1 shrink the column and the number appears to
+   twitch. `.reading-label span` and `.planning-number` already carried this in
+   their own files — the two title rules above used to reset it through the
+   `font:` shorthand, which is why it is stated once, here. Step 16 dropped
+   `.hero-ribbon a span` and `.review-position` from the list: neither selector
+   matches anything the homepage renders any more. */
+body .journey :is(.chapter-index,.chapter-index span,.reading-label span,.planning-number,.rating-number,.rating-number span,.rating-count,.google-rating small,.review-card-top,.material-lens figcaption) { font-variant-numeric: tabular-nums; }
 body .journey .story-photo picture { mask-image: radial-gradient(ellipse 67% 65% at 46% 50%,#000 51%,rgba(0,0,0,.95) 65%,transparent 100%); }
 body .journey .story-photo--finish picture { mask-image: radial-gradient(ellipse 65% 68% at 54% 48%,#000 51%,rgba(0,0,0,.95) 65%,transparent 100%); }
 body .journey .story-heading { margin-bottom: 3rem; }
@@ -204,24 +210,12 @@ body .journey .story-heading { margin-bottom: 3rem; }
   body .journey .hero-content { padding-right: 25%; }
   body .journey .review-card { flex-basis: calc((100vw - 2 * var(--gutter) - 1.5rem) / 2); }
 }
-/* Tablet: the hero's small type runs past the end of the horizontal wash.
-   Measured at 768x1024 on the opening frame, where the DOM still owns the
-   picture: the CTA row sits at y 582-634 with the phone number spanning 59-72%
-   of the width, and the ribbon at y 674-769 reaching 93% — while the 90deg wash
-   is already down to 0.48 at 59% and 0 by 80%. The phone number read 1.73:1
-   there against a 4.5:1 threshold.
-   The answer is the feather every other chapter already uses, added as a second
-   layer on the same `.hero-light` element and stopping above the reading rows:
-   the row sits ON the paper band rather than getting a panel or a halo of its
-   own (CLAUDE.md rejects both), and because `.hero-light` is in flow with the
-   chapter, the band travels with the copy instead of standing still under it. */
-@media (min-width: 681px) and (max-width: 1100px) {
-  body .journey .hero-light {
-    background:
-      linear-gradient(180deg, transparent 0%, transparent 40%, rgba(250,249,246,.34) 47%, rgba(250,249,246,.86) 52%, var(--paper) 56%),
-      linear-gradient(90deg, var(--paper) 0%, rgba(250,249,246,.98) 33%, rgba(250,249,246,.9) 43%, rgba(250,249,246,.3) 65%, transparent 80%);
-  }
-}
+/* Step 17's tablet fix — a second gradient layer on `.hero-light` in a bespoke
+   681–1100 px block, because at 768 the hero's CTA row and its ribbon ran past the end
+   of the horizontal wash and the phone number in the row read 1.73:1 — is now Act 1's
+   `tablet` reading zone (`src/lib/motion/reading-zones.ts`): `column: .62` keeps the
+   horizontal wash, `band: .47` is the same paper band under the same two rows, and the
+   numbers are checked against the rendered page instead of against a comment. */
 @media (max-width: 680px) {
   /* A 44 px hero is no longer display type — it is roughly a phone headline, and
      at that optical size Manrope needs the weight back that a 98 px desktop hero
@@ -232,7 +226,6 @@ body .journey .story-heading { margin-bottom: 3rem; }
   body .journey .hero-content { padding: 0; }
   body .journey .pour-stage { height: 48svh; bottom: auto; }
   body .journey .hero-chapter { min-height: 100svh; padding: 32svh var(--gutter) 5rem; }
-  body .journey .hero-light { background: linear-gradient(180deg,transparent 0%,rgba(250,249,246,.35) 15%,rgba(250,249,246,.96) 28%,var(--paper) 53%); }
   body .journey .hero-proof { position: relative; inset: auto; margin-top: 1.5rem; }
   /* Storyboard §2, Act 1 phone: "CTAs full-width". They were 192 px and 138 px of
      a 350 px column, which reads as two chips rather than the act's two choices.
@@ -255,7 +248,6 @@ body .journey .story-heading { margin-bottom: 3rem; }
   body .journey .rating-count { font-size: var(--type-caption); }
   body .journey .review-card { flex-basis: min(84vw,25rem); }
   body .journey .review-bottom > div:first-child { max-width: 60%; }
-  body .journey .review-controls { max-width: 105px; gap: .4rem; }
   body .journey-motion-control { top: auto; left: auto; right: .75rem; bottom: max(.75rem,env(safe-area-inset-bottom)); }
   body .journey .journey-breath { min-height: 28svh; }
   body .journey .journey-breath[data-hall-to='foundation'],body .journey .journey-breath[data-hall-from='foundation'] { min-height: 38svh; }

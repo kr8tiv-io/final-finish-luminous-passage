@@ -23,6 +23,11 @@ export function Picture({ image, full, loading }: { image: ImageVariant; full: b
     objectPosition: image.crop.objectPosition,
     transform: `translate3d(${crop.translateX}%, ${crop.translateY}%, 0) rotate(${crop.rotate}deg) scale(${crop.scale})`,
   };
+  // `data-horizon-avoid` (Step 16): the surface plane's 1 px horizon line must never
+  // cross a photograph. The line is meant to sit over the FILM plates, which is why the
+  // opt-out is on the content images rather than on every `<img>` on the page —
+  // `src/lib/motion/surface-store.ts` reads the attribute and the store hides the line
+  // for as long as one of these boxes is on its row.
   if (!full) {
     return <img
       src={image.thumbnail}
@@ -33,10 +38,11 @@ export function Picture({ image, full, loading }: { image: ImageVariant; full: b
       decoding="async"
       draggable={false}
       data-image-quality="thumbnail"
+      data-horizon-avoid=""
       style={cropStyle}
     />;
   }
-  return <picture data-image-quality="full">
+  return <picture data-image-quality="full" data-horizon-avoid="">
     <source type="image/avif" srcSet={image.avif} />
     <source type="image/webp" srcSet={image.webp} />
     <img src={image.jpeg} alt={image.alt} width={image.width} height={image.height} loading={loading} decoding="async" draggable={false} style={cropStyle} />

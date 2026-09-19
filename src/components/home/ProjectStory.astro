@@ -9,9 +9,12 @@ const photos = story.photos.map(photo => ({ ...photo, asset: archive.assets.find
     <div><p class="eyebrow">{story.eyebrow}</p><h2 id={`${story.id}-title`} class="interlude-title">{story.title}</h2></div>
     <p class="story-intro">{story.body}</p>
   </div>
+  {/* `data-horizon-avoid` (Step 16): the surface plane's 1 px horizon line must not run
+      across a photograph. It sits on the figure rather than the `<img>`, so the caption
+      row under the picture is covered by the same opt-out. */}
   <div class="story-photographs editorial-width">
     {photos.map((photo,index) => (
-      <figure class={`story-photo story-photo--${index === 0 ? 'preparation' : 'finish'}`} data-story-photo>
+      <figure class={`story-photo story-photo--${index === 0 ? 'preparation' : 'finish'}`} data-story-photo data-horizon-avoid>
         <a href={photo.asset.variants.jpeg} aria-label={`Open full photograph: ${photo.caption}`}>
           <picture><source type="image/avif" srcset={photo.asset.variants.avif} /><source type="image/webp" srcset={photo.asset.variants.webp} /><img src={photo.asset.variants.jpeg} alt={photo.alt} width={photo.asset.width} height={photo.asset.height} loading="lazy" decoding="async" /></picture>
         </a>

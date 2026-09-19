@@ -57,19 +57,42 @@
   line-gap-override: 0%;
 }
 
+/* ── The palette (Step 16) ───────────────────────────────────────────────────
+ *
+ * Paper, ink, cobalt and bronze, and every tint any stylesheet is allowed to use.
+ * One place. Before this block the journey files carried eleven hand-mixed blue-greys
+ * between #3f4e57 and #71808a and four bronzes, several of which fell under 4.5:1 on
+ * paper (#67767e read 4.46, #71808a 3.87); they are now two ink tints, both measured.
+ *
+ * The `*-rgb` triples exist so a wash, a hairline or a card face can be written as
+ * `rgb(var(--paper-rgb) / .85)` instead of re-typing the channels. A translucent colour
+ * built any other way is drift, and drift is what the contrast report measures.
+ */
 :root {
   color-scheme: light;
   --paper: #faf9f6;
   --paper-bright: #ffffff;
+  /* A cool paper, for a chip that has to read as a surface rather than as ink. */
+  --paper-cool: #edf1f2;
   --limestone: #d8d1c3;
   --stone: #ada495;
   --ink: #17222a;
   --muted: #5d686c;
+  /* Ink tints. Measured on `--paper`: 8.18:1 and 5.69:1. `--ink-body` is long-form
+     reading copy, `--ink-quiet` every caption, meta row and small label. */
+  --ink-body: #3f4e57;
+  --ink-quiet: #54666f;
   --cobalt: #164f83;
   --cobalt-dark: #0d355b;
   --cobalt-light: #6fa6ca;
   --bronze: #a57d42;
-  --line: rgba(23, 34, 42, 0.16);
+  /* Bronze tint: 2.59:1 on paper, so rules, dots and gradient ends only — never text. */
+  --bronze-tint: #b49875;
+  --paper-rgb: 250 249 246;
+  --paper-bright-rgb: 255 255 255;
+  --ink-rgb: 23 34 42;
+  --cobalt-rgb: 22 79 131;
+  --line: rgb(var(--ink-rgb) / .16);
   --shadow: 0 28px 80px rgba(31, 39, 42, 0.12);
   --sans: 'Manrope Variable', 'Manrope Fallback', 'Segoe UI', Arial, sans-serif;
   --serif: var(--sans);

@@ -82,45 +82,23 @@ error/warning counts, failed requests, tier, motion, page height).
 
 ## `scripts/measure-delivery.mjs`
 
-Always targets the **built** app on 4334 (starts it if nothing is listening,
-same non-destructive ownership rule as above). Measures, per viewport
-(1440x900 desktop, 390x844 phone):
-
-- arrival transfer bytes (all responses until `networkidle` after first paint)
-- full-route transfer bytes after a scripted scroll through every chapter
-- LCP element selector + time, CLS sum (`hadRecentInput === false`), an INP
-  proxy (max `PerformanceObserver('event')` duration), long tasks > 50 ms
-  (count + longest), the largest 10 resources by bytes, and total font bytes
-
-via `page.addInitScript` registering buffered `PerformanceObserver`s before
-navigation, matching the pattern in `tests/e2e/readability-capture.spec.ts`
-(arrival/route resource snapshots) — this script does not modify that spec
-or `playwright.delivery.config.ts`, only reuses their approach.
+The delivery probe and its budgets are documented in one place:
+**`docs/context/DELIVERY-BUDGETS.md`**. That file is the contract — the four
+measurement windows, what "arrival" means and why it is the `load` event rather
+than `networkidle`, the thresholds themselves (which live in `budgets.json` at
+the repo root and are read by both the probe and `scripts/check-budgets.mjs`),
+and the `--port` and process-ownership rules.
 
 ```
-node scripts/measure-delivery.mjs --label baseline
+npm run build:staging
+npm run measure:delivery -- --label step34 --port 4391
+npm run check:budgets -- --label step34
 ```
 
-Output: `output/delivery/<label>.json`, printed as a pass/fail table against
-the Step 34 thresholds:
-
-| Metric | Threshold |
-| --- | --- |
-| Phone arrival | ≤ 0.8 MB |
-| Desktop arrival | ≤ 5 MB |
-| Route transfer | ≤ 12 MB / 18 MB |
-| LCP | ≤ 2.5 s |
-| CLS | < .02 |
-| INP (proxy) | ≤ 200 ms |
-| Longest long task | ≤ 200 ms |
-
-**Assumption flagged for review:** the master plan's Step 34 table lists the
-route budget as "≤ 12/18 MB" without stating which figure is desktop and
-which is phone. This script assumes **desktop ≤ 18 MB / phone ≤ 12 MB** (the
-larger figure to the viewport that loads the 1080p pour/finish-hall
-encodes across the whole scroll route). Revisit this mapping when Step 34
-runs for real against the frozen build — this is the one figure in the
-script that is inferred rather than quoted directly from the plan.
+The paragraph that used to sit here described the pre-Step-34 probe: a
+`networkidle` arrival window, a hard-coded 4334, and a route-budget mapping the
+script no longer infers. Step 34 replaced all three. Do not restate any
+threshold in this file; there must remain exactly one copy of each.
 
 ## Where outputs land
 
