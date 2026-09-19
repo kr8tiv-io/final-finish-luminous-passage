@@ -88,7 +88,7 @@ export function getFeaturedScrollTarget({
 }
 
 /**
- * The one admission rule for the pinned featured passage. There is no second
+ * The one admission rule for the sticky featured passage. There is no second
  * rule anywhere in the gallery: phones, coarse pointers, short viewports, still
  * motion, reduced motion, and any measured card that cannot actually fit stay on
  * the native snap ribbon.
@@ -100,6 +100,13 @@ export function getFeaturedScrollTarget({
  * what it cannot (the stored `still` preference, and the measured fit of a real
  * card). `finePointer` defaults to `true` so a caller that has already been
  * gated by the query does not have to restate it.
+ *
+ * Step 23c gave the query a third reader: `transformation-gallery.css` repeats
+ * it, character for character, as a real `@media` rule so the server-rendered
+ * page reserves Act 5's whole scroll length before this module is ever parsed.
+ * A change here is a change there — they are the same rule — and the gate that
+ * catches a drift is "the page is the same height before and after the island
+ * hydrates" in `cylinder.spec.ts`.
  */
 export const CYLINDER_MEDIA =
   '(min-width: 960px) and (min-height: 680px) and (pointer: fine) and (prefers-reduced-motion: no-preference)';

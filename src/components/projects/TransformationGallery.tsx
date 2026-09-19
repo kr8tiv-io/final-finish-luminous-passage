@@ -42,17 +42,39 @@ type CylinderGeometry = {
   readonly gap: number;
   readonly radius: number;
   readonly innerAngle: number;
-  /** Document scroll position at which the pin starts, and its travel. */
+  /** Document scroll position at which the passage starts sticking, and its travel. */
   readonly start: number;
   readonly travel: number;
 };
 
+/**
+ * Who owns the passage's height.
+ *
+ * `reserved` is the server's answer and the only one that can be rendered
+ * without a measurement: inside `CYLINDER_MEDIA` the stylesheet has already
+ * given the section its whole scroll length, so the page is its final height on
+ * the first painted frame. `sticky` is the same reservation with the ring built
+ * on top of it — deliberately not a different height. `flow` is the one state
+ * that gives the reservation back, and it is only ever reached by a measurement
+ * the media query cannot make: a card that does not fit, or a stored `still`
+ * preference. Nothing else may release it, because anything else would be a
+ * height the visitor watches change.
+ */
+type PassageHost = 'reserved' | 'sticky' | 'flow';
+
 const INITIAL_REVEAL = 50;
 const PROJECT_ARCHIVE_PATH = '/projects';
-/** Matches `--pin-top` in `transformation-gallery.css`; the header's own height. */
-const PIN_TOP = 88;
-/** Viewport heights of pin travel per card step (storyboard §2: Act 5 ≈ 3.0 vh). */
-const CARD_TRAVEL = 1;
+/** Matches `--passage-top` in `transformation-gallery.css`; the header's own height. */
+const PASSAGE_TOP = 88;
+/**
+ * The per-card step (one viewport, storyboard §2: Act 5 ≈ 3.0 vh over three
+ * pairs) used to live here as `CARD_TRAVEL` and was multiplied by
+ * `window.innerHeight` to produce the pin's duration. It now lives in
+ * `transformation-gallery.css` as `--passage-travel`, because the height has to
+ * exist before this island does. Read back by `passageTravel` below.
+ */
+const passageTravel = (passage: HTMLElement, sticky: HTMLElement): number =>
+  Math.max(1, Math.round(passage.getBoundingClientRect().height - sticky.getBoundingClientRect().height));
 
 /**
  * Production fallback. Never an empty section and never an "archive" apology:
@@ -85,7 +107,7 @@ declare global {
       readonly progress: () => number;
       readonly radius: () => number;
       readonly innerAngle: () => number;
-      /** Document scroll positions at which the pin starts and releases. */
+      /** Document scroll positions at which the passage sticks and releases. */
       readonly start: () => number;
       readonly end: () => number;
       readonly cards: number;
@@ -135,6 +157,7 @@ export default function TransformationGallery({ allowPending = false }: Props) {
   const render = useMemo(() => resolveGalleryRender(transformations, { allowPending }), [allowPending]);
   const pairs = render.pairs;
   const passageRef = useRef<HTMLDivElement>(null);
+  const stickyRef = useRef<HTMLDivElement>(null);
   const featuredNavRef = useRef<HTMLElement>(null);
   const featuredWindowRef = useRef<HTMLDivElement>(null);
   const ringRef = useRef<HTMLDivElement>(null);
@@ -145,6 +168,7 @@ export default function TransformationGallery({ allowPending = false }: Props) {
   const [hydrated, setHydrated] = useState(false);
   const [reducedMotion, setReducedMotion] = useState(false);
   const [cylinder, setCylinder] = useState<CylinderGeometry | null>(null);
+  const [passageHost, setPassageHost] = useState<PassageHost>('reserved');
   const [progress, setProgress] = useState(0);
   const [featuredNavigation, setFeaturedNavigation] = useState<FeaturedNavigation>(null);
   const [interactionIndex, setInteractionIndex] = useState<number | null>(null);
@@ -217,6 +241,13 @@ export default function TransformationGallery({ allowPending = false }: Props) {
    * chapter, never `.journey`, never with `snap`), and the only thing it writes
    * is the ring's `rotationY`.
    *
+   * It does **not** pin. The pin is what Step 23c removed: `pin: passage` with
+   * `pinSpacing: true` inserted a 2612 px spacer at hydration time, so the page
+   * grew under a visitor standing ~800 px above the act. The host is a
+   * sticky-in-flow box whose length the stylesheet reserved before this island
+   * existed (see the `@media` block in `transformation-gallery.css`), and this
+   * trigger now only *reads* where that box starts and stops sticking.
+   *
    * @motion perspective-cylinder
    */
   useEffect(() => {
@@ -227,11 +258,12 @@ export default function TransformationGallery({ allowPending = false }: Props) {
 
     media.add(CYLINDER_MEDIA, () => {
       const passage = passageRef.current;
+      const sticky = stickyRef.current;
       const ring = ringRef.current;
       const slot = slotRef.current;
       const nav = featuredNavRef.current;
       const panel = firstFeaturedRef.current;
-      if (!passage || !ring || !slot || !nav || !panel) return undefined;
+      if (!passage || !sticky || !ring || !slot || !nav || !panel) return undefined;
 
       /** The front slot's rect, for a later step's `shrink-to-card` to land on. */
       const writeFrontSlot = () => {
@@ -253,7 +285,14 @@ export default function TransformationGallery({ allowPending = false }: Props) {
           reducedMotion,
         });
       };
-      if (!admitted()) return undefined;
+      // The one state that hands the reserved height back. It is set before the
+      // early return so the release is a single React commit, not a frame of
+      // reserved-then-released.
+      if (!admitted()) {
+        setPassageHost('flow');
+        return undefined;
+      }
+      setPassageHost('sticky');
 
       const measure = (): CylinderGeometry => {
         const cardWidth = slot.getBoundingClientRect().width || panel.getBoundingClientRect().width;
@@ -264,7 +303,11 @@ export default function TransformationGallery({ allowPending = false }: Props) {
           radius: cylinderRadius({ cardWidth, gap, cards: pairs.length }),
           innerAngle: cylinderInnerAngle(pairs.length),
           start: 0,
-          travel: Math.max(1, window.innerHeight * CARD_TRAVEL * Math.max(1, pairs.length - 1)),
+          // Read off the reserved host rather than recomputed from
+          // `window.innerHeight`: the distance the sticky child travels before
+          // it releases *is* the trigger's duration, so there is no second
+          // arithmetic that could disagree with the stylesheet's.
+          travel: passageTravel(passage, sticky),
         };
       };
 
@@ -284,10 +327,11 @@ export default function TransformationGallery({ allowPending = false }: Props) {
           ease: 'none',
           scrollTrigger: {
             trigger: passage,
-            pin: passage,
-            pinSpacing: true,
-            start: `top top+=${PIN_TOP}`,
-            end: () => `+=${geometry.travel}`,
+            // The same two coordinates the sticky child itself uses: it sticks
+            // when the host's top reaches the header offset, and releases when
+            // the host's bottom reaches the bottom of the stuck box.
+            start: `top top+=${PASSAGE_TOP}`,
+            end: () => `+=${passageTravel(passage, sticky)}`,
             scrub: true,
             invalidateOnRefresh: true,
             onRefresh: (self) => {
@@ -324,6 +368,10 @@ export default function TransformationGallery({ allowPending = false }: Props) {
         delete passage.dataset.frontSlot;
         setCylinder(null);
         setProgress(0);
+        // Back to the server's answer, not to `flow`: outside `CYLINDER_MEDIA`
+        // the stylesheet reserves nothing, and inside it the height belongs to
+        // the page again until a fresh measurement says otherwise.
+        setPassageHost('reserved');
         journeyDirector.invalidateGeometry();
       };
     });
@@ -349,8 +397,8 @@ export default function TransformationGallery({ allowPending = false }: Props) {
     };
   }, [passageEnabled, schedule]);
 
-  // While pinned, the window is the only scroller. A focus ring, a hash jump,
-  // or scroll anchoring must never scroll the inner track sideways instead.
+  // While the passage is stuck, the window is the only scroller. A focus ring,
+  // a hash jump, or scroll anchoring must never scroll the track sideways instead.
   useEffect(() => {
     const track = featuredWindowRef.current;
     if (!track || !passageEnabled) return;
@@ -405,15 +453,18 @@ export default function TransformationGallery({ allowPending = false }: Props) {
   // for more than one frame.
   const settled = passageState.settled || cylinderState.inHoldWindow;
   const updateReveal = (id: string, value: number) => setReveals((current) => ({ ...current, [id]: value }));
+  // `--passage-travel` is deliberately absent: it is declared in
+  // `transformation-gallery.css` from `--featured-count`, which the server
+  // already renders here, so the act's length has exactly one owner and exists
+  // before this island does.
   const passageStyle = {
-    '--passage-travel': `${cylinder?.travel ?? 0}px`,
     '--featured-count': pairs.length,
     '--featured-position': passageState.position,
     '--cylinder-radius': cylinder?.radius ?? 0,
     '--cylinder-inner-angle': `${cylinder?.innerAngle ?? 0}deg`,
     '--front-emphasis': cylinderState.emphasis,
   } as CSSProperties;
-  // Held one pixel inside the pin's own end, so "Last" lands on a card the
+  // Held one pixel inside the passage's own end, so "Last" lands on a card the
   // trigger is still holding rather than on the exact frame it releases.
   const featuredScrollTarget = (index: number) => Math.min(
     getFeaturedScrollTarget({
@@ -490,6 +541,7 @@ export default function TransformationGallery({ allowPending = false }: Props) {
     style={passageStyle}
     data-gallery-mode="native"
     data-gallery-layout={passageEnabled ? 'passage' : 'native'}
+    data-passage-host={passageHost}
     data-featured-index={passageState.activeIndex}
     data-featured-settled={settled}
     data-hold-window={cylinderState.inHoldWindow}
@@ -502,8 +554,8 @@ export default function TransformationGallery({ allowPending = false }: Props) {
     {render.reviewBadge ? <p className="transformation-gallery__review-note">Project pairing review · not approved for publication</p> : null}
 
     <div className="transformation-gallery__passage" ref={passageRef}>
-      <div className="transformation-gallery__sticky">
-        {/* Inside the pinned wrapper, because the eyebrow is the act's live
+      <div className="transformation-gallery__sticky" ref={stickyRef}>
+        {/* Inside the sticky wrapper, because the eyebrow is the act's live
             label: it is driven by the front card's index and has to be on
             screen with the ring, not scrolled away above it. */}
         <WordSwapEyebrow swapKey={passageState.activeIndex} />
