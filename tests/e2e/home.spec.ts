@@ -168,11 +168,12 @@ test.describe('Final Finish homepage', () => {
    * The storyboard's ten acts, in the order it tells them (§2). Step 11b moved
    * `#proof` (act 05) into its act position between Reclaim and Your finish, so
    * DOM order and act order are now the same list and nothing is excused from
-   * the DOM-order rule. `PENDING_ACT_MOVE` stays as the seam for act 06, the
-   * archive lattice, which has no section yet — when Step 23b builds it, it is
-   * added here only if it lands out of position, never to hide a regression.
+   * the DOM-order rule. Step 23b built act 06, the archive lattice, and it
+   * landed in its act position between `proof` and `finish-hall`, so
+   * `PENDING_ACT_MOVE` stays empty — it exists to name a section that is
+   * knowingly out of position, never to hide a regression.
    */
-  const ACT_ORDER = ['portico', 'foundation', 'garage', 'vault', 'mancave', 'proof', 'finish-hall', 'commercial', 'consultation'];
+  const ACT_ORDER = ['portico', 'foundation', 'garage', 'vault', 'mancave', 'proof', 'archive', 'finish-hall', 'commercial', 'consultation'];
   const PENDING_ACT_MOVE: string[] = [];
 
   test('numbers the acts 01 to 10 with one shared number for the three Reclaim rooms', async ({ page }) => {

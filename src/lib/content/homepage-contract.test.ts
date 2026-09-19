@@ -12,7 +12,7 @@ describe('Follow the Floor semantic fallback', () => {
     expect(homepage).toContain('fetchpriority="high"');
   });
   it('keeps useful, named destinations without JavaScript', () => {
-    for (const chapter of ['portico', 'foundation', 'garage', 'vault', 'mancave', 'finish-hall', 'commercial', 'proof', 'consultation']) {
+    for (const chapter of ['portico', 'foundation', 'garage', 'vault', 'mancave', 'finish-hall', 'commercial', 'proof', 'archive', 'consultation']) {
       expect(homepage).toContain(`id="${chapter}"`);
     }
       expect(homepage).toContain('Reclaim your garage or basement.');
@@ -39,10 +39,10 @@ describe('Follow the Floor semantic fallback', () => {
     expect(homepage.match(/Architectural concept · not an installed project/g)).toHaveLength(3);
   });
   /**
-   * The storyboard's ten acts (§2). `customer-reviews` (02), the archive
-   * lattice (06), and `floor-planning` (09) render no act label yet, so they
-   * are absent here by design — 06 in particular must NOT appear as a
-   * placeholder before Step 23b builds the lattice.
+   * The storyboard's ten acts (§2). `customer-reviews` (02) and
+   * `floor-planning` (09) render no act label yet, so they are absent here by
+   * design. 06 arrived with Step 23b's archive lattice and is now expected in
+   * its act position; 09 must still NOT appear as a placeholder.
    */
   it('labels every act that carries a chapter index with its storyboard number', () => {
     const labels = [...homepage.matchAll(/<p class="chapter-index"[^>]*>(\d{2}) \/ ([^<]+?)\s*(?:<span>|<\/p>)/g)]
@@ -54,12 +54,32 @@ describe('Follow the Floor semantic fallback', () => {
       '04 / Reclaim · basement',
       '04 / Reclaim · lounge',
       '05 / See the difference',
+      '06 / The archive',
       '07 / Your finish',
       '08 / Commercial',
       '10 / Talk to Denis',
     ]);
-    expect(homepage).not.toContain('06 / ');
     expect(homepage).not.toContain('09 / ');
+  });
+  /**
+   * Act 6 is DOM first (storyboard §8, directive 5): the section is in the page
+   * between `#proof` and `#finish-hall`, it is a white stage for the director,
+   * and its photograph count is rendered from the manifest rather than typed
+   * into the markup. `COPY-DECK.md` Act 6 tags that count `[sourced: data]`.
+   */
+  it('puts the archive lattice in its act position and renders its count', () => {
+    const proof = homepage.indexOf('id="proof"');
+    const archive = homepage.indexOf('id="archive"');
+    const finish = homepage.indexOf('id="finish-hall"');
+    expect(proof).toBeGreaterThan(-1);
+    expect(archive).toBeGreaterThan(proof);
+    expect(finish).toBeGreaterThan(archive);
+    expect(homepage).toContain('data-hall-from="proof" data-hall-to="archive"');
+    expect(homepage).toContain('data-hall-from="archive" data-hall-to="finish-hall"');
+    expect(homepage).not.toContain('data-hall-from="proof" data-hall-to="finish-hall"');
+    expect(homepage).toContain('data-journey-chapter="archive" data-journey-white-stage');
+    expect(homepage).toContain('{ARCHIVE_PHOTO_COUNT} photographs');
+    expect(homepage).not.toContain('96 photographs');
   });
   it('gives every reading panel the act number of the chapter it belongs to', () => {
     const readings = [...homepage.matchAll(/<ChapterReading id="([a-z-]+)" number="(\d{2})"/g)]

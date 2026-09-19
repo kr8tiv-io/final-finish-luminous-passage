@@ -1,0 +1,379 @@
+/* Act 6 — the archive lattice.
+   Every value that decides layout is here and nothing measures it in JS, which
+   is what keeps `document.scrollHeight` identical before and after the island
+   hydrates: the chapter's height, the sticky host's height and the plane's size
+   are all CSS, and every tile is out of flow inside the host. */
+
+/* ---------------------------------------------------------------------------
+   The chapter. Sticky-in-flow host per storyboard §8 directive 2 — no pin, no
+   pin spacer, and therefore no transform anywhere above a `.journey-chapter`.
+
+   The `.white-stage` class is deliberately NOT reused here even though the
+   chapter carries `data-journey-white-stage` for the director. `journey.css`'s
+   Step 11 note records that a white stage placed after `#proof` paints a
+   `--blend-space`-tall gradient back over the previous act's tail, and
+   `html[data-journey-motion='still']` collapses the breath between them to zero
+   height — which would put that gradient straight on top of the gallery. Plain
+   paper is all the two white-dissolve boundaries need to land on.
+   --------------------------------------------------------------------------- */
+/* The selector is this long on purpose, and its length is the whole point.
+   `readable-experience.css` owns
+   `body .journey .journey-chapter:not(.hero-chapter):not(.white-stage)`
+   (specificity 0-4-1, three copies of it across its media queries) and gives
+   every such chapter `min-height: 110svh`, `padding: 50svh … 5rem` and an
+   `::after` paper gradient at `inset: 0` that is fully opaque from 72% down.
+   Those are the right defaults for a chapter whose copy sits over a film; on a
+   3.5 viewport-tall act they would cut the reserved height to 1430 px
+   (measured) and paint the bottom 880 px of the lattice solid paper. That file
+   is not this step's to edit, so this one out-specifies it at 0-5-1 rather than
+   reaching for `!important` or adding the `.white-stage` class, whose blend
+   pseudo-elements `journey.css`'s Step 11 note warns against placing after
+   `#proof`. The act's own copy carries its own scrim instead. */
+body .journey .journey-chapter.archive-chapter:not(.hero-chapter):not(.white-stage) {
+  display: block;
+  min-height: 350lvh;
+  padding: 0;
+  background: var(--paper);
+  align-content: start;
+  scroll-margin-top: 6rem;
+}
+
+body .journey .journey-chapter.archive-chapter:not(.hero-chapter):not(.white-stage)::after {
+  display: none;
+}
+
+.al {
+  position: sticky;
+  top: 0;
+  height: 100lvh;
+  overflow: hidden;
+  isolation: isolate;
+  background: var(--paper);
+
+  /* SSR / no-JavaScript resting state: the lattice fully arrived, the copy
+     readable, nothing dimmed. The island only ever overwrites these. */
+  --al-enter: 1;
+  --al-copy: 1;
+  --al-dim: 0;
+  --al-resolve: 0;
+
+  /* One tile's height is a sixth of the viewport so the 8-row plane clears the
+     viewport by a whole tile top and bottom (8h >= vh + 2h), which is the
+     condition for the wrap seam to stay off screen. The second term does the
+     same for the horizontal seam on a short, wide window. */
+  --al-tile-h: max(calc(100lvh / 6), calc(100vw / 13));
+  --al-tile-w: calc(var(--al-tile-h) * 4 / 3);
+  --al-plane-w: calc(var(--al-cols) * var(--al-tile-w));
+  --al-plane-h: calc(var(--al-rows) * var(--al-tile-h));
+  /* The unwrap stagger. A tile starts rising at `--al-enter = d * spread` and
+     is fully up one `1 - spread` later, so the LAST tile (`d = 1`) lands
+     exactly as `--al-enter` reaches 1 and no tile is left short of its own
+     alpha at the end of the unwrap. `--al-gain` is `1 / (1 - spread)`,
+     precomputed so the rule multiplies instead of dividing by an expression. */
+  --al-spread: 0.42;
+  --al-gain: 1.7241;
+}
+
+@media (max-width: 759px) {
+  body .journey .journey-chapter.archive-chapter:not(.hero-chapter):not(.white-stage) {
+    min-height: 240lvh;
+  }
+  .al { --al-tile-h: max(calc(100lvh / 6), calc(100vw / 5.2)); }
+}
+
+/* ---------------------------------------------------------------------------
+   The plane and its tiles
+   --------------------------------------------------------------------------- */
+.al-plane {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: var(--al-plane-w);
+  height: var(--al-plane-h);
+  margin: calc(var(--al-plane-h) / -2) 0 0 calc(var(--al-plane-w) / -2);
+  padding: 0;
+  list-style: none;
+}
+
+.al-tile {
+  position: absolute;
+  left: calc(var(--al-c) * var(--al-tile-w));
+  top: calc(var(--al-r) * var(--al-tile-h));
+  width: var(--al-tile-w);
+  height: var(--al-tile-h);
+  padding: 0.22rem;
+  /* Deliberately NO `will-change: transform`. It was here, and on 96 tiles it
+     asks for 96 permanently promoted compositing layers; on a software
+     rasteriser that is enough to make a single `page.screenshot` time out in
+     WebKit. The tiles are driven by `translate3d`, which every engine promotes
+     on its own for the frames it is actually moving, and drops again when it
+     stops — which is most of this act, because the drift is frozen through the
+     unwrap, the hold window and the resolve. */
+}
+
+.al-tile__fit {
+  display: block;
+  margin: 0;
+  width: 100%;
+  height: 100%;
+}
+
+/* `unwrap-to-lattice`, for the 95 tiles that are not the front slot: an outward
+   stagger keyed off `--al-d`, the tile's normalised distance from the lead.
+   `--al-alpha` is 0.6 while the photograph is awaiting Denis's approval, so
+   with nothing approved today the whole lattice reads dimmed and uncaptioned. */
+.al-tile__in {
+  display: block;
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  border-radius: 2px;
+  background: rgba(23, 34, 42, 0.05);
+  opacity: calc(
+    var(--al-alpha)
+    * clamp(0, (var(--al-enter) - var(--al-d) * var(--al-spread)) * var(--al-gain), 1)
+    * (1 - var(--al-dim))
+  );
+  transform: scale(calc(
+    0.9 + 0.1 * clamp(0, (var(--al-enter) - var(--al-d) * var(--al-spread)) * var(--al-gain), 1)
+  ));
+}
+
+.al-tile__in img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: 50% 50%;
+}
+
+/* The full-resolution plate that swaps in beneath the thumbnail as the tile
+   grows. `alt=""` and `aria-hidden` on purpose: it is a second copy of the
+   photograph the `<img>` above it already describes. */
+.al-tile__full {
+  position: absolute;
+  inset: 0;
+  opacity: var(--al-resolve);
+}
+
+.al-tile__caption { display: none; }
+
+/* ---------------------------------------------------------------------------
+   `tile-resolve` — the one tile that grows to full bleed
+   --------------------------------------------------------------------------- */
+/* The tile's containing block is `.al-plane`, which is bigger than the host and
+   centred on it, so `inset: 0` here would fill the PLANE (measured: a 1125 px
+   square on a 390 x 844 phone). These four values are the host's rect expressed
+   in the plane's coordinates; `ArchiveLattice.tsx` publishes them from the same
+   single measurement the drift already takes, on the same resize. */
+.al-tile.is-resolving {
+  left: var(--al-res-x, 0px);
+  top: var(--al-res-y, 0px);
+  right: auto;
+  bottom: auto;
+  width: var(--al-res-w, 100%);
+  height: var(--al-res-h, 100%);
+  padding: 0;
+  z-index: 3;
+}
+
+.al-tile.is-resolving .al-tile__in {
+  opacity: calc(var(--al-alpha) + (1 - var(--al-alpha)) * var(--al-resolve));
+  transform: none;
+  border-radius: 0;
+}
+
+/* A single photograph, labelled as the archive it came from. No pairing claim
+   is made here and none can be: `COPY-DECK.md` Act 6, "Resolved job fallback". */
+.al-tile.is-resolving .al-tile__caption {
+  display: block;
+  position: absolute;
+  left: var(--gutter);
+  right: var(--gutter);
+  bottom: clamp(2.2rem, 7svh, 4.5rem);
+  z-index: 1;
+  max-width: 34rem;
+  margin: 0;
+  padding: 0.85rem 1.1rem;
+  background: color-mix(in srgb, var(--paper) 93%, transparent);
+  color: var(--ink);
+  font-size: clamp(0.82rem, 1.05vw, 0.98rem);
+  line-height: 1.6;
+  opacity: var(--al-resolve);
+}
+
+/* ---------------------------------------------------------------------------
+   The hold window's copy
+   --------------------------------------------------------------------------- */
+.al-copy {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  z-index: 2;
+  width: min(100% - 2 * var(--gutter), 34rem);
+  translate: -50% -50%;
+  padding: clamp(1.6rem, 3.4vw, 2.6rem) clamp(1.5rem, 3vw, 2.4rem);
+  text-align: center;
+  /* Reaches past the last line of copy on both viewports, so no line of text
+     ever has to hold its own against a photograph behind it. */
+  background: radial-gradient(
+    ellipse at 50% 50%,
+    var(--paper) 54%,
+    color-mix(in srgb, var(--paper) 82%, transparent) 74%,
+    color-mix(in srgb, var(--paper) 0%, transparent) 96%
+  );
+  pointer-events: none;
+  opacity: var(--al-copy);
+}
+
+/* `line-rise`: the block's children ride up their last 14 px together. */
+.al-copy > * { translate: 0 calc((1 - var(--al-copy)) * 14px); }
+.al-copy a { pointer-events: auto; }
+[data-al-copy='off'] .al-copy { visibility: hidden; }
+
+.al-copy__eyebrow { margin-bottom: 1.2rem; color: var(--muted); }
+
+.al-copy__title {
+  max-width: 14ch;
+  margin: 0 auto;
+  font-family: var(--sans);
+  font-size: clamp(2.2rem, 4.4vw, 4rem);
+  font-weight: 450;
+  line-height: 1.08;
+  letter-spacing: -0.055em;
+  text-wrap: balance;
+}
+
+.al-copy__count {
+  margin: 1.3rem auto 0;
+  max-width: 30rem;
+  color: #3f4e57;
+  font-size: clamp(0.9rem, 1.1vw, 1.04rem);
+  line-height: 1.7;
+}
+
+/* Mirrors `journey.css` `.chapter-link` (the only rule that styles it; the
+   other three occurrences are contextual `margin-top` overrides in sections
+   this act is not in). It is a separate class because `intent-motion.ts`
+   injects a child into every `.journey a.chapter-link` — see the note in
+   `ArchiveLattice.tsx`. If the shared rule ever changes, this is the line that
+   has to change with it. */
+.al-copy__link {
+  display: inline-flex;
+  gap: 1.25rem;
+  align-items: center;
+  min-height: 44px;
+  margin-top: 1.1rem;
+  color: var(--cobalt);
+  font-size: 0.85rem;
+  text-underline-offset: 0.45rem;
+  text-decoration-thickness: 1px;
+}
+
+.al-copy__pending {
+  margin: 1rem 0 0;
+  font-size: 0.62rem;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--muted);
+}
+
+/* ---------------------------------------------------------------------------
+   `still` — the whole act told in DOM, with no scroll-linked motion at all.
+   A real CSS grid of every thumbnail with an opacity stagger, and the resolve
+   tile simply sits at full width with its caption (storyboard §6, Act 6
+   `still` column). The chapter drops its reserved height with the sticky host
+   it no longer needs; that is the one condition in which this act changes the
+   page's scroll height, and it happens twenty viewports below the fold.
+   --------------------------------------------------------------------------- */
+html[data-journey-motion='still'] body .journey .journey-chapter.archive-chapter:not(.hero-chapter):not(.white-stage) {
+  min-height: auto;
+  padding: clamp(4rem, 9vw, 8rem) 0;
+}
+
+html[data-journey-motion='still'] .al {
+  position: static;
+  height: auto;
+  overflow: visible;
+  /* The copy is last in the DOM because the lattice is what the act opens on
+     and the headline arrives into the middle of it. With no motion there is no
+     middle to arrive into, so the act reads in reading order instead: the
+     sentence, then the evidence. */
+  display: flex;
+  flex-direction: column;
+}
+
+html[data-journey-motion='still'] .al-copy { order: -1; }
+
+html[data-journey-motion='still'] .al-plane {
+  position: static;
+  display: grid;
+  grid-template-columns: repeat(var(--al-cols), 1fr);
+  gap: 0.35rem;
+  width: auto;
+  height: auto;
+  margin: 0 var(--gutter);
+}
+
+html[data-journey-motion='still'] .al-tile {
+  position: static;
+  width: auto;
+  height: auto;
+  padding: 0;
+  aspect-ratio: 4 / 3;
+  transform: none !important;
+  will-change: auto;
+}
+
+html[data-journey-motion='still'] .al-tile__in {
+  opacity: var(--al-alpha);
+  transform: none;
+  animation: al-still-rise 0.6s ease-out backwards;
+  animation-delay: calc(var(--al-d) * 0.5s);
+}
+
+html[data-journey-motion='still'] .al-tile--resolve {
+  grid-column: 1 / -1;
+  aspect-ratio: 16 / 9;
+}
+
+html[data-journey-motion='still'] .al-tile--resolve .al-tile__in,
+html[data-journey-motion='still'] .al-tile--resolve .al-tile__full { opacity: 1; }
+
+html[data-journey-motion='still'] .al-tile--resolve .al-tile__caption {
+  display: block;
+  position: static;
+  margin: 0.6rem 0 0;
+  padding: 0;
+  background: none;
+  color: var(--ink);
+  font-size: 0.86rem;
+  line-height: 1.6;
+  opacity: 1;
+}
+
+html[data-journey-motion='still'] .al-copy {
+  position: static;
+  width: min(100%, var(--max));
+  margin: 0 auto clamp(2.5rem, 6vw, 4rem);
+  padding-inline: var(--gutter);
+  translate: none;
+  opacity: 1;
+  background: none;
+}
+
+html[data-journey-motion='still'] .al-copy > * { translate: none; }
+html[data-journey-motion='still'] [data-al-copy='off'] .al-copy { visibility: visible; }
+
+@keyframes al-still-rise {
+  from { opacity: 0; }
+  to { opacity: var(--al-alpha); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .al-tile { will-change: auto; }
+  .al-tile__in { transform: none; }
+  .al-copy > * { translate: none; }
+  html[data-journey-motion='still'] .al-tile__in { animation: none; }
+}

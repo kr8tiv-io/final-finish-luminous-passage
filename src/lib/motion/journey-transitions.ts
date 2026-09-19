@@ -44,12 +44,21 @@ const DEFAULT_STYLE: JourneyTransitionStyle = Object.freeze({ kind: 'fold', mode
  * and `@motion swallow` (the act's entrance, still wearing `preparation-curl`
  * at `foundation:garage` until Step 20's stair lands the real opening rectangle).
  *
- * Two of these are placeholders wearing an existing veil mode until their own
+ * Step 23b put Act 6 (`archive`) between the gallery and Your finish, so the
+ * single `proof:finish-hall` breath became the pair `proof:archive` and
+ * `archive:finish-hall`.
+ *
+ * Three of these are placeholders wearing an existing veil mode until their own
  * step authors the real mechanic:
  * - `mancave:proof` reuses `aperture` until Step 23 lands `shrink-to-card`.
- * - `proof:finish-hall` reuses `white-dissolve` until Step 24 lands
+ * - `proof:archive` reuses `white-dissolve` because the act's real entrance,
+ *   `unwrap-to-lattice`, is DOM (`ArchiveLattice.tsx` Flips the gallery's
+ *   published front-slot rect into a tile). Both sides of this breath are white
+ *   stages, so paper into paper is what the compositor should be doing here —
+ *   the veil is the crossfade, the movement is below it.
+ * - `archive:finish-hall` reuses `white-dissolve` until Step 24 lands
  *   `resin-layer-mask`. It leaves a white stage, so paper-to-room is the honest
- *   stand-in rather than a fold that would deform the gallery's own paper.
+ *   stand-in rather than a fold that would deform the lattice's own paper.
  */
 const TRANSITIONS: Readonly<Record<string, JourneyTransitionStyle>> = Object.freeze({
   'portico:foundation': Object.freeze({ kind: 'white-dissolve', mode: 0, direction: 1 }),
@@ -57,7 +66,8 @@ const TRANSITIONS: Readonly<Record<string, JourneyTransitionStyle>> = Object.fre
   'garage:vault': Object.freeze({ kind: 'fold-and-shoot-left', mode: 5, direction: 1 }),
   'vault:mancave': Object.freeze({ kind: 'fold-and-shoot-left', mode: 5, direction: 1 }),
   'mancave:proof': Object.freeze({ kind: 'aperture', mode: 1, direction: -1 }),
-  'proof:finish-hall': Object.freeze({ kind: 'white-dissolve', mode: 0, direction: 1 }),
+  'proof:archive': Object.freeze({ kind: 'white-dissolve', mode: 0, direction: 1 }),
+  'archive:finish-hall': Object.freeze({ kind: 'white-dissolve', mode: 0, direction: 1 }),
   'finish-hall:commercial': Object.freeze({ kind: 'fold', mode: 2, direction: 1 }),
   'commercial:consultation': Object.freeze({ kind: 'fold', mode: 2, direction: 1 }),
 });

@@ -288,7 +288,8 @@ export function scissorBox(
  * Chapter → material state, exactly as the storyboard's acts run.
  *
  * portico 0 → 2 in the last fifth of the pour · foundation 1 → 2 · garage 2 ·
- * vault 3 · mancave 5 · finish-hall 5 · commercial 6 · proof 3 · consultation 7.
+ * vault 3 · mancave 5 · archive 4 · finish-hall 5 · commercial 6 · proof 3 ·
+ * consultation 7.
  * Act 4's three rooms therefore morph 2 → 3 → 5 under the horizontal bay, which is
  * the storyboard's "pearl (garage) → flake (basement) → metallic (mancave)" run.
  * Boundaries blend the outgoing chapter's end state into the incoming chapter's start
@@ -302,6 +303,9 @@ const CHAPTER_STATES: Readonly<Record<JourneyChapterId, readonly [SurfaceStateId
   garage: [2, 2],
   vault: [3, 3],
   mancave: [5, 5],
+  // Storyboard §2, Act 6: the lattice IS the photograph plane, so the floor
+  // carries state 4 *photograph* under it while the archive is on screen.
+  archive: [4, 4],
   'finish-hall': [5, 5],
   commercial: [6, 6],
   proof: [3, 3],
@@ -358,6 +362,23 @@ export const SURFACE_PRESENCE: Readonly<{
 const MEDIA_CHAPTERS: ReadonlySet<JourneyChapterId> = new Set<JourneyChapterId>([
   'portico', 'foundation', 'garage', 'vault', 'mancave', 'finish-hall', 'commercial', 'consultation',
 ]);
+
+/**
+ * Chapters the plane is only ever a faint reflection under, at both edges as
+ * well as in the interior.
+ *
+ * `archive` is one: Act 6 is told entirely in DOM — 96 real `<img>` tiles on
+ * paper — so a floor plane at `full` strength would be a slab pasted over the
+ * photographs, and at the two white-dissolve boundaries either side it would
+ * step up out of and back down into the lattice. `whiteStageActive` already
+ * gives the *interior* `SURFACE_PRESENCE.reflection` (the section carries
+ * `data-journey-white-stage`); this set is what carries the same answer into
+ * `surfaceChapterPresenceEdge`, which boundaries read and white stages do not
+ * reach. If the `full`-tier `lattice-flyover` is ever built — see the hook at
+ * the foot of `ArchiveLattice.tsx` — it paints the picture itself and this is
+ * the line that lifts.
+ */
+const REFLECTION_CHAPTERS: ReadonlySet<JourneyChapterId> = new Set<JourneyChapterId>(['archive']);
 
 /* -------------------------------------------------------------------------- */
 /* The horizon line's occlusion rule — pure half                               */
@@ -521,6 +542,7 @@ export function surfaceChapterPresence(id: JourneyChapterId, chapterProgress: nu
   if (id === 'portico') {
     return SURFACE_PRESENCE.sheen * clamp01((chapterProgress - PORTICO_CURE_START) / (1 - PORTICO_CURE_START));
   }
+  if (REFLECTION_CHAPTERS.has(id)) return SURFACE_PRESENCE.reflection;
   return MEDIA_CHAPTERS.has(id) ? SURFACE_PRESENCE.sheen : SURFACE_PRESENCE.full;
 }
 

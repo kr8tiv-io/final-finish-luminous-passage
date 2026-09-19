@@ -73,7 +73,7 @@ describe('Act 1 span and the resin-wipe band', () => {
 describe('native journey snapshots', () => {
   afterEach(() => vi.unstubAllGlobals());
 
-  it('publishes the stable nine-room manifest in storyboard act order', () => {
+  it('publishes the stable ten-room manifest in storyboard act order', () => {
     expect(JOURNEY_CHAPTER_IDS).toEqual([
       'portico',
       'foundation',
@@ -81,6 +81,7 @@ describe('native journey snapshots', () => {
       'vault',
       'mancave',
       'proof',
+      'archive',
       'finish-hall',
       'commercial',
       'consultation',

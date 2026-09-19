@@ -490,16 +490,25 @@ test('the flash detector catches a flash and ignores a steep ramp', () => {
 });
 
 /**
- * The eight adjacencies of the storyboard's act order (§2), after Step 11b put
- * `proof` (act 05) between Reclaim and Your finish and Step 22 gave Act 4 its
- * third room. Spelled out rather than counted: a table that reorders itself and
- * a page that reorders with it would both satisfy a length check while the acts
- * came out in the wrong sequence.
+ * The nine adjacencies of the storyboard's act order (§2), after Step 11b put
+ * `proof` (act 05) between Reclaim and Your finish, Step 22 gave Act 4 its
+ * third room, and Step 23b landed Act 6 (`archive`) between the gallery and
+ * Your finish. Spelled out rather than counted: a table that reorders itself
+ * and a page that reorders with it would both satisfy a length check while the
+ * acts came out in the wrong sequence.
  *
  * `garage:vault` and `vault:mancave` are the bay's two interior folds. They are
  * the first media-to-media boundaries in Act 4 — the Reclaim reading aside used
  * to sit between the rooms, so `garage:vault` left a white stage — which means
  * both are now held to the stricter "never blank at any sample" rule below.
+ *
+ * `proof:archive` is the one boundary in this list with a white stage on BOTH
+ * sides and no media plate on the incoming side, so neither the "never blank"
+ * rule nor the control measurement applies to it: `readBoundaries` reports
+ * `fromWhite: true` and `toHasPlate: false`, and the spec below skips both on
+ * exactly that evidence rather than on a name. What it is still held to is the
+ * seam, the monotonic handoff, and the flash scan — which is the whole of what
+ * a paper-to-paper dissolve can be wrong about.
  */
 const EXPECTED_BOUNDARY_KEYS = [
   'portico:foundation',
@@ -507,7 +516,8 @@ const EXPECTED_BOUNDARY_KEYS = [
   'garage:vault',
   'vault:mancave',
   'mancave:proof',
-  'proof:finish-hall',
+  'proof:archive',
+  'archive:finish-hall',
   'finish-hall:commercial',
   'commercial:consultation',
 ] as const;

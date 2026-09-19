@@ -17,6 +17,20 @@ import ChapterReading from '../components/home/ChapterReading.astro';
 import PreparationLayers from '../components/home/PreparationLayers.astro';
 import ResinReveal from '../components/home/ResinReveal.astro';
 import ReclaimBay from '../components/home/ReclaimBay.astro';
+import ArchiveLattice from '../components/home/ArchiveLattice';
+import {
+  ARCHIVE_COLUMNS,
+  ARCHIVE_DATE_RANGE,
+  ARCHIVE_JOB_COUNT,
+  ARCHIVE_LEAD_INDEX,
+  ARCHIVE_PENDING_COUNT,
+  ARCHIVE_PHONE_COLUMNS,
+  ARCHIVE_PHOTO_COUNT,
+  ARCHIVE_ROWS,
+  ARCHIVE_TILES,
+  archiveResolveImage,
+  archiveResolveIndex,
+} from '../data/archive-lattice';
 import '../styles/journey.css';
 import '../styles/reclaim-bay.css';
 
@@ -231,7 +245,28 @@ const thresholdStudy = import.meta.env.DEV && Astro.url.searchParams.get('study'
       <p class="chapter-index" data-act-label aria-hidden="true">05 / See the difference <span>Edmonton project archive</span></p>
     </section>
 
-    <div class="journey-breath" data-hall-from="proof" data-hall-to="finish-hall" aria-hidden="true"></div>
+    <div class="journey-breath" data-hall-from="proof" data-hall-to="archive" aria-hidden="true"></div>
+
+    <section class="journey-chapter archive-chapter" id="archive" tabindex="-1" data-journey-chapter="archive" data-journey-white-stage aria-labelledby="archive-title">
+      <ArchiveLattice
+        client:visible={{ rootMargin: '900px' }}
+        tiles={ARCHIVE_TILES}
+        resolve={archiveResolveImage()}
+        columns={ARCHIVE_COLUMNS}
+        rows={ARCHIVE_ROWS}
+        phoneColumns={ARCHIVE_PHONE_COLUMNS}
+        leadIndex={ARCHIVE_LEAD_INDEX}
+        resolveIndex={archiveResolveIndex()}
+        photoCount={ARCHIVE_PHOTO_COUNT}
+        jobCount={ARCHIVE_JOB_COUNT}
+        dateRange={ARCHIVE_DATE_RANGE}
+        pendingCount={ARCHIVE_PENDING_COUNT}
+        staging={import.meta.env.DEV || import.meta.env.SITE_ENV === 'staging'}
+      />
+      <p class="chapter-index" data-act-label aria-hidden="true">06 / The archive <span>{ARCHIVE_PHOTO_COUNT} photographs</span></p>
+    </section>
+
+    <div class="journey-breath" data-hall-from="archive" data-hall-to="finish-hall" aria-hidden="true"></div>
 
     <section class="journey-chapter finish-chapter" id="finish-hall" tabindex="-1" data-journey-chapter="finish-hall" aria-labelledby="finish-title">
       <picture class="chapter-frame" data-chapter-frame aria-hidden="true">
