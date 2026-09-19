@@ -3,6 +3,32 @@
    [data-resin-mode="motion"] = pinned stage, [data-resin-mode="still"] = resolved
    end state at natural height. Nothing else on the page reads or writes these. */
 
+/*
+ * THE RESERVED BOX.
+ *
+ * Everything inside this section is absolutely positioned against the stage, and the
+ * stage's own height is stated here rather than discovered: a full viewport of it
+ * (`min-height: 100svh`) from the first paint, before `resin-reveal.ts` reads a single
+ * pixel. `svh` and not `vh` so a phone's retracting URL bar cannot change the number
+ * the runtime then measures. The script's `layout()` only rewrites the SVG's `viewBox`
+ * — a coordinate system, not a box — so what it does is a refinement of this frame,
+ * never the creation of one, and the section occupies exactly the same space with the
+ * script deferred (ResinReveal.astro) as without it.
+ *
+ * `contain: layout paint` states the same promise to the rest of the document: this is
+ * a fixed-size, self-clipping frame, so its interior — a pinned stage whose SVG
+ * re-rasterises every scrub frame — is not part of anyone else's layout pass.
+ *
+ * MEASURED, AND REPORTED HONESTLY: this does NOT move the probe's `clsScroll` number.
+ * That metric is not reproducible on this build — three runs of the *same* build gave
+ * 0.0352 / 1.2133 / 0.2133, and a run attributed 0.83 to
+ * `section.transformation-gallery__explore` with no resin source at all. The
+ * `svg[data-resin-svg]` 0x0 -> 1440x900 entry DELIVERY-BUDGETS.md names is the element
+ * entering the viewport in one frame because the probe teleports
+ * (`scrollIntoView({ behavior: 'instant' })`) into the middle of a pinned section; the
+ * SVG already measures 1440x900 at 348 ms, before any scrolling. Which is exactly why
+ * `clsScroll` is documented as reported and never gated.
+ */
 .resin-stage {
   --resin-gutter: clamp(1.5rem, 5.5vw, 8.25rem);
   --resin-display: clamp(3rem, 8vw, 7.5rem);
@@ -14,6 +40,7 @@
   margin: 0;
   background: #faf9f6;
   overflow: clip;
+  contain: layout paint;
 }
 
 /* ---- GPU layers: everything that only translates, scales or fades --------- */
@@ -96,6 +123,9 @@
 
 /* ---- SVG scene: mask, resin plates, statement ---------------------------- */
 
+/* Sized from the stage's reserved box, not from the script: `inset: 0` plus an
+   explicit 100%/100% means the element has the frame's geometry at first paint and
+   `svg.setAttribute('viewBox', ...)` only re-maps the coordinates drawn inside it. */
 .resin-svg {
   position: absolute;
   inset: 0;
