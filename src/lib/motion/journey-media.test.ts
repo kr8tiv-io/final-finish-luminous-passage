@@ -3,10 +3,14 @@ import {
   coverUvTransform,
   dissolveWeight,
   endpointBlend,
+  isScrollIntentKey,
   journeyEnhancementReady,
+  journeyFilmTopRung,
   journeyMediaResidents,
+  mediaPromotionAllowed,
   plateMediaChoice,
   pourFilmSource,
+  SCROLL_INTENT_POINTER_PX,
   shouldInvalidateForMediaReadiness,
   shouldRequestVideo,
   thresholdHdrSupported,
@@ -29,6 +33,51 @@ describe('Act 1 film rung', () => {
     expect(pourFilmSource({ viewportWidth: 1440, tier: 'balanced' })).toBeNull();
     expect(pourFilmSource({ viewportWidth: 1440, tier: 'still' })).toBeNull();
     expect(pourFilmSource({ viewportWidth: Number.NaN, tier: 'full' })).toBeNull();
+  });
+
+  it('gives Act 3 the same rung rule and every other chapter the markup ladder', () => {
+    expect(journeyFilmTopRung('foundation', { viewportWidth: 1440, tier: 'full' }))
+      .toBe('/videos/follow-floor/1080/epoxy-walkway-pearl.mp4');
+    expect(journeyFilmTopRung('foundation', { viewportWidth: 1439, tier: 'full' })).toBeNull();
+    expect(journeyFilmTopRung('foundation', { viewportWidth: 1440, tier: 'balanced' })).toBeNull();
+    // Act 1 and Act 3 are the only two films authored at three rungs; the rooms
+    // stop at the 720 their `<source>` ladder already names.
+    expect(journeyFilmTopRung('portico', { viewportWidth: 1440, tier: 'full' }))
+      .toBe('/videos/follow-floor/1080/epoxy-pour-pearl.mp4');
+    for (const room of ['garage', 'vault', 'mancave', 'finish-hall'] as const) {
+      expect(journeyFilmTopRung(room, { viewportWidth: 1920, tier: 'full' }), room).toBeNull();
+    }
+    // Falsifiable: the two named films must differ from each other, or a rule
+    // that returned one constant would satisfy every assertion above.
+    expect(journeyFilmTopRung('portico', { viewportWidth: 1440, tier: 'full' }))
+      .not.toBe(journeyFilmTopRung('foundation', { viewportWidth: 1440, tier: 'full' }));
+  });
+});
+
+describe('scroll intent gates every video byte', () => {
+  it('refuses promotion until the visitor has asked the page to move', () => {
+    const base = { presentationEnabled: true, saveData: false, scrollIntent: true };
+    expect(mediaPromotionAllowed(base)).toBe(true);
+    // The rule this step exists for: an idle visitor downloads no film at all.
+    expect(mediaPromotionAllowed({ ...base, scrollIntent: false })).toBe(false);
+    // The two pre-existing refusals are unchanged and still independent.
+    expect(mediaPromotionAllowed({ ...base, presentationEnabled: false })).toBe(false);
+    expect(mediaPromotionAllowed({ ...base, saveData: true })).toBe(false);
+  });
+
+  it('counts the keys that scroll the document and nothing else', () => {
+    for (const key of ['ArrowDown', 'ArrowUp', 'PageDown', 'PageUp', 'Home', 'End', ' ']) {
+      expect(isScrollIntentKey(key), key).toBe(true);
+    }
+    // Tab scrolls too, but the browser is moving the page, not the visitor.
+    for (const key of ['Tab', 'a', 'Enter', 'Escape', 'Shift', 'ArrowLeft']) {
+      expect(isScrollIntentKey(key), key).toBe(false);
+    }
+  });
+
+  it('keeps the pointer threshold small enough to beat the wheel tick that follows it', () => {
+    expect(SCROLL_INTENT_POINTER_PX).toBeGreaterThan(0);
+    expect(SCROLL_INTENT_POINTER_PX).toBeLessThanOrEqual(8);
   });
 });
 
@@ -122,7 +171,7 @@ describe('cinematic plate sampling', () => {
 
   it('samples whichever plate the document is presenting, never a second opinion', () => {
     const image = { complete: true, naturalWidth: 1_920, naturalHeight: 1_080 };
-    const decodedFilm = { readyState: 2, videoWidth: 1_280, videoHeight: 720 };
+    const decodedFilm = { readyState: 2, videoWidth: 1_280, videoHeight: 720, frameDecoded: true };
 
     // The defect this rule replaces: finish-hall's film is on screen
     // (`data-video-ready`) while its poster is a different picture entirely, and the
@@ -135,12 +184,34 @@ describe('cinematic plate sampling', () => {
     // A film with nothing decoded is not a plate at all.
     expect(veilPlateChoice({
       image: null,
-      video: { readyState: 1, videoWidth: 0, videoHeight: 0, presented: true },
+      video: { readyState: 1, videoWidth: 0, videoHeight: 0, presented: true, frameDecoded: false },
     })).toBe('fallback');
     // Falsifiable: `presented` has to be the deciding input, or the first two
     // assertions would pass on any rule that simply preferred one plate.
     expect(veilPlateChoice({ image, video: { ...decodedFilm, presented: true } }))
       .not.toBe(veilPlateChoice({ image, video: { ...decodedFilm, presented: false } }));
+  });
+
+  /**
+   * Lock-on-entry. A `<video>` can reach `readyState >= 2` with a non-zero
+   * intrinsic size and still never have presented a frame — which is what a deep
+   * link straight into a boundary produces — and `THREE.VideoTexture` uploads an
+   * undefined (black) surface for it. `frameDecoded` is the input that refuses it.
+   */
+  it('refuses a plate whose film has not presented a frame, however ready it claims to be', () => {
+    const image = { complete: true, naturalWidth: 1_920, naturalHeight: 1_080 };
+    const cold = { readyState: 2, videoWidth: 1_280, videoHeight: 720, frameDecoded: false };
+
+    // Staged by the document, sized, ready — and still not a texture yet.
+    expect(veilPlateChoice({ image, video: { ...cold, presented: true } })).toBe('poster');
+    // With no poster either, the veil has nothing: the caller must not lock, and
+    // the DOM `--handoff` crossfade carries the boundary instead.
+    expect(veilPlateChoice({ image: null, video: { ...cold, presented: true } })).toBe('fallback');
+    expect(veilPlateChoice({ image: null, video: { ...cold, presented: false } })).toBe('fallback');
+    // Falsifiable: the same inputs with a presented frame resolve to the film, so
+    // these three cannot be passing because the video branch is simply dead.
+    expect(veilPlateChoice({ image, video: { ...cold, frameDecoded: true, presented: true } })).toBe('video');
+    expect(veilPlateChoice({ image: null, video: { ...cold, frameDecoded: true, presented: true } })).toBe('video');
   });
 
   it('crossfades the incoming plate around the midpoint instead of switching at it', () => {

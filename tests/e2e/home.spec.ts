@@ -1,4 +1,13 @@
-import { expect, test } from '@playwright/test';
+import { expect, test, type Page } from '@playwright/test';
+
+/**
+ * Motion A: the first scroll-intent signal is what promotes a film off
+ * `preload="none"`. A one-pixel scroll is a real one — the document moves and
+ * the director's own `scroll` listener sees it — and unlike `page.mouse.wheel`
+ * it works on the `mobile-safari` project too (`Mouse wheel is not supported in
+ * mobile WebKit`).
+ */
+const signalScrollIntent = (page: Page) => page.evaluate(() => window.scrollBy(0, 1));
 
 test.describe('Final Finish homepage', () => {
   test('states the current value proposition and preserves both lead paths', async ({ page }) => {
@@ -72,6 +81,10 @@ test.describe('Final Finish homepage', () => {
     await page.goto('/', { waitUntil: 'domcontentloaded' });
     await page.waitForFunction(() => document.documentElement.dataset.journeyTier !== undefined, null, { timeout: 30_000 });
     const tier = await page.getAttribute('html', 'data-journey-tier');
+    // Motion A: the rung is only named once the visitor has asked the page to
+    // move. Before that `currentSrc` is empty by design, which the test below
+    // asserts on its own; here the signal is the precondition for the rung.
+    await signalScrollIntent(page);
     await page.waitForFunction(
       () => (document.querySelector<HTMLVideoElement>('.pour-film')?.currentSrc ?? '') !== '',
       null,
@@ -80,6 +93,49 @@ test.describe('Final Finish homepage', () => {
     const source = await page.locator('.pour-film').evaluate((node: HTMLVideoElement) => node.currentSrc);
     if (tier === 'full') expect(source, `tier ${tier}`).toMatch(/follow-floor\/1080\/epoxy-pour-pearl\.mp4$/);
     else expect(source, `tier ${tier}`).not.toMatch(/follow-floor\/1080\//);
+  });
+
+  /**
+   * Act 1's film is promoted on the visitor's first scroll-intent signal, never
+   * at hydration (Motion A). Measured on the built app before this rule, the
+   * 5.1 MB 1080 encode began streaming at ~921 ms on a desktop that had done
+   * nothing but load the page.
+   *
+   * The control is the second half: the same page, given one scroll, does fetch
+   * it. Without that, a page that had simply stopped shipping the film would
+   * pass the first half.
+   */
+  test('downloads no film until the visitor asks the page to move', async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 });
+    const videoBytes: string[] = [];
+    page.on('response', (response) => {
+      if (/\/videos\/.*\.mp4(?:\?|$)/.test(response.url())) videoBytes.push(response.url());
+    });
+    await page.goto('/', { waitUntil: 'domcontentloaded' });
+    await page.waitForFunction(() => document.documentElement.dataset.journeyTier !== undefined, null, { timeout: 30_000 });
+    await expect(page.locator('.pour-poster')).toBeVisible();
+    // Long enough that the old hydration-time promotion (~921 ms) would have
+    // fired several times over, and with no pointer, wheel, key or scroll.
+    await page.waitForTimeout(5_000);
+    expect(videoBytes, `an idle session fetched ${videoBytes.length} film request(s)`).toEqual([]);
+    expect(await page.locator('.pour-film').evaluate((node: HTMLVideoElement) => node.preload)).toBe('none');
+
+    // Armed BEFORE the signal, and on a RESPONSE: `currentSrc` is set by resource
+    // selection and says nothing about a fetch, so only a response proves the tap
+    // opened.
+    const firstFilm = page.waitForResponse(
+      (response) => /\/videos\/.*\.mp4(?:\?|$)/.test(response.url()),
+      { timeout: 60_000 },
+    );
+    await signalScrollIntent(page);
+    await page.waitForFunction(
+      () => document.querySelector<HTMLVideoElement>('.pour-film')?.preload === 'auto',
+      null,
+      { timeout: 2_000 },
+    );
+    const response = await firstFilm;
+    expect(response.url(), 'one scroll must open the tap').toMatch(/\/videos\/.*\.mp4$/);
+    expect(videoBytes.length, 'the same fetch must be the one this test counted').toBeGreaterThan(0);
   });
 
   test('keeps each chapter narrative in five readable white panels', async ({ page }) => {

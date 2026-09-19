@@ -1,5 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { expect, test, type Page } from '@playwright/test';
+import { journeyActSpan, journeyWhiteTargetDistance } from '../../src/lib/motion/journey-director';
 import { dissolveWeight } from '../../src/lib/motion/journey-media';
 
 /**
@@ -86,6 +87,17 @@ const MEDIA_ONLY_CSS = `
   .journey .journey-chapter::after { display: none !important; }
 `;
 
+/**
+ * Motion A: no film is fetched before the visitor's first scroll-intent signal,
+ * so a spec that measures film plates has to give one. A one-pixel scroll is a
+ * REAL signal — the document scrolls and the director's own `scroll` listener
+ * sees it — and unlike `page.mouse.wheel` it works on every project here
+ * (`Mouse wheel is not supported in mobile WebKit`). Every `window.scrollTo`
+ * later in this file would also do it; this exists because the capability-tier
+ * test starts from scroll 0 and would otherwise wait on a film nothing asked for.
+ */
+const signalScrollIntent = (page: Page) => page.evaluate(() => window.scrollBy(0, 1));
+
 async function openJourney(page: Page): Promise<string> {
   await page.goto('/', { waitUntil: 'domcontentloaded' });
   // Headless WebKit on a software rasteriser takes its time hydrating the island,
@@ -106,6 +118,7 @@ async function openJourney(page: Page): Promise<string> {
     );
   }
   await page.addStyleTag({ content: MEDIA_ONLY_CSS });
+  await signalScrollIntent(page);
   // The opening plate is eager, so this one really does wait for a decode.
   // The chapter plates are lazy and only start loading once the director puts
   // them on stage, which is what `awaitStagedPlates` covers at each sample.
@@ -169,28 +182,50 @@ function nextFrames(page: Page): Promise<void> {
  * The white target is not a breath, so it cannot be driven by `seek`.
  *
  * `journey-director.ts` measures it as a band ending at the top of
- * `#customer-reviews` and reaching back `min(420, max(180, innerHeight * 0.34))`
- * px, with progress taken from the viewport centre. This reproduces that band
- * from the rendered document rather than from a constant, so a change to the
- * director's distance is a failure here rather than a silently different sample.
+ * `#customer-reviews`, reaching back `journeyWhiteTargetDistance(...)`, with
+ * progress taken from the viewport centre. The distance is imported from the
+ * director rather than restated here — Motion A capped it at a quarter of Act 1's
+ * own scroll span, and a formula copied into this file would have drifted from
+ * the one under test on the very next tuning pass. Only the two measurements the
+ * formula needs are read out of the document.
  */
+async function whiteTargetBand(page: Page): Promise<{ start: number; end: number }> {
+  const measured = await page.evaluate(() => {
+    const stage = document.querySelector<HTMLElement>('#customer-reviews[data-journey-white-stage]');
+    const journey = document.querySelector<HTMLElement>('.journey');
+    const portico = document.querySelector<HTMLElement>('.journey [data-journey-chapter="portico"]');
+    if (!stage || !journey || !portico) return null;
+    const box = (node: HTMLElement) => {
+      const rect = node.getBoundingClientRect();
+      return { start: rect.top + window.scrollY, end: rect.bottom + window.scrollY };
+    };
+    return {
+      end: box(stage).start,
+      journeyTop: box(journey).start,
+      portico: box(portico),
+      viewportHeight: window.innerHeight,
+    };
+  });
+  expect(measured, 'the white target, the journey and Act 1 must all be measurable').not.toBeNull();
+  const { end, journeyTop, portico, viewportHeight } = measured!;
+  const distance = journeyWhiteTargetDistance({
+    viewportHeight,
+    actSpan: journeyActSpan({ id: 'portico', ...portico }, journeyTop, viewportHeight),
+  });
+  return { start: end - distance, end };
+}
+
 async function seekWhiteTarget(page: Page, p: number): Promise<number> {
   let achieved = Number.NaN;
   for (let attempt = 0; attempt < 24; attempt += 1) {
-    achieved = await page.evaluate((target) => {
-      const stage = document.querySelector<HTMLElement>('#customer-reviews[data-journey-white-stage]');
-      if (!stage) return Number.NaN;
-      const band = () => {
-        const end = stage.getBoundingClientRect().top + window.scrollY;
-        const distance = Math.min(420, Math.max(180, window.innerHeight * 0.34));
-        return { start: end - distance, end };
-      };
-      const { start, end } = band();
-      window.scrollTo(0, Math.round(start + (end - start) * Number(target) - window.innerHeight / 2));
-      const settled = band();
-      return (window.scrollY + window.innerHeight / 2 - settled.start)
-        / Math.max(1, settled.end - settled.start);
-    }, String(p));
+    const { start, end } = await whiteTargetBand(page);
+    await page.evaluate(([from, to, target]) => {
+      window.scrollTo(0, Math.round(Number(from) + (Number(to) - Number(from)) * Number(target) - window.innerHeight / 2));
+    }, [String(start), String(end), String(p)] as const);
+    const settled = await whiteTargetBand(page);
+    achieved = await page.evaluate(([from, to]) => (
+      window.scrollY + window.innerHeight / 2 - Number(from)
+    ) / Math.max(1, Number(to) - Number(from)), [String(settled.start), String(settled.end)] as const);
     await nextFrames(page);
     if (Math.abs(achieved - p) < 0.004) break;
   }
@@ -484,6 +519,41 @@ test('the transition table and the rendered journey agree on every boundary', as
   expect(boundaries.map((boundary) => boundary.key)).toEqual(BOUNDARY_KEYS);
 });
 
+/**
+ * Act 3's plate (Motion A). `#foundation` used to be one `pearl-stair` still
+ * behind a `<picture>`; it is now the pearl-graded walkway film on the same
+ * 480/720 markup ladder, the same `preload="none"` promotion and the same scrub
+ * contract as every other chapter film, with the poster as frame 0 of that
+ * master. The two boundaries either side keep their kinds — `portico:foundation`
+ * is `white-dissolve` and `foundation:garage` is `preparation-curl`, both
+ * asserted by the transition-table test above — so what changes here is only
+ * which picture the plate holds.
+ */
+test('the foundation chapter carries a scrubbed film plate, not a still', async ({ page }) => {
+  await openJourney(page);
+  const plate = page.locator('#foundation .floor-film');
+  await expect(plate).toHaveCount(1);
+  await expect(plate.locator('> .floor-film-poster')).toHaveAttribute(
+    'src',
+    '/images/brand/epoxy-walkway-pearl-poster.jpg',
+  );
+  await expect(plate.locator('> .floor-film-poster')).toHaveAttribute('loading', 'lazy');
+  const film = plate.locator('.floor-film-video');
+  await expect(film).toHaveCount(1);
+  expect(await film.locator('source').evaluateAll((nodes) => nodes.map((node) => [
+    node.getAttribute('media'),
+    node.getAttribute('src'),
+  ]))).toEqual([
+    ['(max-width: 680px)', '/videos/follow-floor/480/epoxy-walkway-pearl.mp4'],
+    [null, '/videos/follow-floor/720/epoxy-walkway-pearl.mp4'],
+  ]);
+  // The Option-B still is off the homepage and stays on `/lab/stairs`; the
+  // material lens keeps its own crop of it, which is a different element.
+  await expect(page.locator('#foundation [data-concept-still]')).toHaveCount(0);
+  await expect(page.locator('#foundation .floor-film img[src*="pearl-stair"]')).toHaveCount(0);
+  await expect(page.locator('#foundation [data-material-lens]')).toHaveCount(1);
+});
+
 test('the retired chapter rail is gone from the document', async ({ page }) => {
   await openJourney(page);
   await expect(page.locator('.journey-rail')).toHaveCount(0, { timeout: 15_000 });
@@ -709,7 +779,8 @@ test('the customer-reviews white target wipes without a cut or a flash', async (
   // (b) the exit: the refined front samples an alpha plate, so a plate that fails to
   // decode part-way, or a bloom that lifts the whole frame, would show up here as a
   // single-frame excursion off the luminance trend.
-  const distance = await page.evaluate(() => Math.min(420, Math.max(180, window.innerHeight * 0.34)));
+  const band = await whiteTargetBand(page);
+  const distance = band.end - band.start;
   await seekWhiteTarget(page, -0.15);
   const step = Math.max(4, Math.round((distance * 1.5) / SCAN_FRAMES));
   const luminance: number[] = [];

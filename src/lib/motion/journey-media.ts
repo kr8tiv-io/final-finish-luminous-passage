@@ -67,6 +67,20 @@ interface PresentedVideoLike extends VideoLike {
    * screen. Read it; never re-derive it.
    */
   readonly presented: boolean;
+  /**
+   * Has this element actually presented a frame yet?
+   *
+   * `readyState >= 2` says a frame is *available*; it does not say one has been
+   * handed to the compositor. `THREE.VideoTexture` uploads whatever the element
+   * has at upload time, and on a cold element that is an undefined (in practice
+   * black) surface — which is the dark frame a deep link into a boundary could
+   * paint before this input existed. `FilmVeil` sets it from
+   * `requestVideoFrameCallback` where the browser has it, and otherwise from the
+   * `loadeddata` / `canplay` / `seeked` events, each of which means a decoded
+   * frame is on the element. Posters need no equivalent: a decoded `<img>` is
+   * the texture.
+   */
+  readonly frameDecoded: boolean;
 }
 
 export function plateMediaChoice({ image, video }: {
@@ -109,19 +123,42 @@ const drawable = (image: PosterLike | null): boolean =>
  *
  * The last branch is the poster-less room: a film with no usable poster is still a
  * better answer than blank paper, whether or not it is on stage yet.
+ *
+ * `frameDecoded` (Motion A) gates BOTH video branches. Without it, a boundary
+ * entered from a deep link (`/#vault`, a ribbon anchor, then scrolling back into
+ * `garage:vault`) could lock a plate pair whose incoming `<video>` had
+ * `readyState >= 2` but had never presented a frame, and the compositor uploaded
+ * an undefined — black — surface for it. Refusing the video here is what hands
+ * that boundary to the DOM `--handoff` crossfade instead, which is what Step 8
+ * designed the unconfirmed case for. A poster is unaffected: a decoded `<img>`
+ * IS the texture.
  */
 export function veilPlateChoice({ image, video }: {
   readonly image: PosterLike | null;
   readonly video: PresentedVideoLike | null;
 }): 'video' | 'poster' | 'fallback' {
-  if (video?.presented && decoded(video)) return 'video';
+  const sampleable = Boolean(video && decoded(video) && video.frameDecoded);
+  if (video?.presented && sampleable) return 'video';
   if (drawable(image)) return 'poster';
-  if (decoded(video)) return 'video';
+  if (sampleable) return 'video';
   return 'fallback';
 }
 
 /**
- * Which rung of the pearl pour Act 1 plays.
+ * The 1080 rung of every chapter that has one, by chapter id.
+ *
+ * Act 1's pour (Step 17) and Act 3's pearl-graded walkway (Step 20 option A,
+ * wired by Motion A) are the two films authored at three rungs. Every other
+ * chapter stops at the 720 the markup ladder already names, so it is absent here
+ * and `journeyFilmTopRung` returns `null` for it.
+ */
+const FILM_TOP_RUNG: Readonly<Partial<Record<JourneyChapterId, string>>> = Object.freeze({
+  portico: '/videos/follow-floor/1080/epoxy-pour-pearl.mp4',
+  foundation: '/videos/follow-floor/1080/epoxy-walkway-pearl.mp4',
+});
+
+/**
+ * Which rung of a chapter's film that chapter plays.
  *
  * The markup carries the 480/720 ladder as its no-JS answer (`<source media>` is
  * resolved once, at load, and knows nothing about the capability tier). This is
@@ -129,8 +166,8 @@ export function veilPlateChoice({ image, video }: {
  * moment it promotes the film — before which `preload="none"` has fetched nothing,
  * so naming a rung here never costs a second download.
  *
- *   >= 1440 px on `full`  -> 1080 (5.0 MB; the only rung wide enough for a 1440
- *                            plate to be sampled by the compositor at 1:1)
+ *   >= 1440 px on `full`  -> 1080 (the only rung wide enough for a 1440 plate to
+ *                            be sampled by the compositor at 1:1)
  *   >= 681 px             -> 720
  *   phones                -> 480
  *
@@ -141,12 +178,60 @@ export function veilPlateChoice({ image, video }: {
  *
  * Returns `null` when the markup ladder is already the right answer.
  */
-export function pourFilmSource({ viewportWidth, tier }: {
+export function journeyFilmTopRung(chapter: JourneyChapterId, { viewportWidth, tier }: {
   readonly viewportWidth: number;
   readonly tier: 'full' | 'balanced' | 'still';
 }): string | null {
   if (tier !== 'full' || !Number.isFinite(viewportWidth) || viewportWidth < 1440) return null;
-  return '/videos/follow-floor/1080/epoxy-pour-pearl.mp4';
+  return FILM_TOP_RUNG[chapter] ?? null;
+}
+
+/** Act 1's rung, by the name the Step 17 contract and `home.spec` call it. */
+export function pourFilmSource(input: {
+  readonly viewportWidth: number;
+  readonly tier: 'full' | 'balanced' | 'still';
+}): string | null {
+  return journeyFilmTopRung('portico', input);
+}
+
+/** Cumulative pointer travel, in CSS px, that counts as an intent to scroll. */
+export const SCROLL_INTENT_POINTER_PX = 4;
+
+/**
+ * Keys that scroll the document, and therefore signal the same intent a wheel
+ * tick does. `Space`/`Shift+Space` are included because they page the document;
+ * `Tab` is not, even though focusing an off-screen control scrolls, because that
+ * is the browser moving the page rather than the visitor asking it to.
+ */
+const SCROLL_INTENT_KEYS: ReadonlySet<string> = new Set([
+  'ArrowDown', 'ArrowUp', 'PageDown', 'PageUp', 'Home', 'End', ' ', 'Spacebar',
+]);
+
+export function isScrollIntentKey(key: string): boolean {
+  return SCROLL_INTENT_KEYS.has(key);
+}
+
+/**
+ * May a film be promoted from `preload="none"` to `preload="auto"` yet?
+ *
+ * `scrollIntent` is the input this step adds, and it is the whole of the rule
+ * "a visitor who never scrolls downloads zero video bytes". Before it, the pour
+ * was resident at scroll 0 (it is the active chapter) and so was promoted during
+ * hydration: measured on the built app, the 1080 encode began streaming at
+ * ~921 ms on desktop and the 480 immediately on a phone, for a visitor who had
+ * not yet asked for anything past the headline.
+ *
+ * Promotion is not playback: the hero still scrubs from the first scrolled frame,
+ * because frame 0 of the pour IS the poster already on screen (the Step 7
+ * frame-zero contract), so the promotion that the first wheel tick triggers has a
+ * poster to sit behind until it decodes.
+ */
+export function mediaPromotionAllowed({ presentationEnabled, saveData, scrollIntent }: {
+  readonly presentationEnabled: boolean;
+  readonly saveData: boolean;
+  readonly scrollIntent: boolean;
+}): boolean {
+  return presentationEnabled && !saveData && scrollIntent;
 }
 
 export function thresholdHdrSupported(capabilities: {
