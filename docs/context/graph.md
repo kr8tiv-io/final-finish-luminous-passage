@@ -26,7 +26,7 @@ flowchart TD
     step-13["step-13: Manrope refinement: tokens, scale, leading, trac"]:::stDone
     step-14["step-14: MOTION-VOCABULARY.md: complete every id with dur"]:::stDone
     step-15["step-15: GSAP consolidation + layout canvas: one plugin r"]:::stDone
-    step-16["step-16: Surfaces: paper/ink/cobalt/bronze tokens, per-ch"]:::stDoing
+    step-16["step-16: Surfaces: paper/ink/cobalt/bronze tokens, per-ch"]:::stDone
   end
   subgraph phase-3["phase-3"]
     step-17["step-17: Opening: keep pearl pour scrub, add 1080 source,"]:::stDone
@@ -352,7 +352,7 @@ flowchart TD
 - **Phase:** phase-2
 - **Tier:** S script, O zones
 - **Owner(s):** ui
-- **Status:** doing
+- **Status:** done
 - **Files:** journey-manifest.ts, scripts/measure-contrast.mjs, css
 - **Inputs (informs):** none recorded
 - **Constraints (locks):** none recorded

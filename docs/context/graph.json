@@ -757,7 +757,7 @@
       "id": "step-16",
       "type": "step",
       "title": "Surfaces: paper/ink/cobalt/bronze tokens, per-chapter reading zones, measure-contrast.mjs",
-      "status": "doing",
+      "status": "done",
       "phase": "phase-2",
       "tier": "S script, O zones",
       "owner": "ui",
