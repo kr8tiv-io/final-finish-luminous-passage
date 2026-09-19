@@ -34,6 +34,19 @@ const CASES: ReadonlyArray<readonly [string, Partial<JourneyTierInputs>, Journey
   ['slow-2g connection', { effectiveType: 'slow-2g' }, 'still'],
   ['2g connection', { effectiveType: '2g' }, 'still'],
   ['weak hardware on a 2g connection still resolves to still, not balanced', { webgl2: false, floatBuffers: false, effectiveType: '2g' }, 'still'],
+  /* Step 33 — the resilience rules, each one named so a change to it fails by name. */
+  ['a phone on 3g', { effectiveType: '3g', coarsePointer: true }, 'balanced'],
+  ['a phone on 3g with plenty of memory', { effectiveType: '3g', coarsePointer: true, deviceMemory: 8 }, 'balanced'],
+  ['a phone on 3g that also dropped to save-data still goes all the way to still', { effectiveType: '3g', coarsePointer: true, saveData: true }, 'still'],
+  ['a phone on slow-2g outranks the 3g rule', { effectiveType: 'slow-2g', coarsePointer: true }, 'still'],
+  ['a 1 GB phone', { deviceMemory: 1, coarsePointer: true }, 'balanced'],
+  ['a 1 GB desktop with a mouse', { deviceMemory: 1 }, 'balanced'],
+  ['a 2 GB desktop with a mouse', { deviceMemory: 2 }, 'balanced'],
+  ['device memory reported as 0, which means "not disclosed", not "none"', { deviceMemory: 0 }, 'full'],
+  ['an uppercase 2G from a connection shim', { effectiveType: '2G' }, 'still'],
+  ['a padded  slow-2g  from a connection shim', { effectiveType: '  slow-2g  ' }, 'still'],
+  ['an empty effectiveType string, which is no information at all', { effectiveType: '' }, 'full'],
+  ['an effectiveType nobody has defined yet', { effectiveType: '5g' }, 'full'],
 ];
 
 describe('journey capability tier', () => {
@@ -61,5 +74,46 @@ describe('journey capability tier', () => {
       { ...DESKTOP, coarsePointer: true, floatBuffers: false },
     ];
     touchOnly.forEach((inputs) => expect(resolveJourneyTier(inputs)).toBe('balanced'));
+  });
+
+  /**
+   * Step 33. `still` is the tier a 2G visitor gets, and the narrative has to survive
+   * it — so the rule that produces it must fire on the connection alone, whatever else
+   * the device can do. Stated as a sweep rather than a case, because the failure this
+   * guards against is a later rule being inserted *above* the connection check.
+   */
+  it('sends every 2g-class connection to still, whatever the hardware says', () => {
+    const hardware: ReadonlyArray<Partial<JourneyTierInputs>> = [
+      {},
+      { coarsePointer: true },
+      { deviceMemory: 16 },
+      { deviceMemory: 1 },
+      { webgl2: false, floatBuffers: false },
+      { preference: 'balanced' },
+    ];
+    for (const effectiveType of ['2g', 'slow-2g']) {
+      for (const patch of hardware) {
+        expect(resolveJourneyTier({ ...DESKTOP, ...patch, effectiveType }), `${effectiveType} + ${JSON.stringify(patch)}`)
+          .toBe('still');
+      }
+    }
+  });
+
+  /**
+   * Falsifiability for the sweep above: the same hardware on a fast connection must
+   * NOT all resolve to `still`, or the sweep would pass on a resolver that returned
+   * `still` unconditionally.
+   */
+  it('does not send that same hardware to still on a 4g connection', () => {
+    expect(resolveJourneyTier({ ...DESKTOP, effectiveType: '4g' })).toBe('full');
+    expect(resolveJourneyTier({ ...DESKTOP, effectiveType: '4g', coarsePointer: true })).toBe('balanced');
+    expect(resolveJourneyTier({ ...DESKTOP, effectiveType: '4g', deviceMemory: 1 })).toBe('balanced');
+  });
+
+  it('treats a 3g coarse-pointer device as balanced, never as full', () => {
+    // Both halves stated, because the rule only earns its place if the connection is
+    // what decided it on at least one input the pointer rule would have missed.
+    expect(resolveJourneyTier({ ...DESKTOP, effectiveType: '3g', coarsePointer: true })).toBe('balanced');
+    expect(resolveJourneyTier({ ...DESKTOP, effectiveType: '3g', coarsePointer: false })).toBe('full');
   });
 });
