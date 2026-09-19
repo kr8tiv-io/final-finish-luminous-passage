@@ -20,7 +20,7 @@ const cylinderReady = async (page: Page) => {
   await page.waitForFunction(() => Boolean(window.__ffeCylinder), null, { timeout: 30_000 });
 };
 
-const pin = (page: Page) => page.evaluate(() => {
+const passageRange = (page: Page) => page.evaluate(() => {
   const probe = window.__ffeCylinder!;
   return { start: probe.start(), end: probe.end() };
 });
@@ -83,8 +83,8 @@ test.describe('the Act 5 cylinder', () => {
     await page.setViewportSize({ width: 1440, height: 1000 });
     await page.goto('/#proof', { waitUntil: 'domcontentloaded' });
     await cylinderReady(page);
-    const { start, end } = await pin(page);
-    expect(end - start, 'pin travel').toBeGreaterThan(400);
+    const { start, end } = await passageRange(page);
+    expect(end - start, 'passage travel').toBeGreaterThan(400);
 
     await scrollTo(page, start);
     const atStart = await rotation(page);
@@ -105,14 +105,14 @@ test.describe('the Act 5 cylinder', () => {
     expect(samples.at(-1)!).toBeCloseTo(-innerAngle * 2, 1);
 
     await scrollTo(page, start);
-    expect(await rotation(page), 'back at the start of the pin').toBeCloseTo(atStart, 3);
+    expect(await rotation(page), 'back at the start of the passage').toBeCloseTo(atStart, 3);
   });
 
-  test('holds the proof chapter for the whole pinned range and hands over after it', async ({ page }) => {
+  test('holds the proof chapter for the whole sticky range and hands over after it', async ({ page }) => {
     await page.setViewportSize({ width: 1440, height: 1000 });
     await page.goto('/#proof', { waitUntil: 'domcontentloaded' });
     await cylinderReady(page);
-    const { start, end } = await pin(page);
+    const { start, end } = await passageRange(page);
     const room = page.locator('.journey');
 
     for (const fraction of [0, .05, .25, .5, .75, .95, 1]) {
@@ -121,7 +121,7 @@ test.describe('the Act 5 cylinder', () => {
     }
     // Past the act: the director hands over to Your finish. Measured off the
     // next chapter's own box rather than a guessed distance, because the proof
-    // chapter carries the explore ribbon after the pin releases.
+    // chapter carries the explore ribbon after the passage releases.
     await page.evaluate(() => {
       const next = document.querySelector('#finish-hall')!.getBoundingClientRect();
       window.scrollTo({ top: window.scrollY + next.top + next.height / 2 - window.innerHeight / 2, behavior: 'instant' });
@@ -129,28 +129,43 @@ test.describe('the Act 5 cylinder', () => {
     await expect.poll(() => room.getAttribute('data-room')).toBe('finish-hall');
   });
 
-  test('is the only ScrollTrigger inside #proof, and transforms nothing above itself', async ({ page }) => {
+  test('holds on a sticky host with no pin-spacer, and transforms nothing above itself', async ({ page }) => {
     await page.setViewportSize({ width: 1440, height: 1000 });
     await page.goto('/#proof', { waitUntil: 'domcontentloaded' });
     await cylinderReady(page);
-    const { start, end } = await pin(page);
+    const { start, end } = await passageRange(page);
     await scrollTo(page, start + (end - start) * .5);
 
     const inProof = await page.evaluate(() => {
       const proof = document.querySelector('#proof')!;
-      // `__ffeRoute.scrollTriggers()` counts; the elements come off the same
-      // registry through the pinned/trigger nodes ScrollTrigger marks in the DOM.
-      const pinned = [...document.querySelectorAll('.pin-spacer')].filter((node) => proof.contains(node));
+      const host = document.querySelector<HTMLElement>('.transformation-gallery__passage')!;
+      const sticky = document.querySelector<HTMLElement>('.transformation-gallery__sticky')!;
+      const hostRect = host.getBoundingClientRect();
+      const stickyRect = sticky.getBoundingClientRect();
       return {
-        pinSpacers: pinned.length,
-        pinSpacerInsideProof: pinned.every((node) => proof.contains(node)),
-        pinnedIsThePassage: pinned.every((node) => node.querySelector(':scope > .transformation-gallery__passage') !== null),
+        // Step 23c: the act holds on `position: sticky`, so ScrollTrigger
+        // inserts nothing into the document at all. `__ffeRoute.scrollTriggers()`
+        // still counts the triggers themselves.
+        pinSpacers: [...document.querySelectorAll('.pin-spacer')].filter((node) => proof.contains(node)).length,
+        stickyPosition: getComputedStyle(sticky).position,
+        hostInsideProof: proof.contains(host),
+        hostTop: Math.round(hostRect.top),
+        stickyTop: Math.round(stickyRect.top),
+        reserved: Math.round(hostRect.height - stickyRect.height),
         total: window.__ffeRoute?.scrollTriggers() ?? -1,
       };
     });
-    expect(inProof.pinSpacers, 'one pinned element inside #proof').toBe(1);
-    expect(inProof.pinSpacerInsideProof).toBe(true);
-    expect(inProof.pinnedIsThePassage, 'the pinned element is the inner passage, not the section').toBe(true);
+    expect(inProof.pinSpacers, 'Act 5 inserts no pin-spacer inside #proof').toBe(0);
+    expect(inProof.stickyPosition, 'the inner passage is the sticky host').toBe('sticky');
+    expect(inProof.hostInsideProof, 'the host is the inner passage, not the section').toBe(true);
+    // Falsifiable: the host itself has genuinely scrolled far past the header
+    // while the child it carries is held at exactly the header offset. A host
+    // that never moved, or a child that moved with it, both fail here.
+    expect(inProof.hostTop, 'the sticky host has scrolled above the header offset').toBeLessThan(-100);
+    expect(inProof.stickyTop, 'the passage is held at the header offset').toBe(88);
+    // The reserved length and the trigger's duration are the same number
+    // because the trigger reads one from the other.
+    expect(inProof.reserved, 'reserved travel matches the trigger').toBe(Math.round(end - start));
     expect(inProof.total, 'the page still has its other triggers, so the count is real').toBeGreaterThan(1);
 
     const transforms = await page.evaluate(() => ({
@@ -169,7 +184,7 @@ test.describe('the Act 5 cylinder', () => {
     await page.setViewportSize({ width: 1440, height: 1000 });
     await page.goto('/#proof', { waitUntil: 'domcontentloaded' });
     await cylinderReady(page);
-    const { start } = await pin(page);
+    const { start } = await passageRange(page);
     await scrollTo(page, start);
 
     const stage = page.locator('[data-featured-panel][data-front="true"] [data-comparison]');
@@ -193,7 +208,7 @@ test.describe('the Act 5 cylinder', () => {
     await page.setViewportSize({ width: 1440, height: 1000 });
     await page.goto('/#proof', { waitUntil: 'domcontentloaded' });
     await cylinderReady(page);
-    const { start } = await pin(page);
+    const { start } = await passageRange(page);
     await scrollTo(page, start);
 
     const before = await page.evaluate(() => window.scrollY);
@@ -220,12 +235,60 @@ test.describe('the Act 5 cylinder', () => {
     });
     expect(track.scrollLeft, 'inner track scrollLeft after a forced 240px offset').toBe(0);
     expect(track.scrollTop, 'inner track scrollTop').toBe(0);
-    expect(track.overflow, 'no sideways room exists while pinned').toBe(0);
-    expect(track.overflowX, 'track overflow while pinned').toBe('hidden');
-    expect(track.snap, 'snap is off while pinned').toBe('none');
+    expect(track.overflow, 'no sideways room exists while the passage is stuck').toBe(0);
+    expect(track.overflowX, 'track overflow while the passage is stuck').toBe('hidden');
+    expect(track.snap, 'snap is off while the passage is stuck').toBe('none');
   });
 
-  test('a resize round trip while pinned costs under 0.02 of layout shift', async ({ page }) => {
+  /**
+   * Step 23c's defect, stated as a measurement.
+   *
+   * The act used to get its scroll length from a GSAP pin-spacer, which only
+   * exists once the island hydrates — so the page grew by 2612 px at 1440x900
+   * while the visitor was still ~800 px above the gallery, and every anchor
+   * computed before that (the hero ribbon, `#finish-hall` deep links, the
+   * director's geometry) pointed at a document that was about to move. The
+   * length now comes from the stylesheet, so hydration adds nothing.
+   */
+  test('reserves its whole scroll length before the island hydrates', async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 1000 });
+    await page.goto('/', { waitUntil: 'networkidle' });
+    // The island is `client:visible` with an 800 px root margin and #proof is
+    // ~16 000 px down, so at the top of the page it has not loaded. Asserted,
+    // not assumed — a "before" taken after hydration would prove nothing.
+    await page.evaluate(() => new Promise<void>((resolve) => setTimeout(resolve, 600)));
+    const gallery = page.locator('.transformation-gallery');
+    await expect(gallery, 'the island has not hydrated at the top of the page').not.toHaveClass(/is-hydrated/);
+
+    const read = () => page.evaluate(() => ({
+      page: document.documentElement.scrollHeight,
+      proof: Math.round(document.querySelector('#proof')!.getBoundingClientRect().height),
+      finishTitle: Math.round(document.querySelector('#finish-title')!.getBoundingClientRect().top + window.scrollY),
+    }));
+    const before = await read();
+
+    await gallery.scrollIntoViewIfNeeded();
+    await cylinderReady(page);
+    await page.evaluate(() => window.scrollTo({ top: 0, behavior: 'instant' }));
+    await scrollTo(page, 0);
+    const after = await read();
+
+    expect(after.page, `page height ${before.page} -> ${after.page}`).toBe(before.page);
+    expect(after.proof, `#proof height ${before.proof} -> ${after.proof}`).toBe(before.proof);
+    expect(after.finishTitle, `#finish-title document top ${before.finishTitle} -> ${after.finishTitle}`).toBe(before.finishTitle);
+
+    // Falsifiability: the number that stayed still is a large one the island
+    // really does own. The host carries more than a viewport of reserved travel
+    // beyond the box that sticks inside it, and it carried it before hydration.
+    const reserved = await page.evaluate(() => {
+      const host = document.querySelector<HTMLElement>('.transformation-gallery__passage')!;
+      const sticky = document.querySelector<HTMLElement>('.transformation-gallery__sticky')!;
+      return Math.round(host.getBoundingClientRect().height - sticky.getBoundingClientRect().height);
+    });
+    expect(reserved, 'the act reserves real travel, so an unreserved page would have moved').toBeGreaterThan(1000);
+  });
+
+  test('a resize round trip while the passage is stuck costs under 0.02 of layout shift', async ({ page }) => {
     await page.addInitScript(() => {
       (window as unknown as { __shift: number }).__shift = 0;
       new PerformanceObserver((list) => {
@@ -237,7 +300,7 @@ test.describe('the Act 5 cylinder', () => {
     await page.setViewportSize({ width: 1440, height: 1000 });
     await page.goto('/#proof', { waitUntil: 'domcontentloaded' });
     await cylinderReady(page);
-    const { start, end } = await pin(page);
+    const { start, end } = await passageRange(page);
     await scrollTo(page, start + (end - start) * .5);
     await page.waitForTimeout(400);
 
@@ -274,7 +337,7 @@ test.describe('the Act 5 fallback ribbon', () => {
     const ribbon = gallery.locator('.transformation-gallery__featured-window');
     await expect(ribbon).toHaveCSS('scroll-snap-type', 'x mandatory');
     await expect(ribbon).toHaveCSS('overflow-x', 'auto');
-    // One card per screen, and — the counterpart to the pinned assertion — the
+    // One card per screen, and — the counterpart to the cylinder assertion — the
     // very same element here really is a horizontal scroller with room to move.
     const widths = await page.evaluate(() => {
       const track = document.querySelector<HTMLElement>('.transformation-gallery__featured-window')!;

@@ -1,4 +1,50 @@
-import { expect, test } from '@playwright/test';
+import { expect, test, type Page } from '@playwright/test';
+import { CYLINDER_MEDIA } from '../../src/lib/projects/transformation-gallery';
+
+/**
+ * Whether *this page* is admitted to the cylinder, asked of the page rather than
+ * inferred from the project name.
+ *
+ * `info.project.name === 'review-desktop'` used to stand in for it, which meant
+ * the flag was right only under `playwright.finishing-review.config.ts` and said
+ * "phone" for every other runner — including plain `chromium` at 1280x720, which
+ * is admitted. `CYLINDER_MEDIA` is the media half of the one admission rule, so
+ * evaluating it in the page is the same question the component asks. The layout
+ * attribute is then asserted against it rather than derived from it, so the two
+ * can still disagree and fail.
+ */
+const admitted = (page: Page) => page.evaluate((query) => window.matchMedia(query).matches, CYLINDER_MEDIA);
+
+/**
+ * The explore ribbon scrolls with `behavior: 'smooth'` on a
+ * `scroll-snap-type: x mandatory` track. A second jump issued while the first
+ * is still running leaves the track between two snap points and the card index
+ * with it, so every pair of consecutive jumps below waits for the track to come
+ * to rest first — the same settle the loop already takes as a flat 700 ms,
+ * expressed as the condition rather than as a guess.
+ */
+const ribbonAtRest = async (page: Page) => {
+  await expect.poll(async () => page.evaluate(() => new Promise<boolean>((resolve) => {
+    const track = document.querySelector<HTMLElement>('.transformation-gallery__viewport')!;
+    const first = track.scrollLeft;
+    requestAnimationFrame(() => requestAnimationFrame(() => resolve(track.scrollLeft === first)));
+  })), { timeout: 5_000 }).toBe(true);
+};
+
+/**
+ * The gallery is a `client:visible` island 800 px below the fold. Any document
+ * coordinate taken before it has hydrated is a coordinate for a page that may
+ * still change — Step 23c made the two heights equal, and measuring after
+ * hydration is what keeps this spec honest about that rather than dependent on
+ * it. Leaves the window where it found it.
+ */
+const hydrateGallery = async (page: Page) => {
+  const scrollY = await page.evaluate(() => window.scrollY);
+  await page.locator('.transformation-gallery').scrollIntoViewIfNeeded();
+  await expect(page.locator('.transformation-gallery')).toHaveClass(/is-hydrated/, { timeout: 30_000 });
+  await page.evaluate((top) => window.scrollTo({ top, behavior: 'instant' }), scrollY);
+  await page.waitForTimeout(120);
+};
 
 test('record the frozen opening handoff and finish headline for visual review', async ({ page }, info) => {
   const errors: string[] = [];
@@ -26,6 +72,10 @@ test('record the frozen opening handoff and finish headline for visual review', 
   await page.locator('#social-title').scrollIntoViewIfNeeded();
   await page.screenshot({ path: info.outputPath('03-reviews-landed.png') });
 
+  // Every coordinate below is taken with the gallery hydrated. Before Step 23c
+  // the Act 5 pin-spacer appeared between this measurement and the scroll that
+  // used it, so the window landed 2.4k px short and never reached the headline.
+  await hydrateGallery(page);
   const title = page.locator('#finish-title');
   const titleTop = await title.evaluate(el => el.getBoundingClientRect().top + scrollY);
   await page.evaluate(top => window.scrollTo({ top, behavior: 'instant' }), titleTop - height * .84);
@@ -57,16 +107,27 @@ test('record the frozen gallery passage and native comparisons for independent r
   const gallery = page.locator('.transformation-gallery');
   await gallery.scrollIntoViewIfNeeded();
   await expect(gallery).toHaveClass(/is-hydrated/, { timeout: 15000 });
-  const desktop = info.project.name === 'review-desktop';
+  const desktop = await admitted(page);
   const observations: Record<string, unknown> = {};
+  observations.admitted = desktop;
   await expect(gallery).toHaveAttribute('data-gallery-layout', desktop ? 'passage' : 'native');
   const featured = gallery.locator('[data-featured-panel]');
   await expect(featured).toHaveCount(3);
   if (desktop) {
-    const geometry = await gallery.evaluate(el => ({
-      start: el.querySelector('.transformation-gallery__passage')!.getBoundingClientRect().top + scrollY - 88,
-      travel: Number.parseFloat((el as HTMLElement).style.getPropertyValue('--passage-travel')),
-    }));
+    // Both numbers off the two boxes the act is built from: the sticky host
+    // starts at its own top minus the header offset, and its travel is what is
+    // left of it once the box that sticks inside it is subtracted. Step 23c
+    // removed the `--passage-travel` inline style this used to read — the
+    // stylesheet owns that value now, and the DOM is where it is observable.
+    const geometry = await gallery.evaluate(el => {
+      const host = el.querySelector('.transformation-gallery__passage')!;
+      const sticky = el.querySelector('.transformation-gallery__sticky')!;
+      return {
+        start: host.getBoundingClientRect().top + scrollY - 88,
+        travel: Math.round(host.getBoundingClientRect().height - sticky.getBoundingClientRect().height),
+      };
+    });
+    expect(geometry.travel, 'the passage reserves more than a viewport of travel').toBeGreaterThan(page.viewportSize()!.height);
     await page.mouse.move(2, 2);
     for (const index of [0, 1, 2]) {
       await page.evaluate(top => window.scrollTo({ top, behavior: 'instant' }), geometry.start + geometry.travel * index / 2);
@@ -155,11 +216,15 @@ test('record the frozen gallery passage and native comparisons for independent r
       await expect(cards.nth(index).locator('[data-comparison]')).toHaveAttribute('data-displayed-reveal', '100');
     }
   }
+  await ribbonAtRest(page);
   await explore.getByRole('button', { name: 'Previous project comparison', exact: true }).click();
   await expect(explore).toHaveAttribute('data-explore-index', '1');
   await expect(cards.nth(1).locator('[data-comparison]')).toHaveAttribute('data-displayed-reveal', '100');
+  await ribbonAtRest(page);
   await explore.getByRole('button', { name: 'Previous project comparison', exact: true }).click();
   await expect(explore).toHaveAttribute('data-explore-index', '0');
+  await ribbonAtRest(page);
+  await expect(cards.first()).toHaveAttribute('data-active', 'true');
   await expect(cards.first().locator('[data-comparison]')).toHaveAttribute('data-displayed-reveal', '5');
   await page.getByRole('button', { name: 'Pause visual motion', exact: true }).click();
   await expect(gallery).toHaveAttribute('data-gallery-layout', 'native');
