@@ -24,7 +24,43 @@ export interface JourneyTierInputs {
   readonly preference: MotionPreference;
 }
 
+/**
+ * 2G-class. Nothing on this page is worth a film on a connection that cannot deliver
+ * one inside a scroll: `still` keeps every act, every headline and every poster and
+ * simply never asks for a video byte. See docs/context/DECISIONS.md, "Capability tiers".
+ */
 const SLOW_CONNECTIONS: readonly string[] = ['slow-2g', '2g'];
+
+/**
+ * 3G-class: enough for the page, not enough for the compositor.
+ *
+ * This is a `balanced` rule and not a `still` one — the films still scrub on the DOM
+ * plates, which is what a 3G phone can actually carry — and it is written out rather
+ * than left to the coarse-pointer rule below it, because the two say different things.
+ * "Touch" is a statement about the input device and is why an iPad on fibre is
+ * `balanced`; "3g" is a statement about the pipe. A device that is both gets `balanced`
+ * for two independent reasons, which is the point: neither rule is load-bearing alone.
+ *
+ * Desktop on 3G stays `full` deliberately. A wired machine reporting `3g` is usually a
+ * momentary estimate from the network quality estimator rather than a property of the
+ * machine, and the compositor chunk is already deferred to idle.
+ */
+const MODEST_CONNECTIONS: readonly string[] = ['3g'];
+
+/** Below this many gigabytes a device is not asked to hold the compositor. */
+const LOW_DEVICE_MEMORY_GB = 2;
+
+/**
+ * `effectiveType` arrives from `navigator.connection`, which is a browser-populated
+ * string in practice but an untyped one in this codebase's inputs — it is also the
+ * value an emulation shim or a test harness writes. Normalising it here is what keeps
+ * `2G` and ` 2g ` from resolving to `full` by falling past every named rule.
+ */
+function normalizeEffectiveType(value: string | null): string | null {
+  if (value === null) return null;
+  const trimmed = value.trim().toLowerCase();
+  return trimmed.length > 0 ? trimmed : null;
+}
 
 const DEFAULT_INPUTS: JourneyTierInputs = Object.freeze({
   webgl2: false,
@@ -41,6 +77,16 @@ const DEFAULT_INPUTS: JourneyTierInputs = Object.freeze({
  * Pure: identical inputs always resolve to the same tier. Touch alone never
  * drops below `balanced`, and `still` is only ever reached deliberately
  * (explicit preference, reduced motion, Save-Data, or a 2G-class connection).
+ *
+ * The rules, in the order they are asked (Step 33 wrote this list into
+ * docs/context/DECISIONS.md; the two must not drift):
+ *
+ *   still     preference `still` · `prefers-reduced-motion: reduce` · `saveData`
+ *             · `effectiveType` in {slow-2g, 2g}
+ *   balanced  preference `balanced` · no WebGL2 or no `EXT_color_buffer_float`
+ *             · `deviceMemory` <= 2 · `effectiveType` 3g on a coarse pointer
+ *             · a coarse pointer on its own
+ *   full      everything else
  */
 export function resolveJourneyTier(inputs: Partial<JourneyTierInputs> = {}): JourneyTier {
   const {
@@ -48,11 +94,11 @@ export function resolveJourneyTier(inputs: Partial<JourneyTierInputs> = {}): Jou
     floatBuffers,
     reducedMotion,
     saveData,
-    effectiveType,
     coarsePointer,
     deviceMemory,
     preference,
   } = { ...DEFAULT_INPUTS, ...inputs };
+  const effectiveType = normalizeEffectiveType({ ...DEFAULT_INPUTS, ...inputs }.effectiveType);
 
   if (preference === 'still') return 'still';
   if (reducedMotion) return 'still';
@@ -60,7 +106,8 @@ export function resolveJourneyTier(inputs: Partial<JourneyTierInputs> = {}): Jou
   if (effectiveType !== null && SLOW_CONNECTIONS.includes(effectiveType)) return 'still';
   if (preference === 'balanced') return 'balanced';
   if (!webgl2 || !floatBuffers) return 'balanced';
-  if (deviceMemory !== null && deviceMemory > 0 && deviceMemory <= 2) return 'balanced';
+  if (deviceMemory !== null && deviceMemory > 0 && deviceMemory <= LOW_DEVICE_MEMORY_GB) return 'balanced';
+  if (coarsePointer && effectiveType !== null && MODEST_CONNECTIONS.includes(effectiveType)) return 'balanced';
   if (coarsePointer) return 'balanced';
   return 'full';
 }

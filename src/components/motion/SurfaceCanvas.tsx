@@ -1,4 +1,4 @@
-import { Suspense, lazy, useEffect, useRef, useState, useSyncExternalStore } from 'react';
+import { Suspense, lazy, useCallback, useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { journeyControls } from '../../lib/motion/journey-controls';
 import { journeyDirector } from '../../lib/motion/journey-director';
 import type { SurfaceStateId } from '../../lib/motion/surface-materials';
@@ -75,6 +75,15 @@ declare global {
        * keep showing the frame it drew before the change.
        */
       readonly invalidate: () => void;
+      /**
+       * Context-loss bookkeeping (Step 33). `lost` is the live state; `restores` counts
+       * completed `webglcontextrestored` round trips this session. A gate needs both:
+       * "the canvas came back" is otherwise indistinguishable from "it never went".
+       */
+      readonly lost: boolean;
+      readonly restores: number;
+      /** The renderer island threw and this canvas is standing down for the CSS band. */
+      readonly failed: boolean;
     };
   }
 }
@@ -147,9 +156,30 @@ export default function SurfaceCanvas({ probe = false }: { readonly probe?: bool
   const [admitted, setAdmitted] = useState(false);
   const [contextLost, setContextLost] = useState(false);
   const [restoreKey, setRestoreKey] = useState(0);
+  /**
+   * The renderer island itself threw (not the context — the React subtree). The canvas
+   * is gone for this session's remaining attempts, so the plane has to stand down the
+   * same way a lost context makes it stand down, or `html[data-surface]` would still
+   * say `webgl` while nothing is drawing and `surface.css` would keep the CSS band
+   * hidden behind a canvas that is not there. That is the one genuinely blank state
+   * this component can produce, and this is what forbids it.
+   */
+  const [rendererFailed, setRendererFailed] = useState(false);
   const [canvasElement, setCanvasElement] = useState<HTMLCanvasElement | null>(null);
   const instanceId = useRef<string>('');
   const horizonChecks = useRef(0);
+  /** Completed `webglcontextrestored` round trips. Read by the staging probe only. */
+  const restoreCount = useRef(0);
+  /**
+   * The probe object is built once (its effect is keyed on `probe` alone, so that it is
+   * installed and removed exactly once per island rather than rebuilt on every state
+   * change). Its getters therefore read refs, not the closed-over state values, which
+   * would otherwise be frozen at whatever they were the moment it was installed.
+   */
+  const lostRef = useRef(false);
+  const failedRef = useRef(false);
+  lostRef.current = contextLost;
+  failedRef.current = rendererFailed;
   if (instanceId.current === '') {
     surfaceInstances += 1;
     instanceId.current = `surface-${surfaceInstances}`;
@@ -197,7 +227,7 @@ export default function SurfaceCanvas({ probe = false }: { readonly probe?: bool
   // browser still has something to fire `webglcontextrestored` at; `live` is only
   // about whether that canvas is currently the thing the visitor sees.
   const mounted = admitted && band !== null;
-  const live = mounted && !contextLost;
+  const live = mounted && !contextLost && !rendererFailed;
 
   useEffect(() => {
     surfaceStore.setRenderer(live ? 'webgl' : 'fallback');
@@ -233,6 +263,20 @@ export default function SurfaceCanvas({ probe = false }: { readonly probe?: bool
     };
   }, [mounted, rendererAdmitted]);
 
+  /**
+   * Adopting a canvas — the second half of the teardown rule above.
+   *
+   * A fresh `<Canvas>` brings a fresh context, so whatever was true of the last one is
+   * not true of this one. Resetting here rather than only in the `webglcontextlost`
+   * guard covers the ordering the guard cannot: React runs passive-effect cleanups for
+   * a deleted subtree *after* it has removed the nodes, so the old canvas's farewell
+   * can land after the new one has already been handed over.
+   */
+  const adoptCanvas = useCallback((canvas: HTMLCanvasElement) => {
+    setCanvasElement(canvas);
+    setContextLost(false);
+  }, []);
+
   /* ---- director coupling (read-only); the mapping itself is in surface-store.ts ---- */
   useEffect(() => {
     if (!coupled) {
@@ -246,15 +290,59 @@ export default function SurfaceCanvas({ probe = false }: { readonly probe?: bool
   }, [coupled]);
 
   /* ---- context loss: hide the canvas, show the band, re-mount the views on restore ---- */
+  /**
+   * WHAT A RESTORE HAS TO PUT BACK, AND WHO PUTS IT (Step 33).
+   *
+   * A lost context invalidates every GPU object at once: programs, buffers, and every
+   * texture — `FilmVeil`'s poster and video plates, `DepthPlate`'s colour and depth
+   * maps, this floor's PMREM environment map. Three different owners, and only one of
+   * them is this file, so the recovery is three cooperating pieces rather than one:
+   *
+   *  - three.js re-runs `initGLContext()` on `webglcontextrestored` (its own listener on
+   *    this same canvas, registered before ours, so it has already run by the time we
+   *    are called). That drops `WebGLProperties`, which is what makes every texture
+   *    with CPU-side image data — the plates, the depth maps, the 1x1 fallbacks —
+   *    re-upload lazily on their next draw. Nothing has to ask them to.
+   *  - the PMREM environment map is the exception: it is a render target, its pixels
+   *    only ever existed on the GPU, and no re-upload can bring them back. That is what
+   *    `restoreKey` is for — it re-mounts `SurfaceFloorScene`, whose warm-up bakes a new
+   *    one, re-links the two programs and re-registers the `surface-floor` view.
+   *  - the material state that scene comes back holding is replayed by
+   *    `surfaceStore.bindDriver`, which pushes `a`/`b`/`mix`/presence/horizon/camera
+   *    into the fresh driver at bind time. That is why the horizon line and the plane's
+   *    presence return at the value the scroll position implies rather than at the
+   *    scene's construction defaults.
+   *
+   * What this effect adds on top is the one thing none of the three can do for itself:
+   * ask for a frame once the views are back. The canvas is `frameloop="demand"`, so a
+   * restored context with nothing calling `invalidate()` is a correct, empty canvas.
+   */
   useEffect(() => {
     if (!canvasElement) return undefined;
     canvasElement.dataset.surfaceInstance = instanceId.current;
     const onLost = (event: Event) => {
+      // Without this the browser never fires `webglcontextrestored` at all.
       event.preventDefault();
+      /*
+       * A TEARDOWN IS NOT AN OUTAGE.
+       *
+       * react-three-fiber's unmount disposes the renderer, and three's `dispose()`
+       * calls `forceContextLoss()` — which fires this exact event on a canvas that is
+       * on its way out of the document. Measured: after `MotionErrorBoundary` replaced
+       * a failed renderer island and the retry mounted a fresh `<Canvas>`, the probe
+       * read `{ failed: false, canvases: 1, lost: true, renderer: 'fallback' }` — a
+       * live canvas that the store still believed was dark, because a dead canvas's
+       * farewell had latched this flag on and nothing could turn it off again.
+       *
+       * The canvas that matters is the one in the document. A disconnected one is
+       * being taken apart on purpose and has nothing to restore.
+       */
+      if (!canvasElement.isConnected) return;
       setContextLost(true);
     };
     const onRestored = () => {
       setContextLost(false);
+      restoreCount.current += 1;
       setRestoreKey((key) => key + 1);
     };
     canvasElement.addEventListener('webglcontextlost', onLost);
@@ -264,6 +352,28 @@ export default function SurfaceCanvas({ probe = false }: { readonly probe?: bool
       canvasElement.removeEventListener('webglcontextrestored', onRestored);
     };
   }, [canvasElement]);
+
+  /**
+   * One frame after a restore, and one horizon test with it.
+   *
+   * The warm-up ends with its own `invalidate()`, but it is three idle callbacks away
+   * and the views it gates are registered at the end of it, so the frame it asks for is
+   * the first one that can contain the plane. This asks for another once the store has
+   * the new driver, which covers the views this file does not own: `film-veil` and
+   * `depth-plate` never unregistered, never held the context, and would otherwise sit
+   * in the registry until the next scroll published something.
+   *
+   * The occlusion gate below re-runs for the same reason, through `restoreKey` in its
+   * own dependency list rather than an event dispatched from here: a synthetic `resize`
+   * would reach `journeyDirector.invalidateGeometry` and every ScrollTrigger on the
+   * page, which are other owners' state and have no business moving because a GPU
+   * context came back.
+   */
+  useEffect(() => {
+    if (restoreKey === 0 || !live) return undefined;
+    const frame = window.requestAnimationFrame(() => surfaceStore.invalidate());
+    return () => window.cancelAnimationFrame(frame);
+  }, [live, restoreKey]);
 
   /* ---- the occlusion gate: one hit test, one answer, both lines ---- */
   useEffect(() => {
@@ -374,7 +484,10 @@ export default function SurfaceCanvas({ probe = false }: { readonly probe?: bool
       window.removeEventListener('resize', schedule);
       document.removeEventListener('astro:page-load', schedule);
     };
-  }, [band]);
+    // `restoreKey` rebuilds this effect, and the rebuild's own `run()` is the re-test a
+    // restored context needs. See the restore note above for why it is here and not a
+    // dispatched event.
+  }, [band, restoreKey]);
 
   useEffect(() => {
     if (!probe || typeof window === 'undefined') return undefined;
@@ -392,6 +505,9 @@ export default function SurfaceCanvas({ probe = false }: { readonly probe?: bool
       get horizonChecks() { return horizonChecks.current; },
       get warmup() { return surfaceStore.getWarmup(); },
       invalidate: () => surfaceStore.invalidate(),
+      get lost() { return lostRef.current; },
+      get restores() { return restoreCount.current; },
+      get failed() { return failedRef.current; },
     };
     return () => {
       delete window.__ffeSurface;
@@ -408,11 +524,17 @@ export default function SurfaceCanvas({ probe = false }: { readonly probe?: bool
       data-surface-instance={instanceId.current}
       data-surface-route={routeRevision}
       data-surface-lost={contextLost ? '' : undefined}
+      data-surface-restores={restoreKey > 0 ? String(restoreKey) : undefined}
+      data-surface-failed={rendererFailed ? '' : undefined}
     >
-      <MotionErrorBoundary>
+      <MotionErrorBoundary
+        island="surface"
+        onFail={() => setRendererFailed(true)}
+        onRetry={() => setRendererFailed(false)}
+      >
         <Suspense fallback={null}>
-          {rendererAdmitted && (
-            <SurfaceStage viewElement={band} restoreKey={restoreKey} onCanvas={setCanvasElement} />
+          {rendererAdmitted && !rendererFailed && (
+            <SurfaceStage viewElement={band} restoreKey={restoreKey} onCanvas={adoptCanvas} />
           )}
         </Suspense>
       </MotionErrorBoundary>
