@@ -14,6 +14,7 @@ import {
   surfaceStore,
   type SurfaceCameraMode,
   type SurfaceTarget,
+  type SurfaceWarmup,
 } from '../../lib/motion/surface-store';
 import MotionErrorBoundary from './MotionErrorBoundary';
 
@@ -62,6 +63,12 @@ declare global {
        */
       readonly horizonChecks: number;
       /**
+       * What the renderer's staged bring-up cost and when it ran, so "the first
+       * frame no longer carries the program build" is a number rather than a claim.
+       * `null` until `SurfaceFloor` has finished warming.
+       */
+      readonly warmup: SurfaceWarmup | null;
+      /**
        * Ask for one more frame. The gates need this because a view can now be
        * suppressed from outside (hiding `.film-veil` drops its rectangle to zero,
        * so the registry skips it) and a demand-rendered canvas would otherwise
@@ -108,6 +115,27 @@ const HORIZON_TEST_INTERVAL = 80;
  * page, so nothing is spent looking for it.
  */
 const HORIZON_SETTLE_DELAY = 140;
+
+/**
+ * WHEN THE RENDERER IS ALLOWED TO BE BUILT.
+ *
+ * `client:idle` gets this island hydrated at an idle moment, which is not the same
+ * promise as "the three.js chunk, the WebGL context and the first program build land
+ * outside the arrival window". Measured on the built app, they did not: the lazy
+ * chunk resolved into react-three-fiber's first render at 1038 ms and produced a
+ * 599 ms arrival long task against a 200 ms budget.
+ *
+ * So the renderer waits for two signals rather than one: the document's `load` event
+ * (the boundary the arrival budget is defined against, DELIVERY-BUDGETS.md) and then
+ * an idle callback with a timeout, so a page that never goes idle still gets its floor.
+ * `SurfaceFloor` then splits its own bring-up further — see the warm-up there.
+ *
+ * Nothing the visitor can reach needs the plane sooner. The pour's veil is the
+ * `film-veil` view and is not needed until the first boundary; the floor plane is born
+ * in the last fifth of Act 1 (`surfaceChapterPresence`), which is a screen and a half
+ * of scrolling away.
+ */
+const SURFACE_MOUNT_IDLE_TIMEOUT = 1200;
 
 export default function SurfaceCanvas({ probe = false }: { readonly probe?: boolean }) {
   const controls = useSyncExternalStore(
@@ -174,6 +202,36 @@ export default function SurfaceCanvas({ probe = false }: { readonly probe?: bool
   useEffect(() => {
     surfaceStore.setRenderer(live ? 'webgl' : 'fallback');
   }, [live]);
+
+  /* ---- the renderer's own gate: after `load`, then at idle. See the note above. ---- */
+  const [rendererAdmitted, setRendererAdmitted] = useState(false);
+  useEffect(() => {
+    if (!mounted || rendererAdmitted) return undefined;
+    let idleHandle = 0;
+    let timer = 0;
+    let cancelled = false;
+    const admit = () => {
+      if (!cancelled) setRendererAdmitted(true);
+    };
+    const afterLoad = () => {
+      if (cancelled) return;
+      if (typeof window.requestIdleCallback === 'function') {
+        idleHandle = window.requestIdleCallback(admit, { timeout: SURFACE_MOUNT_IDLE_TIMEOUT });
+        return;
+      }
+      timer = window.setTimeout(admit, 0);
+    };
+    // A route swap never fires `load` again, and this island is `transition:persist`ed,
+    // so the readyState branch is the one every navigation after the first takes.
+    if (document.readyState === 'complete') afterLoad();
+    else window.addEventListener('load', afterLoad, { once: true });
+    return () => {
+      cancelled = true;
+      window.removeEventListener('load', afterLoad);
+      if (idleHandle !== 0 && typeof window.cancelIdleCallback === 'function') window.cancelIdleCallback(idleHandle);
+      if (timer !== 0) window.clearTimeout(timer);
+    };
+  }, [mounted, rendererAdmitted]);
 
   /* ---- director coupling (read-only); the mapping itself is in surface-store.ts ---- */
   useEffect(() => {
@@ -332,6 +390,7 @@ export default function SurfaceCanvas({ probe = false }: { readonly probe?: bool
       resetFrames: () => surfaceStore.resetFrames(),
       views: () => surfaceStore.listViews().map((view) => view.id),
       get horizonChecks() { return horizonChecks.current; },
+      get warmup() { return surfaceStore.getWarmup(); },
       invalidate: () => surfaceStore.invalidate(),
     };
     return () => {
@@ -352,7 +411,9 @@ export default function SurfaceCanvas({ probe = false }: { readonly probe?: bool
     >
       <MotionErrorBoundary>
         <Suspense fallback={null}>
-          <SurfaceStage viewElement={band} restoreKey={restoreKey} onCanvas={setCanvasElement} />
+          {rendererAdmitted && (
+            <SurfaceStage viewElement={band} restoreKey={restoreKey} onCanvas={setCanvasElement} />
+          )}
         </Suspense>
       </MotionErrorBoundary>
     </div>

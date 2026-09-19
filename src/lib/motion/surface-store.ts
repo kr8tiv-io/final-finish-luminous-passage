@@ -114,6 +114,28 @@ export interface SurfaceView extends SurfaceViewOptions {
   readonly priority: number;
 }
 
+/**
+ * What the renderer's staged warm-up cost, and when it happened.
+ *
+ * Deliberately NOT part of `SurfaceSnapshot`: it is a fact about the run, not a
+ * piece of material state, and publishing it would wake every `useSyncExternalStore`
+ * subscriber for a number nothing renders. It lives here rather than on a second
+ * global because the store is already the single owner of "facts about the one
+ * canvas" (`frames`), and `SurfaceCanvas`'s staging-only probe reads it from here.
+ */
+export interface SurfaceWarmup {
+  /** `performance.now()` when the first warm-up step began. */
+  readonly startedMs: number;
+  /** `performance.now()` when the last program was ready and the views were let in. */
+  readonly readyMs: number;
+  /** Time spent inside the warm-up steps themselves, excluding the idle waits between them. */
+  readonly workMs: number;
+  /** Per step: `environment` (PMREM bake), `journey-program`, `menu-program`. */
+  readonly steps: Readonly<Record<string, number>>;
+  /** The whole warm-up began after the document's `load` event. */
+  readonly afterLoadEvent: boolean;
+}
+
 export interface SurfaceSnapshot {
   readonly revision: number;
   readonly a: SurfaceStateId;
@@ -622,6 +644,7 @@ export function createSurfaceStore() {
   let frames = 0;
   let fallbackBand: HTMLElement | null = null;
   let menuFloor: HTMLElement | null = null;
+  let warmup: SurfaceWarmup | null = null;
   /** What the plane goes back to when the menu gives it up. */
   let parkedTarget: SurfaceTarget | null = null;
 
@@ -745,6 +768,11 @@ export function createSurfaceStore() {
     resetFrames: () => {
       frames = 0;
     },
+    /** `SurfaceFloor` is the only caller: one record per renderer, written when it is warm. */
+    noteWarmup: (detail: SurfaceWarmup) => {
+      warmup = Object.freeze(detail);
+    },
+    getWarmup: (): SurfaceWarmup | null => warmup,
 
     /* ---- material state ---- */
     /**
@@ -910,6 +938,7 @@ export function createSurfaceStore() {
       fallbackBand = null;
       menuFloor = null;
       parkedTarget = null;
+      warmup = null;
       snapshot = EMPTY_SNAPSHOT;
       listeners.clear();
     },

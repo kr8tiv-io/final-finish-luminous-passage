@@ -145,5 +145,23 @@ const registerLabel = 'Flake · Solid · Metallic';
 <script>
   import { initializeResinReveal } from '../../scripts/resin-reveal';
 
-  initializeResinReveal();
+  /**
+   * Built two frames late, on purpose.
+   *
+   * `initializeResinReveal` measures before it builds — `stage.clientWidth`,
+   * `register.scrollWidth`, `getComputedStyle(lineOne).fontSize` — and then hands
+   * ScrollTrigger a pin, which measures again. Run at module evaluation that is a
+   * synchronous style-and-layout read against a document that has never been laid
+   * out, so this script pays for the page's first layout: measured on the built app
+   * at 390x844, the LoAF script entry for this module was 85 ms of which **60 ms was
+   * forced style-and-layout**, inside an 84 ms arrival long task.
+   *
+   * Two `requestAnimationFrame`s put it after the first painted frame, so the same
+   * reads land on a layout the browser has already done for itself. Nothing is
+   * deferred that the visitor can reach: this section is several screens down, it
+   * holds its own box from CSS (`min-height: 100svh`, see resin-reveal.css) whether
+   * the script has run or not, and `route-lifecycle.ts` still owns re-initialising it
+   * after a client-side navigation.
+   */
+  requestAnimationFrame(() => requestAnimationFrame(() => initializeResinReveal()));
 </script>

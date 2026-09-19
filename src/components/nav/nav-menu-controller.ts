@@ -95,6 +95,7 @@ export function initializeNavMenu(header: HTMLElement, toggle: HTMLButtonElement
   let transition: gsap.core.Timeline | null = null;
   let inertRecords: InertRecord[] = [];
   let parallaxFrame = 0;
+  let inertFrame = 0;
 
   /** The animated branch only exists while the OS allows motion. */
   const media = gsap.matchMedia();
@@ -162,6 +163,21 @@ export function initializeNavMenu(header: HTMLElement, toggle: HTMLButtonElement
     overlay.hidden = true;
     overlay.removeAttribute('data-nav-warm');
   };
+  /*
+   * WHAT THIS STILL DOES NOT WARM, measured and left alone on purpose.
+   *
+   * After the rest of this step landed, the first open at CPU x4 was still the
+   * outlier — 376 ms against 137-232 ms for the four after it, and the whole
+   * difference sat in `processing` (284 ms vs 97-173 ms), i.e. inside the click
+   * handler. The obvious candidate is Flip's first actual flight (`getState` above
+   * does not reach `Flip.from`) plus DrawSVG's first measurement of the spine.
+   * Warming both here was tried and could not be shown to help: five opens with it
+   * came back 432/120/216/256/936 ms on a machine running three other agents'
+   * Playwright suites, which is noise several times larger than the effect. An
+   * unverifiable change to the warm-up is not worth the inline state a killed
+   * `Flip.from` can leave behind, so it is not here. Re-measure on a quiet machine
+   * before adding it.
+   */
   const scheduleWarmUp = () => {
     const run = () => { try { warmMenuLayout(); } catch { /* warm-up is best effort */ } };
     // `timeout` matters: on a page that is still hydrating, a plain idle callback
@@ -192,6 +208,58 @@ export function initializeNavMenu(header: HTMLElement, toggle: HTMLButtonElement
         element.setAttribute('aria-hidden', 'true');
         return record;
       });
+  };
+
+  /**
+   * ...and why it is not applied in the click's own task.
+   *
+   * `inert` is a rendering-affecting state, so setting it on every child of `<body>`
+   * invalidates style for the whole document — and `Flip.from` then has to force a
+   * full style-and-layout pass to measure the labels' new boxes. Measured on the built
+   * app at CPU x4, the toggle's `BUTTON.onclick` LoAF script ran 648 ms of which
+   * **552 ms was forced style-and-layout**, and an identical open with the WebGL floor
+   * suppressed still cost 200-630 ms of it.
+   *
+   * Moving the write past the first painted frame leaves `Flip.from` measuring a
+   * document whose style was dirtied only by the header and the overlay. Nothing about
+   * the trap changes: `onKeydown` is the actual focus trap and is already live, focus
+   * has already been moved inside the overlay, and the overlay is a fixed full-screen
+   * layer, so the two frames of reachable background exist for a pointer that cannot
+   * see it. `close()` cancels a pending application, and `releaseInert` is a no-op on
+   * an empty record list, so an open/close inside those two frames leaves nothing set.
+   *
+   * Moving focus is the other half of it. `links[0].focus()` forces a style and layout
+   * pass of its own — measured as a 159 ms `FrameRequestCallback` script entry that was
+   * 159 ms of forced style-and-layout — and a `requestAnimationFrame` registered inside
+   * the click still runs in the frame the click is painting, so the old single-frame
+   * defer kept that cost inside the number this gate measures. Two frames puts both
+   * writes after it. The trap itself never moved: `onKeydown` is live from the click.
+   *
+   * Closing owes the same debt in the other direction — `releaseInert` writes to every
+   * body child and `Flip.from` then measures the close — so both ends go through one
+   * scheduler, and whichever direction fires last wins the frame.
+   */
+  const scheduleFollowUp = (run: () => void) => {
+    if (inertFrame !== 0) cancelAnimationFrame(inertFrame);
+    inertFrame = requestAnimationFrame(() => {
+      inertFrame = requestAnimationFrame(() => {
+        inertFrame = 0;
+        run();
+      });
+    });
+  };
+
+  const cancelFollowUp = () => {
+    if (inertFrame !== 0) cancelAnimationFrame(inertFrame);
+    inertFrame = 0;
+  };
+
+  const scheduleOpenFollowUp = ({ focusFirstLink }: { readonly focusFirstLink: boolean }) => {
+    scheduleFollowUp(() => {
+      if (!open) return;
+      applyInert();
+      if (focusFirstLink) links[0]?.focus({ preventScroll: true });
+    });
   };
 
   const releaseInert = () => {
@@ -357,23 +425,21 @@ export function initializeNavMenu(header: HTMLElement, toggle: HTMLButtonElement
     root.setAttribute('data-menu-open', '');
     reserveHeaderSlot(navBox);
     listHost.appendChild(navigation);
-    applyInert();
     veilFloatingControls(true);
     resetParallax();
 
     if (!state) {
       gsap.set([veil, floor, meta].filter(Boolean), { clearProps: 'opacity,clipPath' });
       dispatchState(true, true);
+      // Nothing is animating on this branch, so focus stays immediate; only the
+      // document-wide `inert` write waits for the frame after the first paint.
+      scheduleOpenFollowUp({ focusFirstLink: false });
       links[0]?.focus({ preventScroll: true });
       return;
     }
     transition = buildOpenTimeline(state);
     dispatchState(true, false);
-    // One frame later: focusing forces another style/layout pass, and the first
-    // painted frame of the transition matters more than 16 ms of focus latency.
-    requestAnimationFrame(() => {
-      if (open) links[0]?.focus({ preventScroll: true });
-    });
+    scheduleOpenFollowUp({ focusFirstLink: true });
   };
 
   const close = ({ restoreFocus }: { restoreFocus: boolean }) => {
@@ -393,7 +459,13 @@ export function initializeNavMenu(header: HTMLElement, toggle: HTMLButtonElement
     root.removeAttribute('data-menu-open');
     if (animate) header.setAttribute('data-menu-closing', '');
     slot.replaceWith(navigation);
-    releaseInert();
+    // The page stays inert for the two frames the close's own Flip is measuring in.
+    // Focus is already back on the toggle, which lives in the header and was never
+    // inert, so nothing a visitor can reach is behind it.
+    scheduleFollowUp(() => {
+      if (open) return;
+      releaseInert();
+    });
     veilFloatingControls(false);
 
     if (!state) {
@@ -435,6 +507,9 @@ export function initializeNavMenu(header: HTMLElement, toggle: HTMLButtonElement
     media.revert();
     transition?.kill();
     resetParallax();
+    // Teardown is the one caller that cannot wait for a frame: the document this
+    // controller belongs to is about to be replaced.
+    cancelFollowUp();
     releaseInert();
     veilFloatingControls(false);
   };

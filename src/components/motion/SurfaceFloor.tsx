@@ -1,6 +1,6 @@
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import gsap from 'gsap';
-import { useCallback, useEffect, useMemo, useRef, useSyncExternalStore } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
 import * as THREE from 'three';
 import {
   SURFACE_EDGE_FEATHER,
@@ -211,6 +211,50 @@ function neutralPhotoTexture(): THREE.DataTexture {
 }
 
 /**
+ * THE WARM-UP, AND WHY THE FIRST DRAWN FRAME IS NOT ALLOWED TO CONTAIN IT.
+ *
+ * Bringing this plane up is three separable pieces of work that used to be fused into
+ * react-three-fiber's first `FrameRequestCallback`: the PMREM bake of the environment
+ * map, the link of the patched `MeshPhysicalMaterial` program (clearcoat + six custom
+ * chunks), and the first draw. Measured at arrival on the built app, that one callback
+ * was 154 ms inside a 599 ms arrival long task against a 200 ms budget.
+ *
+ * So the pieces are run one per idle callback, with `compileAsync` — which uses
+ * `KHR_parallel_shader_compile` and therefore does not block the main thread on the
+ * link — instead of letting the first render do the linking, and the floor's view is
+ * not registered until they are all done. Until then the registry has nothing of this
+ * scene in it, so a frame requested by anything else costs one clear.
+ *
+ * Nothing visible changes at arrival by waiting. The homepage's portico chapter holds
+ * the plane at presence 0 for the first 80 % of the pour (`surfaceChapterPresence`),
+ * and a route with no `.journey` is at `RESTING_TARGET`, whose plane opacity is 0 — the
+ * band draws literally nothing until the visitor has scrolled into Act 1.
+ *
+ * `menuCamera` gets its own compile pass. It renders the same material through a wider,
+ * closer lens, so the program is the same one and the pass is usually free — but it is
+ * the pass that makes "the menu's first painted frame waits on a shader link" false by
+ * construction rather than by argument. (It is NOT what makes the menu fast: measured
+ * over five opens at CPU x4, every open paid the same ~350-500 ms, which is the
+ * full-viewport draw's fill cost and not a one-off compile. See `FloorMenuScene`.)
+ */
+const SURFACE_WARM_IDLE_TIMEOUT = 600;
+
+/** One turn of the event loop, at idle if the browser has one to give. */
+function idleTurn(): Promise<void> {
+  return new Promise<void>((resolve) => {
+    if (typeof window === 'undefined') {
+      resolve();
+      return;
+    }
+    if (typeof window.requestIdleCallback === 'function') {
+      window.requestIdleCallback(() => resolve(), { timeout: SURFACE_WARM_IDLE_TIMEOUT });
+      return;
+    }
+    window.setTimeout(resolve, 0);
+  });
+}
+
+/**
  * Walks the view registry once per rendered frame.
  *
  * `priority: 1` takes the render away from react-three-fiber so every draw goes through
@@ -386,17 +430,56 @@ function SurfaceFloorScene({ viewElement }: { readonly viewElement: HTMLElement 
     applyCamera(surfaceStore.getSnapshot().camera);
   }, [applyCamera]);
 
-  // Environment map — built once from the live renderer, disposed with the component.
+  /**
+   * The staged warm-up. Keeps every job the environment-map effect it replaces did —
+   * build the map once from the live renderer, hang it on the material, mark the
+   * material dirty, ask for a frame, and dispose the map with the component — and adds
+   * the two program compiles plus the `warm` gate the view registrations below read.
+   */
+  const [warm, setWarm] = useState(false);
   useEffect(() => {
-    const environment = buildEnvironment(gl);
-    material.envMap = environment;
-    material.needsUpdate = true;
-    invalidate();
-    return () => {
-      material.envMap = null;
-      environment.dispose();
+    let cancelled = false;
+    let environment: THREE.Texture | null = null;
+    const steps: Record<string, number> = {};
+    const startedMs = performance.now();
+    const afterLoadEvent = typeof document !== 'undefined' && document.readyState === 'complete';
+
+    const step = async (label: string, run: () => unknown | Promise<unknown>) => {
+      await idleTurn();
+      if (cancelled) return;
+      const at = performance.now();
+      await run();
+      steps[label] = Math.round(performance.now() - at);
     };
-  }, [gl, invalidate, material]);
+
+    void (async () => {
+      await step('environment', () => {
+        environment = buildEnvironment(gl);
+        material.envMap = environment;
+        material.needsUpdate = true;
+      });
+      if (cancelled) return;
+      await step('journey-program', () => gl.compileAsync(scene, camera));
+      if (cancelled) return;
+      await step('menu-program', () => gl.compileAsync(scene, menuCamera));
+      if (cancelled) return;
+      surfaceStore.noteWarmup({
+        startedMs: Math.round(startedMs),
+        readyMs: Math.round(performance.now()),
+        workMs: Object.values(steps).reduce((total, value) => total + value, 0),
+        steps: { ...steps },
+        afterLoadEvent,
+      });
+      setWarm(true);
+      invalidate();
+    })();
+
+    return () => {
+      cancelled = true;
+      material.envMap = null;
+      environment?.dispose();
+    };
+  }, [camera, gl, invalidate, material, menuCamera, scene]);
 
   useEffect(() => () => {
     material.dispose();
@@ -553,6 +636,10 @@ function SurfaceFloorScene({ viewElement }: { readonly viewElement: HTMLElement 
 
   /* ---- view registration: this floor owns the band's rectangle ---- */
   useEffect(() => {
+    // Not before the programs are linked: a view registered earlier would hand the
+    // first requested frame the whole bring-up cost, which is the arrival long task
+    // this staging exists to split.
+    if (!warm) return undefined;
     const render = ({ rect, box, gl: renderer }: SurfaceViewRenderContext) => {
       const aspect = rect.width / Math.max(1, rect.height);
       if (camera.aspect !== aspect) {
@@ -572,7 +659,7 @@ function SurfaceFloorScene({ viewElement }: { readonly viewElement: HTMLElement 
       renderer.render(scene, camera);
     };
     return surfaceStore.registerView('surface-floor', viewElement, { render, priority: 10 });
-  }, [camera, horizonUniforms, scene, uniforms, viewElement]);
+  }, [camera, horizonUniforms, scene, uniforms, viewElement, warm]);
 
   /* ---- second view: the same plane, the same material, the menu's lens ---- */
   useEffect(() => {
@@ -580,7 +667,10 @@ function SurfaceFloorScene({ viewElement }: { readonly viewElement: HTMLElement 
     // loss so the <canvas> survives to receive `webglcontextrestored`, and a view
     // registered in that window would claim the menu's floor while drawing nothing.
     // `data-nav-floor-view` has to mean "the canvas really is painting this".
-    if (!menuOpen || !menuElement || !live) return undefined;
+    // `warm` is the same promise one step earlier: a menu opened before the programs
+    // are linked keeps the CSS gradient floor under its own paper plate, which is the
+    // floor every refused visitor already sees, rather than stalling on a link.
+    if (!menuOpen || !menuElement || !live || !warm) return undefined;
     const fades = menuFades();
 
     const render = ({ rect, box, gl: renderer }: SurfaceViewRenderContext) => {
@@ -645,7 +735,7 @@ function SurfaceFloorScene({ viewElement }: { readonly viewElement: HTMLElement 
       unregister();
       surfaceStore.invalidate();
     };
-  }, [clearScratch, live, menuCamera, menuElement, menuOpen, paperColour, scene, uniforms]);
+  }, [clearScratch, live, menuCamera, menuElement, menuOpen, paperColour, scene, uniforms, warm]);
 
   return (
     <>
