@@ -36,12 +36,12 @@ flowchart TD
     step-21["step-21: Preparation cutaway: layered illustrative diagra"]:::stDoing
     step-22["step-22: Reclaim your garage or basement: garage, basemen"]:::stDone
     step-23["step-23: See the difference: pin the inner passage, jh3y "]:::stDone
-    step-23b["step-23b: Archive lattice (Act 6): cylinder cards unwrap i"]:::stDoing
+    step-23b["step-23b: Archive lattice (Act 6): cylinder cards unwrap i"]:::stDone
     step-24["step-24: Epoxy layer-mask headline (Creative Ocean): resi"]:::stDoing
     step-25["step-25: Finish alcove and visualizer: entrance from fini"]:::stDone
-    step-26["step-26: Commercial chapter: poster becomes a DepthPlate "]:::stTodo
-    step-27["step-27: Consultation: single poster, wash only behind wo"]:::stTodo
-    step-28["step-28: Micro-interactions and grade: hover vocabulary s"]:::stTodo
+    step-26["step-26: Commercial chapter: poster becomes a DepthPlate "]:::stDoing
+    step-27["step-27: Consultation: single poster, wash only behind wo"]:::stDoing
+    step-28["step-28: Micro-interactions and grade: hover vocabulary s"]:::stDoing
   end
   subgraph phase-4["phase-4"]
     step-29["step-29: Copy pass in Denis voice; complete CLAIMS-LEDGER"]:::stDone
@@ -52,8 +52,8 @@ flowchart TD
   end
   subgraph phase-5["phase-5"]
     step-34["step-34: Budgets enforced in CI: phone = 0.8MB, desktop ="]:::stDone
-    step-35["step-35: Mobile and tablet composition: per-breakpoint re"]:::stTodo
-    step-36["step-36: Accessibility: axe on every route, keyboard jour"]:::stTodo
+    step-35["step-35: Mobile and tablet composition: per-breakpoint re"]:::stDoing
+    step-36["step-36: Accessibility: axe on every route, keyboard jour"]:::stDoing
   end
   subgraph phase-6["phase-6"]
     step-37["step-37: Auditor loop: blind pairwise review by three Opu"]:::stTodo
@@ -456,7 +456,7 @@ flowchart TD
 - **Phase:** phase-3
 - **Tier:** O+
 - **Owner(s):** motion-b
-- **Status:** doing
+- **Status:** done
 - **Files:** src/components/home/ArchiveLattice.tsx, scripts/build-archive-atlas.mjs, public/images/projects/atlas/*
 - **Inputs (informs):** S7
 - **Constraints (locks):** none recorded
@@ -495,7 +495,7 @@ flowchart TD
 - **Phase:** phase-3
 - **Tier:** S
 - **Owner(s):** ui, motion-b
-- **Status:** todo
+- **Status:** doing
 - **Files:** index.astro, DepthPlate.tsx
 - **Inputs (informs):** S7
 - **Constraints (locks):** none recorded
@@ -508,7 +508,7 @@ flowchart TD
 - **Phase:** phase-3
 - **Tier:** S
 - **Owner(s):** ui
-- **Status:** todo
+- **Status:** doing
 - **Files:** index.astro, QuoteForm.tsx, src/pages/privacy.astro
 - **Inputs (informs):** S7
 - **Constraints (locks):** none recorded
@@ -521,7 +521,7 @@ flowchart TD
 - **Phase:** phase-3
 - **Tier:** S hover, O grade
 - **Owner(s):** motion-a
-- **Status:** todo
+- **Status:** doing
 - **Files:** intent-motion.ts, header-ribbon.ts (after 18), FilmVeil.tsx (after 22), src/components/Preloader.astro
 - **Inputs (informs):** S7
 - **Constraints (locks):** L1, L2, L3, L4
@@ -612,7 +612,7 @@ flowchart TD
 - **Phase:** phase-5
 - **Tier:** O
 - **Owner(s):** motion-c
-- **Status:** todo
+- **Status:** doing
 - **Files:** readable-experience.css, journey-manifest.ts
 - **Inputs (informs):** none recorded
 - **Constraints (locks):** none recorded
@@ -625,7 +625,7 @@ flowchart TD
 - **Phase:** phase-5
 - **Tier:** S
 - **Owner(s):** ui
-- **Status:** todo
+- **Status:** doing
 - **Files:** tests/e2e/accessibility.spec.ts
 - **Inputs (informs):** none recorded
 - **Constraints (locks):** none recorded
