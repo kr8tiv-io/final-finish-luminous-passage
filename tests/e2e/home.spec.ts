@@ -101,11 +101,21 @@ test.describe('Final Finish homepage', () => {
    * 5.1 MB 1080 encode began streaming at ~921 ms on a desktop that had done
    * nothing but load the page.
    *
-   * The control is the second half: the same page, given one scroll, does fetch
-   * it. Without that, a page that had simply stopped shipping the film would
-   * pass the first half.
+   * The control is the second half: the same page, given one scroll, promotes
+   * the film and fetches it. Without that, a page that had simply stopped
+   * shipping the film would pass the first half.
+   *
+   * The BYTES half of that control is asserted on Chromium only, and that is a
+   * platform fact rather than a convenience: WebKit treats `preload="auto"` as
+   * advisory and will not fetch an inline video without a user gesture, so the
+   * response never arrives there (measured: `waitForResponse` timed out at
+   * 60 s while `preload` had already flipped). What this step actually owns —
+   * that the promotion happens, and only after the signal — is asserted on both.
    */
-  test('downloads no film until the visitor asks the page to move', async ({ page }) => {
+  test('downloads no film until the visitor asks the page to move', async ({ page, browserName }) => {
+    // The idle window alone is 5 s of the default 30 s budget, before hydration
+    // and before the control's own fetch; on the WebKit project that overran.
+    test.slow();
     await page.setViewportSize({ width: 1440, height: 900 });
     const videoBytes: string[] = [];
     page.on('response', (response) => {
@@ -123,16 +133,19 @@ test.describe('Final Finish homepage', () => {
     // Armed BEFORE the signal, and on a RESPONSE: `currentSrc` is set by resource
     // selection and says nothing about a fetch, so only a response proves the tap
     // opened.
-    const firstFilm = page.waitForResponse(
-      (response) => /\/videos\/.*\.mp4(?:\?|$)/.test(response.url()),
-      { timeout: 60_000 },
-    );
+    const firstFilm = browserName === 'chromium'
+      ? page.waitForResponse(
+        (response) => /\/videos\/.*\.mp4(?:\?|$)/.test(response.url()),
+        { timeout: 60_000 },
+      )
+      : null;
     await signalScrollIntent(page);
     await page.waitForFunction(
       () => document.querySelector<HTMLVideoElement>('.pour-film')?.preload === 'auto',
       null,
-      { timeout: 2_000 },
+      { timeout: 5_000 },
     );
+    if (!firstFilm) return;
     const response = await firstFilm;
     expect(response.url(), 'one scroll must open the tap').toMatch(/\/videos\/.*\.mp4$/);
     expect(videoBytes.length, 'the same fetch must be the one this test counted').toBeGreaterThan(0);
