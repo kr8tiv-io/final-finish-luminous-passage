@@ -22,6 +22,7 @@ import {
 } from '../../lib/motion/headline-motion';
 import {
   SCROLL_INTENT_POINTER_PX,
+  filmDecodesOnTier,
   isScrollIntentKey,
   journeyFilmTopRung,
   journeyMediaResidents,
@@ -428,6 +429,7 @@ export default function JourneyMotion() {
         saveData: saveDataEnabled(),
         scrollIntent,
       })) return;
+      if (!filmDecodesOnTier(id, tier)) return;
       const video = videos.get(id);
       if (!video) return;
       if (shouldRequestVideo(requestedVideos.has(video), id, residentChapters, documentActive)) {

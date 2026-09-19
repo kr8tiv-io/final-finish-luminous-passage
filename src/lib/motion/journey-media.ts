@@ -194,6 +194,32 @@ export function pourFilmSource(input: {
   return journeyFilmTopRung('portico', input);
 }
 
+/**
+ * Chapters whose film only decodes on `full`.
+ *
+ * Act 3 is the one entry. The storyboard gives `balanced` and `still` "the
+ * poster with the scrubbed `scale(1 -> 1.06)`" for this act (§2 phone column,
+ * §6 Act 3 row) — the walk is told by the still there, not by a second film —
+ * and `journey.css` drives that scale from `--foundation-scrub`, so the act
+ * loses nothing by not decoding. It also stops a `balanced` device paying for
+ * two films at the very first boundary: `portico:foundation` is the only
+ * boundary whose two plates are both scrubbed films, and on mobile WebKit that
+ * pair is what took the boundary spec's walk past its 240 s budget.
+ *
+ * Every other chapter's film scrubs on `balanced` exactly as before — that is
+ * the tier's whole definition (`journey-tier.ts`: "the chapter films still
+ * scrub") and Act 4's rooms depend on it.
+ */
+const FULL_TIER_ONLY_FILMS: ReadonlySet<JourneyChapterId> = new Set<JourneyChapterId>(['foundation']);
+
+export function filmDecodesOnTier(
+  chapter: JourneyChapterId,
+  tier: 'full' | 'balanced' | 'still',
+): boolean {
+  if (tier === 'still') return false;
+  return tier === 'full' || !FULL_TIER_ONLY_FILMS.has(chapter);
+}
+
 /** Cumulative pointer travel, in CSS px, that counts as an intent to scroll. */
 export const SCROLL_INTENT_POINTER_PX = 4;
 

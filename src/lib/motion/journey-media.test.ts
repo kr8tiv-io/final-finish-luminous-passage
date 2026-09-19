@@ -3,6 +3,7 @@ import {
   coverUvTransform,
   dissolveWeight,
   endpointBlend,
+  filmDecodesOnTier,
   isScrollIntentKey,
   journeyEnhancementReady,
   journeyFilmTopRung,
@@ -78,6 +79,30 @@ describe('scroll intent gates every video byte', () => {
   it('keeps the pointer threshold small enough to beat the wheel tick that follows it', () => {
     expect(SCROLL_INTENT_POINTER_PX).toBeGreaterThan(0);
     expect(SCROLL_INTENT_POINTER_PX).toBeLessThanOrEqual(8);
+  });
+});
+
+/**
+ * `balanced` is the tier whose definition is "no compositor, but the chapter
+ * films still scrub". Act 3 is the one deliberate exception: the storyboard
+ * hands that act's `balanced` and `still` visitors the poster with a scrubbed
+ * scale instead of a second film.
+ */
+describe('which tiers decode which film', () => {
+  it('keeps Act 3 on `full` and every other film on `balanced` too', () => {
+    expect(filmDecodesOnTier('foundation', 'full')).toBe(true);
+    expect(filmDecodesOnTier('foundation', 'balanced')).toBe(false);
+    expect(filmDecodesOnTier('foundation', 'still')).toBe(false);
+    // Act 1 and Act 4 are the tier's whole point: they scrub on `balanced`.
+    for (const chapter of ['portico', 'garage', 'vault', 'mancave', 'finish-hall'] as const) {
+      expect(filmDecodesOnTier(chapter, 'balanced'), chapter).toBe(true);
+      expect(filmDecodesOnTier(chapter, 'full'), chapter).toBe(true);
+      expect(filmDecodesOnTier(chapter, 'still'), chapter).toBe(false);
+    }
+    // Falsifiable: the exception must actually differ from the rule at the one
+    // tier that separates them, or this table would pass on "never decode".
+    expect(filmDecodesOnTier('foundation', 'balanced'))
+      .not.toBe(filmDecodesOnTier('portico', 'balanced'));
   });
 });
 
