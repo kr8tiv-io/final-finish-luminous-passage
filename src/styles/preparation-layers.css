@@ -61,6 +61,10 @@
   /* Matches the SVG viewBox, so the drawing fills the stage instead of
      letterboxing inside it at narrow widths. */
   aspect-ratio: 1160 / 884;
+  /* Short screens: the whole stack and its seven captions fit under the header at
+     once (a 750 px laptop screen had them running up under it). */
+  width: min(100%, calc((100svh - 10rem) * 1160 / 884));
+  justify-self: end;
 }
 
 .prep-figure {
@@ -164,7 +168,7 @@
      60vh and keeps the drawing edge to edge in its stage. */
   .prep-stage {
     aspect-ratio: auto;
-    height: clamp(60vh, 46vw, 40rem);
+    height: min(clamp(60vh, 46vw, 40rem), calc(100svh - 10rem));
   }
 }
 

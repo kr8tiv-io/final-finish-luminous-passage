@@ -12,13 +12,20 @@
   --track-panel: min(30vw, 54svh);
   --track-gap: 4vw;
   --track-n: 6;
+  --track-num: min(clamp(5rem, 10vw, 11rem), 14svh);
   --track-rail: calc(2 * var(--track-pad) + var(--track-head) + var(--track-n) * (var(--track-panel) + var(--track-gap)));
   --track-travel: calc(var(--track-rail) - 100vw);
+  /* The travel's share of the held scroll. The rest is a dwell on the last three panels:
+     without it they arrived just as the stage began to leave, and slid up under the
+     header (Matt, 2026-09-22). `acts.ts` reads this back. */
+  --track-share: .78;
   position: relative;
-  height: calc(var(--track-travel) + 100lvh);
+  height: calc(var(--track-travel) / var(--track-share) + 100lvh);
   background: transparent;
 }
-.track-stage { position: sticky; top: 0; height: 100lvh; overflow: hidden; display: flex; flex-direction: column; justify-content: center; padding-top: clamp(4.5rem, 9svh, 6.5rem); padding-bottom: calc(100lvh - 100svh + clamp(2.5rem, 7svh, 4.5rem)); box-sizing: border-box; }
+/* Top padding clears the header plus the numerals that rise above each panel; `safe`
+   keeps a rail taller than the room from being centred up under the header. */
+.track-stage { position: sticky; top: 0; height: 100lvh; overflow: hidden; display: flex; flex-direction: column; justify-content: safe center; padding-top: calc(clamp(5.5rem, 11svh, 7.5rem) + .5 * var(--track-num)); padding-bottom: calc(100lvh - 100svh + clamp(2.5rem, 7svh, 4.5rem)); box-sizing: border-box; }
 .track-rail {
   display: flex;
   align-items: flex-start;
@@ -35,12 +42,12 @@
 .track-panel { position: relative; flex: 0 0 var(--track-panel); display: grid; gap: 1.1rem; }
 .track-num {
   position: absolute;
-  top: -.62em;
+  top: -.5em;
   right: -.06em;
   z-index: 2;
   font-family: var(--display);
   font-weight: 500;
-  font-size: min(clamp(5rem, 10vw, 11rem), 17svh);
+  font-size: var(--track-num);
   line-height: 1;
   color: transparent;
   -webkit-text-stroke: 1px rgb(var(--ink-rgb) / .35);
@@ -74,7 +81,6 @@ html[data-journey-tier='still'] .track-foot { display: none; }
 }
 
 @media (max-width: 680px) {
-  .track-sect { --track-pad: 6vw; --track-head: 84vw; --track-panel: 78vw; --track-gap: 7vw; }
-  .track-num { font-size: 5.5rem; }
+  .track-sect { --track-pad: 6vw; --track-head: 84vw; --track-panel: 78vw; --track-gap: 7vw; --track-num: 5.5rem; }
   .track-title { font-size: 1.7rem; }
 }

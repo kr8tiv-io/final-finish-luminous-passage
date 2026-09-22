@@ -38,6 +38,7 @@ const SPAN = 2.2;
 const W = 1.9;
 const H = 0.16;
 const D = 1.28;
+const SHADOW_Y = -0.34;
 
 const clamp01 = (v: number) => (v < 0 ? 0 : v > 1 ? 1 : v);
 const easeOut = (t: number) => 1 - (1 - t) ** 3;
@@ -77,17 +78,20 @@ function Samples({ clock, focus, onFocus, onReady }: {
   }, [gl, scene, invalidate]);
 
   const geometry = useMemo(() => new RoundedBoxGeometry(W, H, D, 4, 0.05), []);
-  const shadowGeometry = useMemo(() => new THREE.PlaneGeometry(9, 4.2).rotateX(-Math.PI / 2), []);
+  // One soft shadow under each sample, travelling with it. A single wide plane under the
+  // row ran past the canvas and its faint tail stopped at the canvas edge: a grey box
+  // (caught on the laptop capture, 2026-09-22). Each blob fades out inside the frame.
+  const shadowGeometry = useMemo(() => new THREE.PlaneGeometry(W * 1.25, D * 1.45).rotateX(-Math.PI / 2), []);
   const shadowTexture = useMemo(() => {
     const canvas = document.createElement('canvas');
-    // A circle that fades to nothing inside the texture's own bounds; the plane stretches
-    // it into the ellipse under the row, so it has no edge to show.
+    // A circle that fades to nothing inside the texture's own bounds, so the blob has no
+    // edge to show.
     canvas.width = 512;
     canvas.height = 512;
     const ctx = canvas.getContext('2d')!;
     const g = ctx.createRadialGradient(256, 256, 6, 256, 256, 250);
-    g.addColorStop(0, 'rgba(23,34,42,0.24)');
-    g.addColorStop(0.55, 'rgba(23,34,42,0.06)');
+    g.addColorStop(0, 'rgba(23,34,42,0.3)');
+    g.addColorStop(0.5, 'rgba(23,34,42,0.1)');
     g.addColorStop(1, 'rgba(23,34,42,0)');
     ctx.fillStyle = g;
     ctx.fillRect(0, 0, 512, 512);
@@ -115,9 +119,13 @@ function Samples({ clock, focus, onFocus, onReady }: {
         new THREE.MeshPhysicalMaterial({ map: marbleTop, roughness: 0.16, metalness: 0.22, clearcoat: 1, clearcoatRoughness: 0.03, iridescence: 0.45, iridescenceIOR: 1.35, envMapIntensity: 1.35, transparent: true }),
         edge('#dcdcd6', 0.28),
       ),
-      shadow: new THREE.MeshBasicMaterial({ map: shadowTexture, transparent: true, depthWrite: false }),
+      shadows: Object.fromEntries(SAMPLES.map(({ id }) => [
+        id,
+        new THREE.MeshBasicMaterial({ map: shadowTexture, transparent: true, depthWrite: false, opacity: 0 }),
+      ])) as Record<SampleId, THREE.MeshBasicMaterial>,
     };
   }, [invalidate, shadowTexture]);
+  const blobs = useRef<Partial<Record<SampleId, THREE.Mesh>>>({});
 
   useFrame((_, delta) => {
     let moving = false;
@@ -150,6 +158,15 @@ function Samples({ clock, focus, onFocus, onReady }: {
       );
       const opacity = Math.min(1, arrive * 1.5) * dim.current[id];
       (materials[id] as THREE.Material[]).forEach((m) => { m.opacity = opacity; });
+
+      // Its shadow: only the bottom of the deck casts one until the row fans out; a
+      // lifted sample's shadow spreads and pales.
+      const blob = blobs.current[id];
+      if (blob) {
+        blob.position.set(x, SHADOW_Y, z + 0.15);
+        blob.scale.setScalar(1 + lift.current[id] * 1.2);
+        materials.shadows[id].opacity = arrive * (index === 0 ? 1 : fan) * (1 - lift.current[id] * 1.8) * dim.current[id];
+      }
     });
 
     // The key light swings across the samples with the scroll.
@@ -169,7 +186,9 @@ function Samples({ clock, focus, onFocus, onReady }: {
   return (
     <group position={[0, -0.35, 0]}>
       <directionalLight ref={light} intensity={1.5} castShadow shadow-mapSize={[1024, 1024]} shadow-radius={5} shadow-bias={-0.0004} shadow-camera-left={-5} shadow-camera-right={5} shadow-camera-top={4} shadow-camera-bottom={-4} />
-      <mesh geometry={shadowGeometry} material={materials.shadow} position={[0, -0.34, 0.2]} />
+      {SAMPLES.map(({ id }) => (
+        <mesh key={`shadow-${id}`} ref={(m) => { if (m) blobs.current[id] = m; }} geometry={shadowGeometry} material={materials.shadows[id]} position={[0, SHADOW_Y, 0]} />
+      ))}
       {SAMPLES.map(({ id }) => (
         <group key={id} ref={(g) => { if (g) tiles.current[id] = g; }} {...hover(id)}>
           <mesh geometry={geometry} material={materials[id]} castShadow receiveShadow />
@@ -210,7 +229,9 @@ export default function FinishSamples3D() {
         t: SPAN,
         ease: 'none',
         onUpdate: () => invalidateRef.current(),
-        scrollTrigger: { trigger: stage, start: 'top 85%', end: 'bottom 30%', scrub },
+        // The fan finishes by the time the stage is centred, not as it leaves: on a short
+        // laptop screen the old end ('bottom 30%') played the fan under the header.
+        scrollTrigger: { trigger: stage, start: 'top 90%', end: 'center 55%', scrub },
       })),
       gsap.to(clock.light, {
         t: 1,

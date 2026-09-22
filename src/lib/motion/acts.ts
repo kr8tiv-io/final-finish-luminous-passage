@@ -613,18 +613,29 @@ export function initActs(): Teardown | undefined {
     const bar = section.querySelector<HTMLElement>('[data-track-bar]');
     const counter = section.querySelector<HTMLElement>('[data-track-index]');
     let travel = 0;
+    // The travel takes this share of the held scroll; the rest is a dwell on the last
+    // panels (CSS reserves it: `--track-share` in process-track.css).
+    let share = 1;
     let shown = -1;
-    const measureTrack = () => { travel = Math.max(0, rail.scrollWidth - window.innerWidth); };
-    const paint = (progress: number) => {
+    const measureTrack = () => {
+      travel = Math.max(0, rail.scrollWidth - window.innerWidth);
+      share = Number.parseFloat(getComputedStyle(section).getPropertyValue('--track-share')) || 1;
+    };
+    const paint = (held: number) => {
+      const progress = Math.min(1, held / share);
       const x = -travel * progress;
       rail.style.transform = `translate3d(${x.toFixed(1)}px, 0, 0)`;
       const width = window.innerWidth;
+      // The counter reads the panel nearest a point that slides from a third of the way
+      // across to five sixths, so the last panel counts once the rail has stopped.
+      const reference = width * (1 / 3 + progress / 2);
       let nearest = 0;
       let best = Infinity;
       panels.forEach((panel, i) => {
         const centre = panel.offsetLeft + x + panel.offsetWidth / 2;
         const d = (centre - width / 2) / width;
-        if (Math.abs(d) < best) { best = Math.abs(d); nearest = i; }
+        const r = Math.abs(centre - reference);
+        if (r < best) { best = r; nearest = i; }
         const part = parts[i];
         part.num?.style.setProperty('transform', `translate3d(${(d * -140).toFixed(1)}px, 0, 0)`);
         part.img?.style.setProperty('transform', `translate3d(${(d * -7).toFixed(2)}%, 0, 0)`);

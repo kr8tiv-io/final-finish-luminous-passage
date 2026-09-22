@@ -134,7 +134,9 @@ function Stack({ clock, focus, onFocus, onReady }: {
     top: new RoundedBoxGeometry(W, TOP_H, D, 3, 0.035),
     overlay: new THREE.PlaneGeometry(W - 0.07, D - 0.07).rotateX(-Math.PI / 2),
     crack: new THREE.PlaneGeometry(W * 0.86, D * 0.86).rotateX(-Math.PI / 2),
-    shadow: new THREE.PlaneGeometry(W * 1.9, D * 2.4).rotateX(-Math.PI / 2),
+    // Sized to fade out inside the frame: at W x 1.9 its tail ran past the canvas and
+    // stopped at the canvas edge as a faint grey box (laptop capture, 2026-09-22).
+    shadow: new THREE.PlaneGeometry(W * 1.35, D * 1.6).rotateX(-Math.PI / 2),
     chip: (() => {
       const shape = new THREE.Shape();
       const sides = 6;

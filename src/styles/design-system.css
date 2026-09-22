@@ -83,6 +83,18 @@ body > .site-footer { position: relative; z-index: 1; }
 @media (prefers-reduced-motion: reduce) { .site-grain { animation: none; } }
 html[data-journey-tier='still'] .site-grain { animation: none; }
 
+/* ── 3D stages on paper: the canvas fades out at every edge ────────────────────
+ * Whatever a scene paints near its border (a shadow's tail, a slab arriving), the
+ * canvas rectangle itself can never show as a box on the paper. */
+.prep-3d canvas,
+.samples-3d canvas {
+  --edge: linear-gradient(to right, transparent, #000 6%, #000 94%, transparent), linear-gradient(to bottom, transparent, #000 6%, #000 94%, transparent);
+  -webkit-mask-image: var(--edge);
+  -webkit-mask-composite: source-in;
+  mask-image: var(--edge);
+  mask-composite: intersect;
+}
+
 /* ── Kicker: italic display face, a short rule before it ──────────────────── */
 .t-kicker,
 .eyebrow {
