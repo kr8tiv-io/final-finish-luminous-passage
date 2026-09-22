@@ -1,0 +1,46 @@
+---
+import { PROCESS_STEPS } from '../../data/process-steps';
+import '../../styles/process-track.css';
+
+/**
+ * The process, sideways (2026-09-22, Matt: "some horizontal kind of scrolling where the
+ * sections come in from the side").
+ *
+ * A sticky stage holds while scroll carries a rail of six panels in from the right: the
+ * floor's material story left to right, bare slab to gloss. The section's height is the
+ * rail's travel plus one screen, reserved in CSS (`process-track.css`), so nothing moves
+ * when the script arrives; `acts.ts` (buildTrack) writes the rail's transform, each
+ * panel's inner drift and the progress rule. Reduced motion and the `still` tier get the
+ * same panels as a plain grid.
+ *
+ * The words are the six steps in `src/data/process-steps.ts` (the only process facts the
+ * site has); the pictures are drawn material close-ups (scripts/build-textures.mjs).
+ */
+const pad = (value: number) => String(value).padStart(2, '0');
+---
+<section id="process" class="track-sect" data-track aria-labelledby="process-title">
+  <div class="track-stage">
+    <ol class="track-rail" data-track-rail>
+      <li class="track-head">
+        <p class="t-kicker">The sequence</p>
+        <h2 id="process-title" class="t-title" data-reveal="title">From bare slab to <em>finished floor.</em></h2>
+        <p class="t-body" data-reveal="fade">Six steps, in this order. Installation usually runs two days, and it varies with the concrete underneath.</p>
+        <a class="link-quiet" href="/process" data-reveal="fade">How a floor actually goes <span aria-hidden="true">↗</span></a>
+      </li>
+      {PROCESS_STEPS.map((step, index) => (
+        <li class="track-panel" data-track-panel>
+          <span class="track-num" aria-hidden="true" data-track-num>{pad(index + 1)}</span>
+          <figure class="track-media">
+            <img data-track-img src={`/images/brand/texture/${step.texture}.webp`} alt={step.textureAlt} width="900" height="900" loading="lazy" decoding="async" />
+          </figure>
+          <h3 class="track-title">{step.title}</h3>
+          <p class="track-copy">{step.copy}</p>
+        </li>
+      ))}
+    </ol>
+    <div class="track-foot" aria-hidden="true">
+      <span class="track-count"><span data-track-index>01</span> / {pad(PROCESS_STEPS.length)}</span>
+      <span class="track-bar"><span data-track-bar></span></span>
+    </div>
+  </div>
+</section>

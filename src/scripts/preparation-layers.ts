@@ -130,6 +130,13 @@ export function initializePreparationLayers(root: ParentNode = document) {
         }
 
         if (layer.id === 'flakes') {
+          // The dense broadcast settles in under the chips that are still falling.
+          timeline.fromTo(
+            group.querySelector('[data-prep-flake-bed]'),
+            { opacity: 0 },
+            { opacity: 1, duration: 0.7, ease: 'power1.in' },
+            at + 0.3,
+          );
           timeline.fromTo(
             group.querySelectorAll('[data-prep-flake]'),
             { y: -120, opacity: 0, scale: 0.3, rotation: -80 },
@@ -225,7 +232,43 @@ export function initializePreparationLayers(root: ParentNode = document) {
         );
       });
 
+      // Hover per piece (2026-09-22, Matt): point at a plate or its caption and that
+      // plate lifts clear of the stack while the others step back. The inner
+      // `[data-prep-lift]` groups take this, so it never fights the scroll timelines,
+      // which own the outer layer groups.
+      const lifts = new Map<string, SVGGElement>();
+      LAYERS.forEach((layer) => {
+        const lift = section.querySelector<SVGGElement>(`[data-prep-layer="${layer.id}"] [data-prep-lift]`);
+        if (lift) lifts.set(layer.id, lift);
+      });
+      let focused: string | null = null;
+      const focus = (id: string | null) => {
+        if (id === focused) return;
+        focused = id;
+        lifts.forEach((lift, key) => {
+          const on = id === key;
+          gsap.to(lift, { y: on ? -14 : 0, opacity: id === null || on ? 1 : 0.38, duration: 0.55, ease: 'power3.out', overwrite: true });
+        });
+        section.querySelectorAll<HTMLElement>('[data-prep-caption]').forEach((caption) => {
+          caption.classList.toggle('is-focus', caption.dataset.prepCaption === id);
+        });
+      };
+      const onOver = (event: PointerEvent) => {
+        if (event.pointerType !== 'mouse') return;
+        const target = event.target as Element;
+        const layer = target.closest<SVGGElement>('[data-prep-layer]')?.dataset.prepLayer
+          ?? target.closest<HTMLElement>('[data-prep-caption]')?.dataset.prepCaption
+          ?? null;
+        focus(layer);
+      };
+      const onLeave = () => focus(null);
+      section.addEventListener('pointerover', onOver);
+      section.addEventListener('pointerleave', onLeave);
+
       return () => {
+        section.removeEventListener('pointerover', onOver);
+        section.removeEventListener('pointerleave', onLeave);
+        lifts.forEach((lift) => gsap.set(lift, { clearProps: 'all' }));
         sweep?.kill();
         split?.revert();
         section.dataset.prepMotion = 'still';

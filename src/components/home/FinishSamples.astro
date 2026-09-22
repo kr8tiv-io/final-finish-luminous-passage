@@ -1,0 +1,61 @@
+---
+import FinishSamples3D from './FinishSamples3D';
+import { finishPresets } from '../../lib/visualizer/finishes';
+
+/**
+ * Three finish families, as samples (2026-09-22). The 3D slabs (FinishSamples3D) sit
+ * over three flat swatches that are the picture everywhere the 3D does not run (phones,
+ * reduced motion, the `still` tier, no WebGL2). Names and descriptions are the
+ * inspiration library's own (src/lib/visualizer/finishes.ts); nothing here is a product
+ * claim, and the reading copy above already says a screen is a starting point.
+ */
+const pick = (id: string) => finishPresets.find((finish) => finish.id === id);
+const samples = [
+  { id: 'flake', family: 'Flake', finish: pick('midnight-aggregate'), swatch: "url('/images/brand/texture/midnight-aggregate.webp') 50% 50% / cover" },
+  { id: 'solid', family: 'Solid', finish: pick('graphite'), swatch: 'radial-gradient(ellipse at 22% 16%, rgb(255 255 255 / .22), transparent 46%), linear-gradient(150deg, #3d4648, #2a3235 52%, #171e21)' },
+  { id: 'metallic', family: 'Metallic', finish: pick('pearl-current'), swatch: "linear-gradient(120deg, rgb(255 255 255 / .35), transparent 40%, rgb(233 246 244 / .3)), url('/images/brand/texture/pearl-calacatta.webp') 50% 50% / cover" },
+] as const;
+---
+<div class="sect-inner samples" data-samples>
+  <div class="samples-stage" data-samples-stage>
+    <ul class="samples-flat" aria-hidden="true">
+      {samples.map((sample) => <li style={`background:${sample.swatch}`}></li>)}
+    </ul>
+    <FinishSamples3D client:visible={{ rootMargin: '600px' }} />
+  </div>
+  <ol class="samples-captions">
+    {samples.map((sample, index) => (
+      <li class="samples-caption" data-sample-caption={sample.id}>
+        <span class="samples-index">{String(index + 1).padStart(2, '0')} · {sample.family}</span>
+        <strong>{sample.finish?.name}</strong>
+        <span class="samples-copy">{sample.finish?.description}</span>
+      </li>
+    ))}
+  </ol>
+</div>
+
+<style>
+  .samples { display: grid; grid-template-columns: minmax(0, 1.55fr) minmax(15rem, .75fr); gap: clamp(1.5rem, 4vw, 4rem); align-items: center; margin-top: clamp(4rem, 8vw, 7rem); }
+  .samples-stage { position: relative; aspect-ratio: 16 / 9; min-height: 20rem; }
+  .samples-flat { position: absolute; inset: 12% 4% 16%; display: grid; grid-template-columns: repeat(3, 1fr); gap: 5%; margin: 0; padding: 0; list-style: none; perspective: 900px; }
+  .samples-flat li { border-radius: 4px; box-shadow: 0 30px 60px -30px rgb(23 34 42 / .5), inset 0 0 0 1px rgb(255 255 255 / .12); transform: rotateX(28deg); transform-origin: 50% 100%; }
+  :global([data-samples-3d='ready']) .samples-flat { opacity: 0; transition: opacity .6s ease; }
+  /* Global: the host is rendered by the React island, which never carries this file's scope. */
+  :global(.samples-3d) { position: absolute; inset: -6% -4%; z-index: 2; opacity: 0; transition: opacity .9s ease; }
+  :global(.samples-3d canvas) { display: block; }
+  :global([data-samples-3d='ready'] .samples-3d) { opacity: 1; }
+  .samples-captions { display: grid; gap: 1.6rem; margin: 0; padding: 0 0 0 clamp(1rem, 1.7vw, 1.75rem); list-style: none; border-left: 1px solid rgb(var(--ink-rgb) / .16); }
+  .samples-caption { display: grid; gap: .3rem; transition: opacity .4s ease; }
+  .samples-index { font-size: .62rem; font-weight: 650; letter-spacing: .16em; text-transform: uppercase; color: var(--cobalt); }
+  .samples-caption strong { font-family: var(--display); font-weight: 500; font-size: clamp(1.3rem, 1.9vw, 2rem); line-height: 1.05; text-transform: uppercase; letter-spacing: .004em; color: var(--ink); }
+  .samples-copy { font-size: .9rem; line-height: 1.6; color: var(--ink-body); }
+  .samples-caption:global(.is-focus) strong { color: var(--cobalt); }
+  .samples-captions:has(:global(.is-focus)) .samples-caption:not(:global(.is-focus)) { opacity: .42; }
+  @media (max-width: 860px) {
+    .samples { grid-template-columns: 1fr; }
+    /* aspect-ratio + min-height would widen the stage past a phone's width. */
+    .samples-stage { aspect-ratio: auto; min-height: 0; height: clamp(12rem, 52vw, 20rem); }
+    .samples-flat { inset: 8% 0 12%; gap: 4%; }
+    .samples-captions { border-left: 0; border-top: 1px solid rgb(var(--ink-rgb) / .16); padding: 1.4rem 0 0; }
+  }
+</style>

@@ -4,6 +4,7 @@ import '../styles/global.css';
 import '../styles/readable-experience.css';
 import '../styles/surface.css';
 import '../styles/route-transitions.css';
+import '../styles/design-system.css';
 import SurfaceCanvas from '../components/motion/SurfaceCanvas';
 import { deploymentSettings } from '../lib/deployment.js';
 import { buildSiteGraph } from '../lib/seo/schema';
@@ -146,6 +147,13 @@ const extraJsonLd = jsonLd == null ? [] : Array.isArray(jsonLd) ? jsonLd : [json
   </head>
   <body>
     <a class="skip-link" href="#main-content">Skip to content</a>
+    <!-- The paper every page is printed on (design-system.css): the grid lines, the
+         light tracers that run down them (src/lib/motion/paper-field.ts), and the grain
+         over everything. All three persist across route swaps: they belong to the site,
+         not to a page, and the tracer canvas keeps its one context for the whole visit. -->
+    <div class="paper-grid" aria-hidden="true" transition:persist="paper-grid"></div>
+    <canvas class="paper-field" aria-hidden="true" transition:persist="paper-field"></canvas>
+    <div class="site-grain" aria-hidden="true" transition:persist="site-grain"></div>
     <!-- The one floor: a CSS band on balanced/still tiers, and the WebGL view's
          rectangle when SurfaceCanvas is admitted. See src/styles/surface.css.
          Persisted with the canvas, not separately: it is the `surface-floor` view's
@@ -165,10 +173,17 @@ const extraJsonLd = jsonLd == null ? [] : Array.isArray(jsonLd) ? jsonLd : [json
     />
     <slot />
     <script>
-      import { initializeRouteLifecycle } from '../lib/motion/route-lifecycle';
+      import { bindRouteScoped, initializeRouteLifecycle } from '../lib/motion/route-lifecycle';
+      import { initPaperField } from '../lib/motion/paper-field';
+      import { initPageMotion } from '../lib/motion/page-motion';
       // A bundled module script: it runs once for the session, which is exactly the
-      // lifetime the document listeners want.
+      // lifetime the document listeners want — and the persisted tracer canvas.
       initializeRouteLifecycle();
+      // Interior pages move like the homepage (the homepage runs its own owner).
+      bindRouteScoped(initPageMotion);
+      const startField = () => initPaperField();
+      if (document.readyState === 'complete') window.setTimeout(startField, 300);
+      else window.addEventListener('load', () => window.setTimeout(startField, 300), { once: true });
     </script>
   </body>
 </html>

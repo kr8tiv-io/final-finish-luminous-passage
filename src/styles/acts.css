@@ -21,60 +21,36 @@
  * ───────────────────────────────────────────────────────────────────────────── */
 
 .acts {
-  --grid-cols: 6;
-  --grid-line: rgb(var(--ink-rgb) / .055);
-  --grid-lines: linear-gradient(90deg, var(--grid-line) 1px, transparent 1px);
-  --grid-size: calc((100% - 2 * var(--gutter)) / var(--grid-cols)) 100%;
   --fog-e: 20svh;
-  --t-display: clamp(2.65rem, 5vw, 6.2rem);
-  --t-title: clamp(2.35rem, 4.6vw, 5.5rem);
   --t-sub: clamp(1.3rem, 1.9vw, 2rem);
-  --t-kicker: clamp(1.05rem, 1.3vw, 1.4rem);
   --t-body: clamp(1rem, 1.06vw, 1.1rem);
   --act-ease: cubic-bezier(.22, 1, .36, 1);
   position: relative;
   display: block;
-  background: var(--paper);
+  /* Transparent: the paper, its grid and the light tracers are the layout's
+     (design-system.css). Films and photographs are opaque and cover them. */
+  background: transparent;
   overflow: clip;
 }
 
-/* ── Type: one display face, one text face ────────────────────────────────── */
-.acts :is(.t-display, .t-title) {
-  margin: 0;
-  font-family: var(--display);
-  font-weight: 500;
-  text-transform: uppercase;
-  letter-spacing: .004em;
-  color: var(--ink);
-  text-wrap: balance;
-  font-kerning: normal;
-}
-.acts .t-display { font-size: var(--t-display); line-height: .96; max-width: 14ch; }
-.acts .t-title { font-size: var(--t-title); line-height: .98; max-width: 16ch; }
+/* ── Type: the display scale and the kicker are site-wide (design-system.css) ── */
+.acts .t-display { max-width: 15ch; }
+.acts .t-title { max-width: 16ch; }
 .acts .t-sub { margin: 1.1rem 0 0; font-family: var(--display); font-style: italic; font-weight: 400; font-size: var(--t-sub); line-height: 1.25; color: var(--ink-body); text-wrap: balance; }
-.acts .t-kicker { display: flex; align-items: center; gap: .9rem; margin: 0 0 1.4rem; font-family: var(--display); font-style: italic; font-weight: 400; font-size: var(--t-kicker); line-height: 1.3; color: var(--cobalt); }
-.acts .t-kicker::before { content: ''; flex: 0 0 2.4rem; height: 1px; background: currentColor; opacity: .55; }
 .acts .t-body { max-width: 34rem; margin: 1.4rem 0 0; font-size: var(--t-body); line-height: 1.78; color: var(--ink-body); text-wrap: pretty; }
 .acts .t-body + .t-body { margin-top: 1rem; }
-.acts .t-line { overflow: clip; padding-bottom: .06em; margin-bottom: -.06em; }
 .acts .t-index { margin: 0; font-size: .62rem; font-weight: 600; text-transform: uppercase; letter-spacing: .18em; color: var(--ink-quiet); font-variant-numeric: tabular-nums; }
 
-.acts .button-row { display: flex; flex-wrap: wrap; align-items: center; gap: .8rem; margin-top: 2.2rem; }
-.acts .button { min-height: 48px; padding: .85rem 1.45rem; border-radius: 999px; font-size: .76rem; letter-spacing: .02em; gap: 1.2rem; }
-.acts .button-secondary { background: rgb(var(--paper-rgb) / .7); border-color: rgb(var(--ink-rgb) / .22); }
-.acts .text-call { display: inline-flex; align-items: center; gap: .5rem; min-height: 44px; font-size: .76rem; text-underline-offset: .3rem; }
+.acts .button-row { display: flex; flex-wrap: wrap; align-items: center; gap: .8rem; margin-top: 2.4rem; }
+.acts .text-call { display: inline-flex; align-items: center; gap: .5rem; min-height: 44px; margin-left: .4rem; font-size: .74rem; letter-spacing: .04em; text-underline-offset: .3rem; }
 .acts .text-call span { color: var(--ink-quiet); }
-.acts .link-quiet { display: inline-flex; align-items: center; gap: 1rem; min-height: 44px; margin-top: 1.6rem; color: var(--cobalt); font-size: .85rem; text-underline-offset: .45rem; text-decoration-thickness: 1px; }
+.acts .link-quiet { display: inline-flex; align-items: center; gap: 1rem; min-height: 44px; margin-top: 1.6rem; color: var(--cobalt); font-size: .8rem; font-weight: 600; letter-spacing: .12em; text-transform: uppercase; text-underline-offset: .5rem; text-decoration-thickness: 1px; }
 
 /* ── Paper sections ───────────────────────────────────────────────────────── */
 .sect {
   position: relative;
   padding: clamp(6rem, 12vw, 11rem) var(--gutter);
-  background-color: var(--paper);
-  background-image: var(--grid-lines);
-  background-size: var(--grid-size);
-  background-position: var(--gutter) 0;
-  background-repeat: repeat-x;
+  background: transparent;
 }
 .sect > .sect-inner { width: min(100%, var(--max)); margin-inline: auto; }
 .sect--tight { padding-block: clamp(4rem, 8vw, 7rem); }
@@ -144,7 +120,7 @@
    so the review ring below meets paper, not a cut through the pour. */
 .act--hero .act-stage::after { content: ''; position: absolute; left: 0; right: 0; bottom: calc(100lvh - 100svh); z-index: 3; height: var(--fog-e); pointer-events: none; background: url('/images/brand/fog/fog-rise-1024.webp') 0 0 / 100% 100% no-repeat; }
 .act--hero .act-stage::before { content: ''; position: absolute; left: 0; right: 0; bottom: 0; z-index: 3; height: calc(100lvh - 100svh); background: var(--paper); pointer-events: none; }
-.act--hero .act-copy { top: 0; bottom: 0; display: grid; align-content: center; padding-top: 5rem; }
+.act--hero .act-copy { top: 0; bottom: 0; display: grid; align-content: center; padding-top: clamp(5.5rem, 11svh, 7.5rem); padding-bottom: clamp(1rem, 3svh, 2.5rem); }
 .act--hero .act-copy-inner { max-width: min(48rem, 56%); }
 .act--hero .t-display { max-width: none; }
 .act--hero .t-body { max-width: 30rem; }
@@ -152,19 +128,24 @@
 .hero-proof small { font-size: .62rem; color: var(--ink-quiet); }
 .hero-proof .g-mark { width: 1.05rem; height: 1.05rem; }
 
-/* ── Act 4: two rooms, one floor ──────────────────────────────────────────── */
+/* ── Act 4: two rooms, one floor — the second slides in from the side ─────── */
+/* Each room is a full-width panel; `acts.ts` moves the panels and writes each
+   picture's own drift (`--act-media`), so the picture lags its panel (parallax). */
+.act--bay .act-frame { overflow: hidden; }
+.act--bay .act-frame > :is(img, video) { transform: var(--act-media, none); transform-origin: 50% 55%; will-change: transform; }
+.act--bay .act-room + .act-room { transform: translate3d(100%, 0, 0); visibility: hidden; box-shadow: -30px 0 60px rgb(var(--ink-rgb) / .18); }
 .act-room { position: absolute; inset: 0; }
-.act-room + .act-room { opacity: 0; }
+
 .act-captions { position: relative; min-height: 5.2rem; margin-top: 1.4rem; }
 .act-caption { position: absolute; inset: 0 auto auto 0; max-width: 32rem; }
 .act-caption + .act-caption { opacity: 0; }
-.act-caption strong { display: block; font-family: var(--display); font-weight: 500; font-size: clamp(1.25rem, 1.7vw, 1.75rem); line-height: 1.2; color: var(--ink); text-transform: uppercase; letter-spacing: .01em; }
+.act-caption strong { display: block; font-family: var(--display); font-weight: 500; font-size: clamp(1.6rem, 2.7vw, 3.1rem); line-height: 1.04; color: var(--ink); text-transform: uppercase; letter-spacing: .004em; }
 .act-caption span { display: block; margin-top: .45rem; font-size: .88rem; line-height: 1.6; color: var(--ink-body); }
 
 /* ── Act 3: the lens, kept (Matt likes the section) ───────────────────────── */
 .act .material-lens { position: absolute; z-index: 3; right: max(8vw, 4rem); top: 18svh; margin: 0; width: clamp(9rem, 15vw, 16rem); }
 .act .material-lens-glass { position: relative; aspect-ratio: 1; overflow: hidden; border-radius: .25rem; padding: 2px; background: rgb(var(--paper-bright-rgb) / .35); box-shadow: 0 0 0 1px rgb(var(--paper-bright-rgb) / .6), 0 18px 60px rgb(var(--ink-rgb) / .12); }
-.act .material-lens-glass img { width: 100%; height: 100%; object-fit: cover; object-position: 50% 100%; transform: scale(2.2); transform-origin: 50% 100%; }
+.act .material-lens-glass img { width: 100%; height: 100%; object-fit: cover; transform: scale(1.5); transform-origin: 50% 50%; will-change: transform; }
 .act .material-lens figcaption { display: grid; gap: .3rem; padding: .85rem 0 0; }
 .act .material-lens figcaption span { font-size: .56rem; text-transform: uppercase; letter-spacing: .16em; color: rgb(var(--paper-bright-rgb) / .92); text-shadow: 0 1px 8px rgb(var(--ink-rgb) / .35); }
 .act .material-lens figcaption strong { font-family: var(--display); font-style: italic; font-weight: 400; font-size: 1.25rem; color: var(--paper-bright); text-shadow: 0 1px 10px rgb(var(--ink-rgb) / .4); }
@@ -237,11 +218,6 @@
   .journey-motion-control .motion-control-label { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
 }
 
-/* ── The footer speaks in the page's display face here ────────────────────── */
-body:has(main[data-acts]) .site-footer .footer-statement { font-family: var(--display); font-weight: 500; text-transform: uppercase; letter-spacing: .004em; line-height: 1.02; text-wrap: balance; }
-body:has(main[data-acts]) .site-footer > * > .eyebrow,
-body:has(main[data-acts]) .site-footer .eyebrow { font-family: var(--display); font-style: italic; font-weight: 400; font-size: clamp(1.05rem, 1.3vw, 1.35rem); letter-spacing: 0; text-transform: none; color: var(--cobalt); }
-
 /* ── The site-wide floor band stays off this page ─────────────────────────── */
 /* Every act brings its own floor, so the fixed band (and the 1 px horizon line at
    its top edge) would only ever draw across paper here. `display: none` rather than
@@ -260,7 +236,7 @@ html[data-journey-tier='still'] .act-fog,
 html[data-journey-tier='still'] .act--hero .act-column { display: none; }
 html[data-journey-tier='still'] .act-copy { position: relative; inset: auto; bottom: auto; padding: 3rem var(--gutter) 4rem; width: auto; }
 html[data-journey-tier='still'] .act-foot { position: relative; inset: auto; padding: 0 var(--gutter) 2rem; }
-html[data-journey-tier='still'] .act-room + .act-room { opacity: 1; position: relative; }
+html[data-journey-tier='still'] .act-room + .act-room { opacity: 1; position: relative; transform: none; visibility: visible; box-shadow: none; }
 html[data-journey-tier='still'] .act-caption + .act-caption { opacity: 1; position: relative; margin-top: 1rem; }
 html[data-journey-tier='still'] .act--hero .act-copy-inner { max-width: 44rem; }
 html[data-journey-tier='still'] .act .material-lens { display: none; }
@@ -273,6 +249,7 @@ html[data-journey-tier='still'] .act .material-lens { display: none; }
   .act-copy { position: relative; inset: auto; bottom: auto; padding: 3rem var(--gutter) 4rem; width: auto; }
   .act-foot { position: relative; inset: auto; padding: 0 var(--gutter) 2rem; }
   .act-room + .act-room, .act-caption + .act-caption { opacity: 1; position: relative; }
+  .act--bay .act-room + .act-room { transform: none; visibility: visible; box-shadow: none; }
 }
 
 /* Phone acts are shorter: a thumb covers a screen faster than a wheel does. */
@@ -288,7 +265,7 @@ html[data-journey-tier='still'] .act .material-lens { display: none; }
 
 /* ── Phone ────────────────────────────────────────────────────────────────── */
 @media (max-width: 680px) {
-  .acts { --grid-cols: 4; --fog-e: 16svh; --t-display: clamp(2.35rem, 11vw, 3.4rem); --t-title: clamp(2.1rem, 9.6vw, 3.1rem); }
+  .acts { --fog-e: 16svh; }
   .sect { padding: 5rem var(--gutter); }
   .reading-sect { padding-block: 4.5rem; }
   .planning-answer { padding: 0 0 1.6rem; }
@@ -308,4 +285,12 @@ html[data-journey-tier='still'] .act .material-lens { display: none; }
   .act-captions { min-height: 6.6rem; }
   .act .material-lens { top: 12svh; right: var(--gutter); width: 7.5rem; }
   .act-foot { bottom: calc(100lvh - 100svh + 1rem); }
+}
+
+/* Laptop heights (wide and short): the hero's copy keeps clear of the header. */
+@media (min-width: 681px) and (max-height: 860px) {
+  .act--hero .t-kicker { margin-bottom: .9rem; }
+  .act--hero .t-body { margin-top: 1rem; line-height: 1.6; }
+  .act--hero .button-row { margin-top: 1.5rem; }
+  .hero-proof { margin-top: 1.2rem; }
 }

@@ -307,6 +307,7 @@ export default function ArchiveLattice({
     let resolving = false;
     const lastX = new Float64Array(tileNodes.length).fill(Number.NaN);
     const lastY = new Float64Array(tileNodes.length).fill(Number.NaN);
+    const lastClear = new Float64Array(tileNodes.length).fill(Number.NaN);
     const written: Record<'enter' | 'copy' | 'dim' | 'resolve', number> = {
       enter: -1, copy: -1, dim: -1, resolve: -1,
     };
@@ -516,6 +517,25 @@ export default function ArchiveLattice({
           y += (homeY - y) * homing;
         }
 
+        // The clearing (2026-09-22, Matt: the faded box behind the words looked odd):
+        // while the words are up, the wall parts around them — tiles near the centre
+        // ease outward and fade, so the words sit on clean paper, not on a white box.
+        const centreX = box.planeLeft + originX + x + box.tileWidth / 2 - box.hostWidth / 2;
+        const centreY = box.planeTop + originY + y + box.tileHeight / 2 - box.hostHeight / 2;
+        const nx = centreX / Math.max(230, box.hostWidth * 0.4);
+        const ny = centreY / Math.max(200, box.hostHeight * 0.37);
+        const reach = Math.hypot(nx, ny);
+        const clear = copy * (1 - smooth(clamp01((reach - 0.82) / 0.5)));
+        if (clear > 0 && reach > 0.001) {
+          x += (nx / reach) * clear * 70;
+          y += (ny / reach) * clear * 70;
+        }
+        const roundedClear = Math.round(clear * 100) / 100;
+        if (lastClear[index] !== roundedClear) {
+          lastClear[index] = roundedClear;
+          tileNodes[index].style.setProperty('--al-clear', String(roundedClear));
+        }
+
         const roundedX = Math.round(x * 10) / 10;
         const roundedY = Math.round(y * 10) / 10;
         if (lastX[index] === roundedX && lastY[index] === roundedY) continue;
@@ -547,6 +567,7 @@ export default function ArchiveLattice({
       if (geometry) publishResolveFrame(geometry);
       lastX.fill(Number.NaN);
       lastY.fill(Number.NaN);
+      lastClear.fill(Number.NaN);
       buildUnwrap();
       paint();
     };
@@ -654,13 +675,13 @@ export default function ArchiveLattice({
 
     <div className="al-copy">
       <p className="al-copy__eyebrow">Real Edmonton floors</p>
-      <h2 className="al-copy__title" id="archive-title">Explore our work.</h2>
+      <h2 className="al-copy__title" id="archive-title">Explore <em>our work.</em></h2>
       {/* `al-copy__link`, not `chapter-link`: `intent-motion.ts` appends a child
           to every `.journey a.chapter-link` at load, and React throws away a tree
           that meets a child it never rendered (React #418). Matt, 2026-09-22:
           the fuller body of work lives on the Facebook page, so that is the link. */}
-      <a className="al-copy__link al-copy__link--primary" href={FACEBOOK_URL} rel="me noopener" target="_blank">
-        {'Find us on Facebook '}<span aria-hidden="true">↗</span>
+      <a className="button button-primary al-copy__cta" href={FACEBOOK_URL} rel="me noopener" target="_blank">
+        <span>Find us on Facebook</span><span aria-hidden="true">↗</span>
       </a>
       <a className="al-copy__link al-copy__link--quiet" href="/projects">
         {`Or browse ${jobCount} projects here`}

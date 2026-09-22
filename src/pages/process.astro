@@ -5,45 +5,10 @@ import SiteFooter from '../components/SiteFooter.astro';
 import InteriorHero from '../components/InteriorHero.astro';
 import SectionShell from '../components/SectionShell.astro';
 
-/**
- * Every step below comes from the one place process facts exist: the live blog
- * post "Our Epoxy Flooring Process" (CONTEXT-SHEET A8). That post gives a free
- * estimate from photos or a visit, two-day installation that varies, grinding,
- * cosmetic crack filling, a flake broadcast, a scrape, a top coat, and an
- * optional anti-slip top coat. Nothing else is here.
- *
- * Removed in Step 29, named so the deletion is not silent: the previous version
- * claimed a primer coat, a cove detail, a "drive-on window", a promise to hand
- * the room back "on the quoted timing", and it paraphrased Google reviews as
- * evidence for the prep. None of those five is in A8 or in a written note from
- * Denis, and the cove and primer are not mentioned anywhere on the live site.
- */
-const steps = [
-  {
-    title: 'A free estimate',
-    copy: 'Send photos of the floor, or book a visit. Either works, and both are free. Denis wants to see the concrete, what is on it now, and any cracks you already know about.',
-  },
-  {
-    title: 'Grinding',
-    copy: 'The slab is ground to open the surface so the coating can bond. It is loud, dusty work, and the room has to be empty before it starts.',
-  },
-  {
-    title: 'Cosmetic crack filling',
-    copy: 'Visible cracks are filled so they do not read through the finish. If something turns up that is structural rather than cosmetic, you hear about it then, not later.',
-  },
-  {
-    title: 'The flake broadcast',
-    copy: 'Flake is broadcast into the coat while it is still open. This is where the colour and the pattern of the floor are set.',
-  },
-  {
-    title: 'The scrape',
-    copy: 'Once it has set, the surface is scraped back. That is what turns a loose broadcast into a flat floor you can walk on and clean.',
-  },
-  {
-    title: 'The top coat',
-    copy: 'The last coat goes over everything. Where a room needs more grip, an anti-slip top coat goes on instead, and that is a decision we make with you.',
-  },
-];
+import { PROCESS_STEPS as steps } from '../data/process-steps';
+
+// The six steps and their sourcing notes live in src/data/process-steps.ts, shared with
+// the homepage's process track so the two can never disagree.
 ---
 
 <BaseLayout title="How an Epoxy Floor Gets Built | Final Finish Edmonton" description="Estimate, grind, fill, broadcast, scrape, and top coat. The order Final Finish Epoxy builds an Edmonton floor in, and what is decided at each step." canonicalPath="/process" imagePath="/images/brand/foundation-chamber.jpg">
@@ -77,8 +42,8 @@ const steps = [
 <style>
   .process-steps { display: grid; gap: 2rem; margin: 0; padding: 0; list-style: none; }
   .process-steps li { display: grid; gap: 0.6rem; padding-bottom: 2rem; border-bottom: 1px solid var(--line); }
-  .process-steps span { color: var(--cobalt); font-size: 0.7rem; font-weight: 780; letter-spacing: 0.14em; }
-  .process-steps h2 { margin: 0; font-family: var(--serif); font-size: clamp(2rem, 4vw, 3.4rem); font-weight: 400; }
+  .process-steps span { color: var(--cobalt); font-family: var(--display); font-style: italic; font-size: 1.3rem; font-weight: 400; letter-spacing: 0; }
+  .process-steps h2 { margin: 0; font-family: var(--display); font-size: clamp(2.2rem, 4.4vw, 4.2rem); font-weight: 500; line-height: .96; text-transform: uppercase; letter-spacing: .002em; }
   .process-steps p { margin: 0; max-width: 40rem; color: var(--muted); }
   .process-note { max-width: 44rem; margin: 2.5rem 0 0; color: #3f4e57; line-height: 1.7; }
 </style>

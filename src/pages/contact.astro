@@ -9,7 +9,7 @@ import QuoteForm from '../components/quote/QuoteForm';
   <main id="main-content" class="contact-page">
     <section class="contact-intro">
       <p class="eyebrow">A useful first conversation</p>
-      <h1>Let’s talk about your space.</h1>
+      <h1>Let’s talk about <em>your space.</em></h1>
       <p>Send photos for a free estimate, or book a visit. Either way, Denis looks at the concrete first. You do not need every detail worked out before you start.</p>
       <div class="direct-contact">
         <a href="tel:+17809911651">Call Denis · (780) 991-1651</a>
@@ -28,7 +28,7 @@ import QuoteForm from '../components/quote/QuoteForm';
 </BaseLayout>
 <style>
   .contact-page { display: grid; grid-template-columns: minmax(0,.9fr) minmax(24rem,1fr); gap: clamp(3rem,8vw,9rem); width: min(100%,var(--max)); margin: auto; padding: 10rem var(--gutter) 8rem; }
-  .contact-intro h1 { max-width: 10ch; margin: 0; font-family: var(--sans); font-size: clamp(3rem,5.4vw,6rem); font-weight: 470; letter-spacing: -.06em; line-height: 1.04; }
+  .contact-intro h1 { max-width: 11ch; margin: 0; font-family: var(--display); font-size: clamp(3rem, 6vw, 7rem); font-weight: 500; letter-spacing: .002em; line-height: .92; text-transform: uppercase; }
   .contact-intro > p:not(.eyebrow) { max-width: 29rem; color: var(--muted); line-height: 1.8; margin-top: 2rem; }
   .direct-contact { display: grid; gap: .4rem; margin-top: 1.6rem; font-size: .85rem; }
   .direct-contact a { display: inline-flex; align-items: center; min-height: 44px; color: var(--cobalt); text-underline-offset: .3rem; }
@@ -44,7 +44,7 @@ import QuoteForm from '../components/quote/QuoteForm';
   :global(.quote-selected-finish) { font-size: .85rem; line-height: 1.6; padding: 1.1rem 1.2rem; margin: 0; border-radius: .5rem; background: #eef2f4; }
   :global(.quote-selected-finish small) { color: var(--muted); }
   :global(.quote-form fieldset) { display: grid; gap: 1rem; margin: 0; padding: 0; border: 0; min-width: 0; }
-  :global(.quote-form legend) { font: 500 clamp(1.7rem,2.5vw,2.4rem)/1.16 var(--sans); letter-spacing: -.04em; margin-bottom: 1.8rem; max-width: 22ch; }
+  :global(.quote-form legend) { font: 500 clamp(1.9rem,2.8vw,2.8rem)/1.1 var(--display); letter-spacing: .002em; margin-bottom: 1.8rem; max-width: 22ch; }
   :global(.quote-form fieldset > p) { color: var(--muted); font-size: .85rem; }
   :global(.quote-form label) { display: grid; gap: .5rem; font-size: .8rem; font-weight: 600; }
   :global(.quote-form input:not([type="checkbox"]):not([type="radio"])), :global(.quote-form select), :global(.quote-form textarea) { width: 100%; min-height: 48px; padding: .8rem 1rem; border: 1px solid #bcc6cb; border-radius: .3rem; background: white; color: var(--ink); font: 400 16px/1.4 var(--sans); }
@@ -63,7 +63,7 @@ import QuoteForm from '../components/quote/QuoteForm';
   :global(.quote-actions button:disabled) { opacity: .45; cursor: not-allowed; }
   :global(.quote-actions .back-button) { margin-right: auto; border: 1px solid var(--line); background: transparent; color: var(--ink); }
   :global(.form-error) { margin: 0; color: #8c2f25; font-size: .88rem; line-height: 1.6; }
-  :global(.quote-success h2) { font: 470 clamp(2rem,3.5vw,3.5rem)/1.1 var(--sans); letter-spacing: -.045em; }
+  :global(.quote-success h2) { font: 500 clamp(2.2rem,4vw,4rem)/1 var(--display); letter-spacing: .002em; text-transform: uppercase; }
   :global(.quote-success p) { color: var(--muted); }
   @media(max-width:840px) {
     .contact-page { grid-template-columns: 1fr; padding-top: 7rem; gap: 3rem; }

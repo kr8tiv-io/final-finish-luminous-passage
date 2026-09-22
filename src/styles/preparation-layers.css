@@ -193,3 +193,17 @@
     width: clamp(1.25rem, 6vw, 2.25rem);
   }
 }
+
+/* Hover per piece: the plate under the pointer lifts (preparation-layers.ts); its
+   caption answers. The SVG takes pointer events only on the plates themselves. */
+.prep-svg [data-prep-layer] { cursor: default; }
+.prep-caption { transition: opacity .4s ease; }
+.prep-caption.is-focus .prep-caption-title { color: var(--cobalt); }
+.prep-caption.is-focus .prep-caption-rule { width: clamp(1.4rem, 2.2vw, 2.4rem); transition: width .5s cubic-bezier(.7, 0, .2, 1); }
+.prep-captions:has(.is-focus) .prep-caption:not(.is-focus) { opacity: .45; }
+/* The 3D stack (PrepLayers3D.tsx) sits over the drawing and takes over once its first
+   frame is up; the drawing stays underneath as the no-WebGL / still-tier picture. */
+.prep-3d { position: absolute; inset: -8% -6% -4% -6%; z-index: 2; opacity: 0; transition: opacity .9s ease; }
+.prep-3d canvas { display: block; }
+[data-prep-3d='ready'] .prep-3d { opacity: 1; }
+[data-prep-3d='ready'] .prep-figure { opacity: 0; transition: opacity .6s ease; }

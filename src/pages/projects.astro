@@ -140,8 +140,8 @@ const comparisons: ComparisonProject[] = projectPhotos.curatedPairCandidates.map
   .hero-architecture i:nth-child(1), .hero-architecture i:nth-child(5) { transform: translateY(16%); }
   .hero-architecture i:nth-child(2), .hero-architecture i:nth-child(4) { transform: translateY(7%); }
   .hero-copy { position: relative; z-index: 1; width: min(100%, var(--max)); margin: auto; }
-  .hero-copy h1 { max-width: 70rem; margin: 1.3rem 0 3rem; color: #15374e; font-family: var(--serif); font-size: clamp(5rem, 12vw, 12rem); font-weight: 400; letter-spacing: -.065em; line-height: .72; }
-  .hero-copy h1 em { color: #2c7da2; font-weight: 400; }
+  .hero-copy h1 { max-width: 70rem; margin: 1.3rem 0 3rem; color: var(--ink); font-family: var(--display); font-size: clamp(3.4rem, 8.4vw, 9.4rem); font-weight: 500; letter-spacing: .002em; line-height: .9; text-transform: uppercase; }
+  .hero-copy h1 em { color: var(--cobalt); font-style: italic; font-weight: 400; text-transform: none; letter-spacing: -.01em; }
   .hero-deck { display: grid; grid-template-columns: minmax(0, 32rem) auto; gap: 2rem; align-items: end; }
   .hero-deck p { margin: 0; color: #526771; font-size: clamp(1rem, 2vw, 1.25rem); line-height: 1.6; }
   .hero-deck span { color: #60747e; font-size: .62rem; font-weight: 750; letter-spacing: .14em; text-transform: uppercase; }
@@ -150,7 +150,7 @@ const comparisons: ComparisonProject[] = projectPhotos.curatedPairCandidates.map
   .archive-intro, .comparison-grid, .review-key, .review-note { width: min(100%, var(--max)); margin-inline: auto; }
   .review-note { margin: 0 0 clamp(2rem, 4vw, 3rem); color: #72572b; font: 650 .875rem/1.5 var(--sans); letter-spacing: -.01em; }
   .archive-intro { display: grid; grid-template-columns: 1fr 2.2fr 1fr; gap: 3vw; align-items: start; margin-bottom: clamp(5rem, 10vw, 10rem); }
-  .archive-intro h2 { margin: 0; font-family: var(--serif); font-size: clamp(3.8rem, 7.5vw, 8rem); font-weight: 400; letter-spacing: -.055em; line-height: .83; }
+  .archive-intro h2 { margin: 0; font-family: var(--display); font-size: clamp(2.8rem, 6vw, 7rem); font-weight: 500; letter-spacing: .002em; line-height: .92; text-transform: uppercase; }
   .archive-intro > p:last-child { margin: .25rem 0 0; color: var(--muted); font-size: .86rem; line-height: 1.7; }
   /* One column: the shared comparison is a 4:3 stage with a caption row, and a
      two-up grid of them halves the drag distance the divider needs. */
@@ -171,7 +171,7 @@ const comparisons: ComparisonProject[] = projectPhotos.curatedPairCandidates.map
   .project-cta { padding: clamp(6rem, 12vw, 12rem) var(--gutter); background: radial-gradient(circle at 78% 25%, rgba(130,205,232,.26), transparent 30%), #153d58; color: white; }
   .project-cta > * { width: min(100%, var(--max)); margin-inline: auto; }
   .project-cta .eyebrow { color: #a9d9ec; }
-  .project-cta h2 { margin-top: 1rem; font-family: var(--serif); font-size: clamp(4.2rem, 9vw, 9rem); font-weight: 400; letter-spacing: -.055em; line-height: .82; }
+  .project-cta h2 { margin-top: 1rem; font-family: var(--display); font-size: clamp(3rem, 7vw, 8rem); font-weight: 500; letter-spacing: .002em; line-height: .9; text-transform: uppercase; }
   .project-cta-lead { max-width: 42rem; margin: 2rem 0 0; color: #cfe3ee; line-height: 1.7; }
   .project-cta > div { display: flex; gap: 2rem; align-items: center; margin-top: 3rem; }
   .project-cta .text-link { color: white; font-size: .7rem; font-weight: 750; letter-spacing: .1em; text-transform: uppercase; }

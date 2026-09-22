@@ -1,0 +1,260 @@
+/* ─────────────────────────────────────────────────────────────────────────────
+ * The site's design language, on every page (2026-09-22, Matt: "do the other pages
+ * in the same style", "more dramatic headings", "buttons ... more of a square",
+ * "a soft overlay of the whole site, a transparent noise", "light tracers going down
+ * those lines in the background").
+ *
+ * Loaded after global.css and readable-experience.css so it is the last word on the
+ * shared pieces: the display type, the kicker, the buttons, the header's call to
+ * action, the paper grid every page is printed on, and the grain over all of it.
+ *
+ * Layers, back to front:
+ *   body paper  ->  .paper-grid (fixed CSS lines)  ->  .paper-field (WebGL tracers,
+ *   src/lib/motion/paper-field.ts)  ->  page content (paper sections transparent,
+ *   film and photographs opaque)  ->  header  ->  .site-grain (fixed, over everything)
+ * ───────────────────────────────────────────────────────────────────────────── */
+
+:root {
+  --grid-cols: 6;
+  --grid-line: rgb(var(--ink-rgb) / .055);
+  --grid-lines: linear-gradient(90deg, var(--grid-line) 1px, transparent 1px);
+  --grid-size: calc((100% - 2 * var(--gutter)) / var(--grid-cols)) 100%;
+  /* Display scale: headline sizes are the drama. */
+  /* Capped by height as well as width: on a laptop screen (wide but short) a width-only
+     size pushed the hero headline up under the fixed header (Matt, 2026-09-22). */
+  --t-display: min(clamp(3.1rem, 7.4vw, 9.6rem), 11svh);
+  --t-title: min(clamp(2.7rem, 6vw, 7.8rem), 10svh);
+  --t-title-sm: min(clamp(2.2rem, 4.2vw, 5.2rem), 8svh);
+  --t-h3: clamp(1.55rem, 2.3vw, 2.5rem);
+  --t-kicker: clamp(1.05rem, 1.3vw, 1.4rem);
+  --ease-editorial: cubic-bezier(.7, 0, .2, 1);
+}
+@media (max-width: 680px) {
+  :root {
+    --grid-cols: 4;
+    --t-display: clamp(2.6rem, 12.4vw, 3.9rem);
+    --t-title: clamp(2.3rem, 10.6vw, 3.5rem);
+    --t-title-sm: clamp(2rem, 8.8vw, 2.8rem);
+  }
+}
+
+/* ── The paper every page is printed on ───────────────────────────────────── */
+.paper-grid,
+.paper-field {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+}
+.paper-grid {
+  background-image: var(--grid-lines);
+  background-size: var(--grid-size);
+  background-position: var(--gutter) 0;
+  background-repeat: repeat-x;
+}
+.paper-field { width: 100%; height: 100%; opacity: 0; transition: opacity 1.2s ease; }
+.paper-field[data-live] { opacity: 1; }
+/* Page content stacks above the paper layers. */
+body > main,
+body > .site-footer { position: relative; z-index: 1; }
+
+/* ── The grain: a transparent noise over the whole site ───────────────────── */
+/* Plain alpha, no blend mode (Safari repaints a fixed blend layer on every scroll).
+   The tile is light and dark specks at low alpha, so it reads on paper and on film. */
+.site-grain {
+  position: fixed;
+  inset: -64px;
+  z-index: 70;
+  pointer-events: none;
+  background: url('/images/brand/grain-160.png') 0 0 / 160px 160px repeat;
+  opacity: .3;
+  animation: site-grain 1.1s steps(1) infinite;
+}
+@keyframes site-grain {
+  0% { transform: translate3d(0, 0, 0); }
+  12% { transform: translate3d(-23px, 11px, 0); }
+  25% { transform: translate3d(17px, -29px, 0); }
+  37% { transform: translate3d(-41px, -7px, 0); }
+  50% { transform: translate3d(9px, 33px, 0); }
+  62% { transform: translate3d(31px, 5px, 0); }
+  75% { transform: translate3d(-13px, -37px, 0); }
+  87% { transform: translate3d(37px, 21px, 0); }
+}
+@media (prefers-reduced-motion: reduce) { .site-grain { animation: none; } }
+html[data-journey-tier='still'] .site-grain { animation: none; }
+
+/* ── Kicker: italic display face, a short rule before it ──────────────────── */
+.t-kicker,
+.eyebrow {
+  display: flex;
+  align-items: center;
+  gap: .9rem;
+  margin: 0 0 1.4rem;
+  font-family: var(--display);
+  font-style: italic;
+  font-weight: 400;
+  font-size: var(--t-kicker);
+  line-height: 1.3;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--cobalt);
+}
+.t-kicker::before,
+.eyebrow::before { content: ''; flex: 0 0 2.4rem; height: 1px; background: currentColor; opacity: .55; }
+
+/* ── Display type ─────────────────────────────────────────────────────────── */
+/* Upper-case roman for the statement; an italic, lower-case accent (<em>) for the
+   phrase that lands it. One device, every headline on the site. */
+body :is(.t-display, .t-title, .t-title-sm, .section-title, .interior-title, .display-title, .chapter-title) {
+  margin: 0;
+  font-family: var(--display);
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: .002em;
+  color: var(--ink);
+  text-wrap: balance;
+  font-kerning: normal;
+}
+body :is(.t-display, .display-title) { font-size: var(--t-display); line-height: .92; }
+body :is(.t-title, .chapter-title) { font-size: var(--t-title); line-height: .94; }
+body :is(.t-title-sm, .section-title) { font-size: var(--t-title-sm); line-height: .98; font-weight: 500; letter-spacing: .002em; }
+body :is(.t-display, .t-title, .t-title-sm, .section-title, .interior-title, .display-title, .chapter-title) em {
+  font-style: italic;
+  font-weight: 400;
+  text-transform: none;
+  letter-spacing: -.01em;
+  color: var(--cobalt);
+}
+/* SplitText's word boxes: an inline-block per word keeps each word whole while it flies. */
+.t-word { display: inline-block; will-change: transform; }
+.t-line { overflow: clip; padding-bottom: .08em; margin-bottom: -.08em; }
+
+/* ── Buttons: square, editorial, a label and an arrow cell ────────────────── */
+/* `body` in every selector: readable-experience.css styles these as `body .button…`. */
+body .button {
+  --btn-line: var(--ink);
+  --btn-fill: var(--ink);
+  --btn-text-hover: var(--paper-bright);
+  position: relative;
+  isolation: isolate;
+  display: inline-flex;
+  align-items: stretch;
+  justify-content: space-between;
+  min-height: 3.25rem;
+  padding: 0 1.45rem;
+  overflow: hidden;
+  border: 1px solid var(--btn-line);
+  border-radius: 0;
+  background: transparent;
+  color: var(--ink);
+  font-family: var(--sans);
+  font-size: .68rem;
+  font-weight: 650;
+  letter-spacing: .16em;
+  line-height: 1;
+  text-transform: uppercase;
+  text-decoration: none;
+  transition: color .55s var(--ease-editorial), border-color .55s var(--ease-editorial), background-color .55s var(--ease-editorial);
+}
+body .button:has(> span) { padding: 0; }
+body .button > span { position: relative; z-index: 1; display: inline-flex; align-items: center; padding: 0 1.45rem; }
+/* The arrow cell, divided from the label by a hairline. */
+body .button > span[aria-hidden='true'] { padding: 0 1.05rem; border-left: 1px solid color-mix(in srgb, currentColor 35%, transparent); font-size: .85rem; letter-spacing: 0; transition: transform .55s var(--ease-editorial); }
+body .button:not(:has(> span)) { align-items: center; }
+/* The fill rises from the base edge on hover; nothing moves the hit area. */
+body .button::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  width: auto;
+  z-index: -1;
+  background: var(--btn-fill);
+  transform: scaleY(0);
+  transform-origin: 50% 100%;
+  transition: transform .6s var(--ease-editorial);
+}
+body .button:is(:hover, :focus-visible) { color: var(--btn-text-hover); }
+body .button:is(:hover, :focus-visible)::before { transform: scaleY(1); }
+body .button:is(:hover, :focus-visible) > span[aria-hidden='true'] { transform: translate(2px, -2px); }
+body .button:focus-visible { outline: 2px solid var(--cobalt); outline-offset: 3px; }
+body .button-primary { --btn-line: var(--ink); --btn-fill: var(--cobalt); background: var(--ink); border-color: var(--ink); color: var(--paper-bright); }
+body .button-primary:is(:hover, :focus-visible) { background: var(--ink); border-color: var(--ink); color: var(--paper-bright); }
+body .button-secondary { --btn-line: rgb(var(--ink-rgb) / .55); background: rgb(var(--paper-rgb) / .72); border-color: var(--btn-line); color: var(--ink); }
+body .button-secondary:is(:hover, :focus-visible) { background: rgb(var(--paper-rgb) / .72); border-color: var(--ink); color: var(--paper-bright); }
+@media (max-width: 680px) {
+  body .button > span { padding: 0 1.15rem; }
+  body .button > span[aria-hidden='true'] { padding: 0 .9rem; }
+}
+/* The header's call to action and the phone menu toggle share the square. */
+.header-cta,
+body .header-cta {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  padding: .7rem 1.1rem;
+  border: 1px solid var(--ink);
+  border-radius: 0;
+  background: var(--ink);
+  color: var(--paper-bright);
+  font-size: .64rem;
+  font-weight: 650;
+  letter-spacing: .16em;
+  text-transform: uppercase;
+}
+.header-cta::before { content: ''; position: absolute; inset: 0; z-index: -1; background: var(--cobalt); transform: scaleY(0); transform-origin: 50% 100%; transition: transform .6s var(--ease-editorial); }
+.header-cta:is(:hover, :focus-visible) { background: var(--ink); }
+.header-cta:is(:hover, :focus-visible)::before { transform: scaleY(1); }
+@media (max-width: 880px) {
+  .menu-toggle { border-radius: 0 !important; border-color: var(--ink) !important; color: var(--ink) !important; letter-spacing: .16em !important; }
+}
+
+/* ── The mark: a slow light passes over it, and at once on hover ──────────── */
+.brand { position: relative; }
+.brand::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  -webkit-mask: url('/images/brand/final-finish-epoxy-mark.png') left center / contain no-repeat;
+  mask: url('/images/brand/final-finish-epoxy-mark.png') left center / contain no-repeat;
+  background: linear-gradient(105deg, transparent 38%, rgb(255 255 255 / .9) 50%, transparent 62%) 150% 0 / 260% 100% no-repeat;
+  animation: brand-sheen 9s var(--ease-editorial) 1.6s infinite;
+}
+.brand:is(:hover, :focus-visible)::after { animation: brand-sheen-now .9s var(--ease-editorial) 1; }
+@keyframes brand-sheen {
+  0% { background-position: 150% 0; }
+  14%, 100% { background-position: -60% 0; }
+}
+@keyframes brand-sheen-now {
+  from { background-position: 150% 0; }
+  to { background-position: -60% 0; }
+}
+.brand-mark { transition: transform .8s var(--ease-editorial); }
+.brand:is(:hover, :focus-visible) .brand-mark { transform: rotate(-3deg) scale(1.04); }
+@media (prefers-reduced-motion: reduce) {
+  .brand::after { animation: none; }
+  .brand-mark { transition: none; }
+}
+
+/* ── The header's chrome joins the square (nav-menu.css / header-ribbon.css draw pills) ── */
+body .site-header .header-cta { border-radius: 0; border-color: var(--ink); box-shadow: none; }
+body .site-header .menu-toggle { border-radius: 0; border: 1px solid rgb(var(--ink-rgb) / .3); background: rgb(var(--paper-bright-rgb) / .6); color: var(--ink); font-size: .64rem; letter-spacing: .16em; }
+body .site-header .menu-toggle:is(:hover, :focus-visible) { border-color: var(--ink); color: var(--ink); }
+body .nav-material { border-radius: 0; }
+body :is(.upload-button, .replace-photo) { border-radius: 0; }
+
+/* ── The motion switch: a quiet square, its words on hover ─────────────────── */
+body .journey-motion-control { width: 44px; height: 44px; padding: 0; justify-content: center; gap: 0; border-radius: 0; font-size: .8rem; }
+body .journey-motion-control .motion-control-label { position: absolute; right: calc(100% + .6rem); top: 50%; translate: 0 -50%; padding: .45rem .7rem; white-space: nowrap; background: var(--ink); color: var(--paper-bright); font-size: .62rem; letter-spacing: .08em; opacity: 0; pointer-events: none; transition: opacity .3s var(--ease-editorial); }
+body .journey-motion-control:is(:hover, :focus-visible) .motion-control-label { opacity: 1; }
+/* ── The old fixed floor band is retired site-wide ─────────────────────────── */
+/* Its 1px horizon and its grey band were the white lines Matt kept finding; the paper
+   grid and its tracers are the floor now. `display: none`, not removal: the band is the
+   layout canvas's anchor, and the menu floor still draws in that canvas. */
+.surface-band { display: none !important; }
+/* ── The footer's statement in the display face, on every page ─────────────── */
+body .site-footer .footer-statement { font-family: var(--display); font-weight: 500; text-transform: uppercase; letter-spacing: .002em; line-height: 1; text-wrap: balance; }
+/* The one disclosure for every concept picture on the site. */
+.footer-concept { grid-column: 1 / -1; margin: 1.6rem 0 0; max-width: 60ch; color: var(--ink-quiet); font-size: .7rem; line-height: 1.7; }
+/* Contact, projects and visualizer headings: the italic accent. */
+body main :is(h1, h2) em { font-style: italic; font-weight: 400; text-transform: none; letter-spacing: -.01em; color: var(--cobalt); }

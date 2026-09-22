@@ -19,7 +19,7 @@ const description = `Try ${finishCount} epoxy-floor inspirations on a photo of y
         <div>
           <p class="eyebrow">The Finish Studio · Edmonton</p>
           <!-- The line mask splits this heading; the label keeps one stable accessible name. -->
-          <h1 aria-label="Your space. A new surface.">Your space.<br />A new surface.</h1>
+          <h1 aria-label="Your space. A new surface.">Your space.<br /><em>A new surface.</em></h1>
         </div>
         <p>Try {finishCount} finish inspirations. Add your room, mark where the floor is, and compare your favourites. Your photo stays on this device unless you choose to send it.</p>
       </div>
@@ -32,7 +32,7 @@ const description = `Try ${finishCount} epoxy-floor inspirations on a photo of y
   .visualizer-hero { padding: clamp(7rem,11vw,10rem) var(--gutter) 3rem; }
   .visualizer-intro { display: grid; grid-template-columns: 1.2fr 1fr; align-items: end; gap: 3rem; width: min(100%,1450px); margin: auto; }
   .eyebrow { font-size: .65rem; letter-spacing: .13em; margin-bottom: 1.25rem; }
-  .visualizer-intro h1 { margin: 0; font-family: var(--sans); font-size: clamp(2.8rem,5.5vw,5.8rem); font-weight: 470; letter-spacing: -.065em; line-height: 1.04; }
+  .visualizer-intro h1 { margin: 0; font-family: var(--display); font-size: clamp(2.8rem,6vw,6.6rem); font-weight: 500; letter-spacing: .002em; line-height: .92; text-transform: uppercase; }
   .visualizer-intro > p { max-width: 29rem; margin: 0 0 .35rem; color: var(--muted); font-size: 1rem; line-height: 1.75; }
   @media(max-width:700px) {
     .visualizer-hero { padding: 6rem var(--gutter) 1.8rem; }

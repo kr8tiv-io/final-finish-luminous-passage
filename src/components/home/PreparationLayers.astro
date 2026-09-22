@@ -9,6 +9,7 @@
  * order already described in the foundation chapter copy.
  */
 import '../../styles/preparation-layers.css';
+import PrepLayers3D from './PrepLayers3D';
 
 // Isometric plate geometry. Front edge runs FX0 -> FX1; the depth vector
 // (DX, DY) pushes the back edge up and to the right. Gaps between plates are
@@ -19,7 +20,15 @@ const DX = 130;
 const DY = -74;
 
 const topFace = (y: number) => `${FX0},${y} ${FX1},${y} ${FX1 + DX},${y + DY} ${FX0 + DX},${y + DY}`;
-const frontFace = (y: number, t: number) => `${FX0},${y} ${FX1},${y} ${FX1},${y + t} ${FX0},${y + t}`;
+/** Maps a square texture tile onto a top face: u along the front edge, v along the depth vector. */
+const topTexture = (y: number) => `matrix(1 0 ${(DX / 820).toFixed(5)} ${(DY / 820).toFixed(5)} ${FX0} ${y})`;
+/** The soft shadow a plate casts straight down onto the plate below it (light from the front left). */
+const shadowFace = (y: number) => `${FX0 + 26},${y + 8} ${FX1 + 26},${y + 8} ${FX1 + DX + 18},${y + DY + 8} ${FX0 + DX + 18},${y + DY + 8}`;
+/** A window reflected in the clear coat, lying on the top face toward the back. */
+const reflection = (y: number) => {
+  const at = (u: number, v: number) => `${(FX0 + u * (FX1 - FX0) + v * DX).toFixed(1)},${(y + v * DY).toFixed(1)}`;
+  return `${at(0.18, 0.5)} ${at(0.46, 0.5)} ${at(0.5, 0.92)} ${at(0.22, 0.92)}`;
+};const frontFace = (y: number, t: number) => `${FX0},${y} ${FX1},${y} ${FX1},${y + t} ${FX0},${y + t}`;
 const sideFace = (y: number, t: number) => `${FX1},${y} ${FX1 + DX},${y + DY} ${FX1 + DX},${y + DY + t} ${FX1},${y + t}`;
 
 const SLAB_Y = 700, SLAB_T = 140;
@@ -43,21 +52,36 @@ function mulberry32(seed: number) {
 }
 
 const random = mulberry32(0x5eed10c);
-const FLAKE_TONES = ['#f6f4f0', '#ffffff', '#c6c0b6', '#98a2a8'];
-const FLAKE_UNIT = [[-1, -0.82], [0.92, -1], [1, 0.86], [-0.86, 1]] as const;
+// A real flake blend (2026-09-22, Matt: "more lifelike"): charcoal, graphite, grey,
+// white and a little tan, in irregular 5-7 sided chips of mixed size, laid on the base
+// coat's plane (foreshortened by the same depth vector as the plates).
+const FLAKE_TONES = ['#2b3135', '#4d565b', '#7d858a', '#b8bcb9', '#f2f0ea', '#9f8b72'];
+const FLAKE_WEIGHTS = [0.18, 0.2, 0.2, 0.16, 0.18, 0.08];
+const pickTone = () => {
+  let r = random();
+  for (let i = 0; i < FLAKE_TONES.length; i += 1) {
+    r -= FLAKE_WEIGHTS[i];
+    if (r <= 0) return FLAKE_TONES[i];
+  }
+  return FLAKE_TONES[0];
+};
 
-const flakes = Array.from({ length: 124 }, () => {
-  const u = 0.025 + random() * 0.95;
-  const v = 0.04 + random() * 0.9;
+const flakes = Array.from({ length: 230 }, () => {
+  const u = 0.02 + random() * 0.96;
+  const v = 0.03 + random() * 0.92;
   const x = Math.round((FX0 + u * (FX1 - FX0) + v * DX) * 10) / 10;
   const y = Math.round((BASE_Y + v * DY) * 10) / 10;
-  const size = 6 + (1 - v) * 5.6;
-  const points = FLAKE_UNIT
-    .map(([a, b]) => `${(a * size * (0.7 + random() * 0.6)).toFixed(1)},${(b * size * (0.7 + random() * 0.6)).toFixed(1)}`)
-    .join(' ');
-  return { x, y, points, rotate: Math.round(random() * 360), tone: FLAKE_TONES[Math.floor(random() * FLAKE_TONES.length)] };
+  // Nearer chips (small v) read a little larger; sizes skew small with a few big ones.
+  const size = (3.2 + random() ** 2.4 * 9.5) * (1.18 - v * 0.36);
+  const sides = 5 + Math.floor(random() * 3);
+  const turn = random() * Math.PI * 2;
+  const points = Array.from({ length: sides }, (_, i) => {
+    const angle = turn + (i / sides) * Math.PI * 2 + (random() - 0.5) * 0.6;
+    const radius = size * (0.55 + random() * 0.45);
+    return `${(Math.cos(angle) * radius).toFixed(1)},${(Math.sin(angle) * radius).toFixed(1)}`;
+  }).join(' ');
+  return { x, y, points, rotate: Math.round(random() * 360), tone: pickTone() };
 });
-
 // Diamond-cup passes read as overlapping swirls across the slab's top face.
 const swirls = Array.from({ length: 9 }, (_, index) => ({
   cx: 215 + index * 95,
@@ -69,13 +93,6 @@ const swirls = Array.from({ length: 9 }, (_, index) => ({
 // One crack, read across the slab's top face and down its front edge.
 const CRACK_TOP = 'M 300,700 L 336,684 L 362,692 L 400,670 L 440,679 L 478,658 L 520,638';
 const CRACK_FRONT = 'M 300,700 L 276,736 L 294,766 L 274,800 L 292,832';
-
-const speckles = Array.from({ length: 13 }, () => ({
-  cx: Math.round(random() * 92),
-  cy: Math.round(random() * 92),
-  r: (1.4 + random() * 4.2).toFixed(1),
-  tone: random() > 0.55 ? '#a49f96' : '#d2cdc4',
-}));
 
 const captions = [
   ['01', 'Slab', 'Bare concrete, read before anything is added.'],
@@ -101,23 +118,47 @@ const layerIds = ['slab', 'grind', 'repair', 'primer', 'base', 'flakes', 'topcoa
     <div class="prep-figure" data-prep-figure>
       <svg class="prep-svg" viewBox={VIEW_BOX} preserveAspectRatio="xMidYMid meet" aria-hidden="true" focusable="false">
         <defs>
-          <pattern id="prep-aggregate" width="92" height="92" patternUnits="userSpaceOnUse">
-            <rect width="92" height="92" fill="#bfbab1"></rect>
-            {speckles.map((speckle) => (
-              <circle cx={speckle.cx} cy={speckle.cy} r={speckle.r} fill={speckle.tone} opacity="0.85"></circle>
-            ))}
+          {/* Real material, laid in the plates' own plane: a square texture tile mapped
+              onto the top face by the same depth vector the geometry uses, so the
+              surface foreshortens exactly as the plate does. */}
+          <pattern id="prep-slab-top" patternUnits="userSpaceOnUse" width="820" height="820" patternTransform={topTexture(SLAB_Y)}>
+            <image href="/images/brand/texture/prep-slab.webp" width="820" height="820" preserveAspectRatio="none"></image>
+          </pattern>
+          <pattern id="prep-ground-top" patternUnits="userSpaceOnUse" width="820" height="820" patternTransform={topTexture(SLAB_Y)}>
+            <image href="/images/brand/texture/prep-ground.webp" width="820" height="820" preserveAspectRatio="none"></image>
+          </pattern>
+          <pattern id="prep-flake-bed" patternUnits="userSpaceOnUse" width="820" height="820" patternTransform={topTexture(BASE_Y)}>
+            <image href="/images/brand/texture/prep-scraped.webp" width="820" height="820" preserveAspectRatio="none"></image>
+          </pattern>
+          <pattern id="prep-cut" patternUnits="userSpaceOnUse" width="340" height="340">
+            <image href="/images/brand/texture/prep-slab.webp" width="340" height="340" preserveAspectRatio="none"></image>
           </pattern>
           <linearGradient id="prep-slab-shade" gradientUnits="userSpaceOnUse" x1="0" y1={SLAB_Y} x2="0" y2={SLAB_Y + SLAB_T}>
-            <stop offset="0" stop-color="#17222a" stop-opacity="0.04"></stop>
-            <stop offset="1" stop-color="#17222a" stop-opacity="0.34"></stop>
+            <stop offset="0" stop-color="#17222a" stop-opacity="0.1"></stop>
+            <stop offset="1" stop-color="#17222a" stop-opacity="0.42"></stop>
+          </linearGradient>
+          <linearGradient id="prep-top-light" gradientUnits="userSpaceOnUse" x1={FX0} y1="0" x2={FX1 + DX} y2="0">
+            <stop offset="0" stop-color="#ffffff" stop-opacity="0.16"></stop>
+            <stop offset="0.55" stop-color="#ffffff" stop-opacity="0"></stop>
+            <stop offset="1" stop-color="#17222a" stop-opacity="0.12"></stop>
           </linearGradient>
           <linearGradient id="prep-dust" gradientUnits="userSpaceOnUse" x1="0" y1={SLAB_Y - 52} x2="0" y2={SLAB_Y}>
             <stop offset="0" stop-color="#f4f1ea" stop-opacity="0"></stop>
-            <stop offset="1" stop-color="#efe9dd" stop-opacity="0.92"></stop>
+            <stop offset="1" stop-color="#efe9dd" stop-opacity="0.82"></stop>
           </linearGradient>
-          <linearGradient id="prep-base-shade" gradientUnits="userSpaceOnUse" x1={FX0} y1="0" x2={FX1} y2="0">
-            <stop offset="0" stop-color="#0d355b" stop-opacity="0.55"></stop>
-            <stop offset="1" stop-color="#0d355b" stop-opacity="0"></stop>
+          <linearGradient id="prep-base-top" gradientUnits="userSpaceOnUse" x1={FX0} y1="0" x2={FX1 + DX} y2="0">
+            <stop offset="0" stop-color="#626b70"></stop>
+            <stop offset="0.5" stop-color="#4c5459"></stop>
+            <stop offset="1" stop-color="#3a4145"></stop>
+          </linearGradient>
+          <linearGradient id="prep-primer-top" gradientUnits="userSpaceOnUse" x1={FX0} y1="0" x2={FX1 + DX} y2="0">
+            <stop offset="0" stop-color="#dcc28e" stop-opacity="0.62"></stop>
+            <stop offset="0.6" stop-color="#c9a66a" stop-opacity="0.5"></stop>
+            <stop offset="1" stop-color="#b08c52" stop-opacity="0.58"></stop>
+          </linearGradient>
+          <linearGradient id="prep-coat-top" gradientUnits="userSpaceOnUse" x1="0" y1={TOP_Y + DY} x2="0" y2={TOP_Y}>
+            <stop offset="0" stop-color="#e9f1f6" stop-opacity="0.34"></stop>
+            <stop offset="1" stop-color="#cfdde6" stop-opacity="0.2"></stop>
           </linearGradient>
           <linearGradient id="prep-gloss" gradientUnits="userSpaceOnUse" x1="330" y1="0" x2="600" y2="0">
             <stop offset="0" stop-color="#ffffff" stop-opacity="0"></stop>
@@ -125,96 +166,117 @@ const layerIds = ['slab', 'grind', 'repair', 'primer', 'base', 'flakes', 'topcoa
             <stop offset="0.56" stop-color="#ffffff" stop-opacity="0.9"></stop>
             <stop offset="1" stop-color="#ffffff" stop-opacity="0"></stop>
           </linearGradient>
+          <filter id="prep-soft" x="-20%" y="-60%" width="140%" height="220%"><feGaussianBlur stdDeviation="13"></feGaussianBlur></filter>
+          <filter id="prep-rag" x="-5%" y="-5%" width="110%" height="110%">
+            <feTurbulence type="fractalNoise" baseFrequency="0.07" numOctaves="2" seed="4" result="t"></feTurbulence>
+            <feDisplacementMap in="SourceGraphic" in2="t" scale="7" xChannelSelector="R" yChannelSelector="G"></feDisplacementMap>
+          </filter>
           <clipPath id="prep-clip-slab-top"><polygon points={topFace(SLAB_Y)}></polygon></clipPath>
+          <clipPath id="prep-clip-primer-top"><polygon points={topFace(PRIMER_Y)}></polygon></clipPath>
           <clipPath id="prep-clip-base-top"><polygon points={topFace(BASE_Y)}></polygon></clipPath>
         </defs>
 
         <g data-prep-layer="slab">
-          <polygon points={sideFace(SLAB_Y, SLAB_T)} fill="#9d988f"></polygon>
-          <polygon points={frontFace(SLAB_Y, SLAB_T)} fill="url(#prep-aggregate)"></polygon>
-          <polygon points={frontFace(SLAB_Y, SLAB_T)} fill="url(#prep-slab-shade)"></polygon>
-          <polygon points={topFace(SLAB_Y)} fill="#cdc8bf"></polygon>
-          <polygon points={topFace(SLAB_Y)} fill="url(#prep-aggregate)" opacity="0.4"></polygon>
-          <g fill="none" stroke="rgba(23,34,42,.22)" stroke-width="1.25">
-            <polygon points={topFace(SLAB_Y)}></polygon>
-            <polygon points={frontFace(SLAB_Y, SLAB_T)}></polygon>
-            <polygon points={sideFace(SLAB_Y, SLAB_T)}></polygon>
+          <g data-prep-lift>
+            <polygon points={sideFace(SLAB_Y, SLAB_T)} fill="url(#prep-cut)"></polygon>
+            <polygon points={sideFace(SLAB_Y, SLAB_T)} fill="#17222a" opacity="0.36"></polygon>
+            <polygon points={frontFace(SLAB_Y, SLAB_T)} fill="url(#prep-cut)"></polygon>
+            <polygon points={frontFace(SLAB_Y, SLAB_T)} fill="url(#prep-slab-shade)"></polygon>
+            <polygon points={topFace(SLAB_Y)} fill="url(#prep-slab-top)"></polygon>
+            <polygon points={topFace(SLAB_Y)} fill="url(#prep-top-light)"></polygon>
+            <line x1={FX0} y1={SLAB_Y} x2={FX1} y2={SLAB_Y} stroke="#ffffff" stroke-opacity="0.55" stroke-width="1.4"></line>
+            <g fill="none" stroke="rgba(23,34,42,.16)" stroke-width="1">
+              <polygon points={frontFace(SLAB_Y, SLAB_T)}></polygon>
+              <polygon points={sideFace(SLAB_Y, SLAB_T)}></polygon>
+            </g>
           </g>
         </g>
 
         <g data-prep-layer="grind" clip-path="url(#prep-clip-slab-top)">
-          <g data-prep-swirls fill="none" stroke="rgba(23,34,42,.3)" stroke-width="2.2" stroke-linecap="round">
-            {swirls.map((swirl) => (
-              <ellipse cx={swirl.cx} cy={swirl.cy} rx={swirl.rx} ry={swirl.ry}></ellipse>
-            ))}
+          <g data-prep-lift>
+            <polygon points={topFace(SLAB_Y)} fill="url(#prep-ground-top)" opacity="0.92"></polygon>
+            <g data-prep-swirls fill="none" stroke="#ffffff" stroke-opacity=".32" stroke-width="1.8" stroke-linecap="round">
+              {swirls.map((swirl) => (
+                <ellipse cx={swirl.cx} cy={swirl.cy} rx={swirl.rx} ry={swirl.ry}></ellipse>
+              ))}
+            </g>
+            <polygon data-prep-dust points={`${FX0},${SLAB_Y - 52} ${FX1 + DX},${SLAB_Y - 52} ${FX1 + DX},${SLAB_Y} ${FX0},${SLAB_Y}`} fill="url(#prep-dust)"></polygon>
           </g>
-          <polygon data-prep-dust points={`${FX0},${SLAB_Y - 52} ${FX1 + DX},${SLAB_Y - 52} ${FX1 + DX},${SLAB_Y} ${FX0},${SLAB_Y}`} fill="url(#prep-dust)"></polygon>
         </g>
 
         <g data-prep-layer="repair">
-          {[CRACK_FRONT, CRACK_TOP].map((path) => (
-            <path data-prep-crack d={path} fill="none" stroke="#5f5a52" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"></path>
-          ))}
-          {[CRACK_FRONT, CRACK_TOP].map((path) => (
-            <path data-prep-fill d={path} fill="none" stroke="#ded3c0" stroke-width="5.5" stroke-linecap="round" stroke-linejoin="round"></path>
-          ))}
+          <g data-prep-lift filter="url(#prep-rag)">
+            {[CRACK_FRONT, CRACK_TOP].map((path) => (
+              <path data-prep-crack d={path} fill="none" stroke="#403b34" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"></path>
+            ))}
+            {[CRACK_FRONT, CRACK_TOP].map((path) => (
+              <path data-prep-fill d={path} fill="none" stroke="#dcd2c0" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"></path>
+            ))}
+          </g>
         </g>
 
         <g data-prep-layer="primer">
-          <polygon points={sideFace(PRIMER_Y, PRIMER_T)} fill="#77848d"></polygon>
-          <polygon points={frontFace(PRIMER_Y, PRIMER_T)} fill="#8c99a2"></polygon>
-          <polygon points={topFace(PRIMER_Y)} fill="#a7b4bc"></polygon>
-          <g fill="none" stroke="rgba(23,34,42,.24)" stroke-width="1.25">
-            <polygon points={topFace(PRIMER_Y)}></polygon>
-            <polygon points={frontFace(PRIMER_Y, PRIMER_T)}></polygon>
-            <polygon points={sideFace(PRIMER_Y, PRIMER_T)}></polygon>
+          <g data-prep-lift>
+            <polygon points={shadowFace(SLAB_Y)} fill="#17222a" opacity="0.2" filter="url(#prep-soft)" clip-path="url(#prep-clip-slab-top)"></polygon>
+            <polygon points={sideFace(PRIMER_Y, PRIMER_T)} fill="#a88450" opacity="0.72"></polygon>
+            <polygon points={frontFace(PRIMER_Y, PRIMER_T)} fill="#c49e62" opacity="0.66"></polygon>
+            <polygon points={topFace(PRIMER_Y)} fill="url(#prep-primer-top)"></polygon>
+            <polygon points={topFace(PRIMER_Y)} fill="url(#prep-top-light)"></polygon>
+            <line x1={FX0} y1={PRIMER_Y} x2={FX1} y2={PRIMER_Y} stroke="#fff6e4" stroke-opacity="0.8" stroke-width="1.4"></line>
           </g>
         </g>
 
         <g data-prep-layer="base">
-          <polygon points={sideFace(BASE_Y, BASE_T)} fill="#113f6a"></polygon>
-          <polygon points={frontFace(BASE_Y, BASE_T)} fill="#164f83"></polygon>
-          <polygon points={topFace(BASE_Y)} fill="#1d61a0"></polygon>
-          <polygon points={topFace(BASE_Y)} fill="url(#prep-base-shade)"></polygon>
-          <g fill="none" stroke="rgba(13,53,91,.55)" stroke-width="1.25">
-            <polygon points={topFace(BASE_Y)}></polygon>
-            <polygon points={frontFace(BASE_Y, BASE_T)}></polygon>
-            <polygon points={sideFace(BASE_Y, BASE_T)}></polygon>
+          <g data-prep-lift>
+            <polygon points={shadowFace(PRIMER_Y)} fill="#17222a" opacity="0.22" filter="url(#prep-soft)" clip-path="url(#prep-clip-primer-top)"></polygon>
+            <polygon points={sideFace(BASE_Y, BASE_T)} fill="#2a3033"></polygon>
+            <polygon points={frontFace(BASE_Y, BASE_T)} fill="#363d41"></polygon>
+            <polygon points={topFace(BASE_Y)} fill="url(#prep-base-top)"></polygon>
+            <polygon points={topFace(BASE_Y)} fill="url(#prep-top-light)"></polygon>
+            <line x1={FX0} y1={BASE_Y} x2={FX1} y2={BASE_Y} stroke="#ffffff" stroke-opacity="0.32" stroke-width="1.2"></line>
           </g>
         </g>
 
         <g data-prep-layer="flakes" clip-path="url(#prep-clip-base-top)">
-          {flakes.map((flake) => (
-            <g class="prep-flake" transform={`translate(${flake.x} ${flake.y}) rotate(${flake.rotate})`}>
-              <polygon data-prep-flake points={flake.points} fill={flake.tone} opacity="0.95"></polygon>
-            </g>
-          ))}
+          <g data-prep-lift>
+            <polygon data-prep-flake-bed points={topFace(BASE_Y)} fill="url(#prep-flake-bed)" opacity="0"></polygon>
+            {flakes.map((flake) => (
+              <g class="prep-flake" transform={`translate(${flake.x} ${flake.y}) scale(1 0.46) rotate(${flake.rotate})`}>
+                <polygon data-prep-flake points={flake.points} fill={flake.tone} stroke="rgba(0,0,0,.28)" stroke-width="0.7"></polygon>
+              </g>
+            ))}
+          </g>
         </g>
 
         <g data-prep-layer="topcoat">
-          <polygon points={sideFace(TOP_Y, TOP_T)} fill="rgba(22,79,131,.26)"></polygon>
-          <polygon points={frontFace(TOP_Y, TOP_T)} fill="rgba(22,79,131,.18)"></polygon>
-          <polygon points={topFace(TOP_Y)} fill="rgba(22,79,131,.12)"></polygon>
-          <polygon data-prep-gloss-face points={topFace(TOP_Y)} fill="url(#prep-gloss)"></polygon>
-          <g fill="none" stroke="rgba(22,79,131,.62)" stroke-width="1.4">
-            <polygon points={topFace(TOP_Y)}></polygon>
-            <polygon points={frontFace(TOP_Y, TOP_T)}></polygon>
-            <polygon points={sideFace(TOP_Y, TOP_T)}></polygon>
+          <g data-prep-lift>
+            <polygon points={shadowFace(BASE_Y)} fill="#17222a" opacity="0.16" filter="url(#prep-soft)" clip-path="url(#prep-clip-base-top)"></polygon>
+            <polygon points={sideFace(TOP_Y, TOP_T)} fill="#b7cad6" opacity="0.34"></polygon>
+            <polygon points={frontFace(TOP_Y, TOP_T)} fill="#c8d8e2" opacity="0.28"></polygon>
+            <polygon points={topFace(TOP_Y)} fill="url(#prep-coat-top)"></polygon>
+            {/* A window caught in the clear coat: the reflection that says "gloss". */}
+            <polygon points={reflection(TOP_Y)} fill="#ffffff" opacity="0.34" filter="url(#prep-soft)"></polygon>
+            <polygon data-prep-gloss-face points={topFace(TOP_Y)} fill="url(#prep-gloss)"></polygon>
+            <g fill="none" stroke="rgba(255,255,255,.7)" stroke-width="1.2">
+              <polygon points={topFace(TOP_Y)}></polygon>
+            </g>
+            <line
+              data-prep-edge
+              x1={FX0 + DX}
+              y1={TOP_Y + DY}
+              x2={FX1 + DX}
+              y2={TOP_Y + DY}
+              stroke="#ffffff"
+              stroke-width="2.5"
+              stroke-linecap="round"
+              opacity="0.9"
+            ></line>
+            <line x1={FX0} y1={TOP_Y} x2={FX1} y2={TOP_Y} stroke="#ffffff" stroke-opacity="0.85" stroke-width="1.6"></line>
           </g>
-          <line
-            data-prep-edge
-            x1={FX0 + DX}
-            y1={TOP_Y + DY}
-            x2={FX1 + DX}
-            y2={TOP_Y + DY}
-            stroke="#ffffff"
-            stroke-width="2.5"
-            stroke-linecap="round"
-            opacity="0.9"
-          ></line>
         </g>
       </svg>
     </div>
+    <PrepLayers3D client:visible={{ rootMargin: '600px' }} />
     </div>
 
     <ol class="prep-captions">

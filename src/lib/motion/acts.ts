@@ -53,6 +53,7 @@ import {
   videoSeekTarget,
 } from './journey-media';
 import { onRouteTeardown } from './route-lifecycle';
+import { bindReveals, cascade, converge, driftLines, rise, type Converged } from './reveal';
 
 gsap.registerPlugin(ScrollTrigger, SplitText);
 
@@ -74,7 +75,7 @@ interface ActPhases {
 const PHASES: Readonly<Record<ActKind, ActPhases>> = Object.freeze({
   hero: { liftEnd: 0, bandStart: 0, bandEnd: 0, switchStart: 1, switchEnd: 1 },
   film: { liftEnd: 0.08, bandStart: 0.08, bandEnd: 0.26, switchStart: 1, switchEnd: 1 },
-  bay: { liftEnd: 0.06, bandStart: 0.05, bandEnd: 0.18, switchStart: 0.44, switchEnd: 0.6 },
+  bay: { liftEnd: 0.05, bandStart: 0, bandEnd: 0.1, switchStart: 0.5, switchEnd: 0.68 },
 });
 
 /** How many cards the review ring turns through across its held scroll. */
@@ -108,6 +109,12 @@ interface Act {
   /** Horizontal drift of the plate across the act, in percent of its width. */
   readonly pan: number;
   readonly sheen: HTMLElement | null;
+  /** The material lens's picture, which pans like a magnifier moving over the floor. */
+  readonly lens: HTMLElement | null;
+  /** Headlines converged on entry; their lines drift while the act is held. */
+  titles: Converged[];
+  /** The garage headline's letters, scrubbed with the car (two-room act only). */
+  car: gsap.core.Timeline | null;
   /** Stage height, mist edge height, act height, viewport height (px). */
   H: number;
   E: number;
@@ -115,6 +122,9 @@ interface Act {
   V: number;
   /** Where the band's solid paper begins, and the words it carries (stage px). */
   bandTop: number;
+  /** Two-room acts: where the band settles for the second room (just above the captions). */
+  bandTop2: number;
+  captionLift: number;
   copyTop: number;
   copyH: number;
   /** The last scroll offset into the pass that was rendered. */
@@ -179,11 +189,16 @@ export function initActs(): Teardown | undefined {
       push: Number(el.dataset.push ?? '1.06'),
       pan: Number(el.dataset.pan ?? '0'),
       sheen: el.querySelector<HTMLElement>('.act-sheen'),
+      lens: el.querySelector<HTMLElement>('[data-lens-pan]'),
       H: window.innerHeight,
       E: 0,
       S: window.innerHeight,
       V: window.innerHeight,
       bandTop: 0,
+      bandTop2: 0,
+      captionLift: 0,
+      titles: [],
+      car: null,
       copyTop: 0,
       copyH: 1,
       s: 0,
@@ -203,11 +218,37 @@ export function initActs(): Teardown | undefined {
       act.copyH = Math.max(1, act.copy.offsetHeight);
       // The band's solid paper begins a little above the first line of the words.
       act.bandTop = Math.max(act.H * 0.12, act.copyTop - act.H * 0.07);
+      // Two-room acts: for the second room it settles just above the captions.
+      const captions = act.copy.querySelector<HTMLElement>('.act-captions');
+      act.bandTop2 = captions ? Math.max(act.bandTop, act.copyTop + captions.offsetTop - act.H * 0.06) : act.bandTop;
     } else {
       act.copyTop = act.H;
       act.copyH = 1;
       act.bandTop = act.H;
+      act.bandTop2 = act.H;
     }
+  };
+
+  /** The garage headline: letters stream in from the left behind the car, last letter first. */
+  const buildCar = (act: Act) => {
+    const title = act.el.querySelector<HTMLElement>('[data-car-title]');
+    if (!title) return;
+    const split = SplitText.create(title, { type: 'words,chars', wordsClass: 't-word', charsClass: 't-char', aria: 'auto' });
+    splits.push(split);
+    act.car = gsap.timeline({ paused: true }).fromTo(split.chars, {
+      xPercent: -560,
+      skewX: -26,
+      scaleX: 1.4,
+      opacity: 0,
+    }, {
+      xPercent: 0,
+      skewX: 0,
+      scaleX: 1,
+      opacity: 1,
+      duration: 0.6,
+      ease: 'power3.out',
+      stagger: { each: 0.028, from: 'end' },
+    });
   };
 
   /* ── Films ───────────────────────────────────────────────────────────────── */
@@ -269,6 +310,9 @@ export function initActs(): Teardown | undefined {
     const p = clamp01((s - V) / R);
     /** Pass progress: the approach and the hold (the departure keeps the last frame). */
     const f = act.kind === 'hero' ? p : clamp01(s / (V + R));
+    const bay = act.kind === 'bay' && act.frames.length > 1;
+    /** Two-room acts: the second room's arrival, 0 -> 1. */
+    const k = bay ? easeInOut(span(p, phases.switchStart, phases.switchEnd)) : 0;
 
     // Arriving: only the top edge is mist. Held: that edge lifts off.
     if (act.fogIn) {
@@ -277,34 +321,50 @@ export function initActs(): Teardown | undefined {
     }
 
     // The band rises under the words, and the words appear as its paper reaches them.
+    // In a two-room act it then settles lower for the second room, which is the
+    // picture Matt wanted to see whole (the glass stair and the glass room).
     if (act.fogRise && phases.bandEnd > phases.bandStart) {
-      const y = lerp(H, act.bandTop - E, easeInOut(span(p, phases.bandStart, phases.bandEnd)));
+      const rise = lerp(H, act.bandTop - E, easeInOut(span(p, phases.bandStart, phases.bandEnd)));
+      const y = bay ? lerp(rise, act.bandTop2 - E, k) : rise;
       setY(act.fogRise, y);
       if (act.copy) {
         // Only ever on solid paper: the words start to show once the band's solid edge
         // has passed their first line, and are fully there as the band settles.
         const reach = Math.max(1, act.copyTop - act.bandTop);
-        const shown = clamp01((act.copyTop - (y + E)) / reach);
+        const shown = clamp01((act.copyTop - (rise + E)) / reach);
         act.copy.style.opacity = shown.toFixed(3);
         if (!act.entered && shown > 0.05) enterCopy(act);
       }
     }
 
-    // The plate breathes forward and drifts. Rooms slide apart as they cross.
+    // Held headlines keep moving: their lines drift against each other.
+    if (act.titles.length && tier !== 'still') {
+      const drift = easeInOut(p);
+      act.titles.forEach((title) => driftLines(title.lines, drift, act.kind === 'hero' ? 1.6 : 2.4));
+    }
+
     const push = 1 + (act.push - 1) * f;
-    if (act.kind === 'bay' && act.frames.length > 1) {
-      const k = easeInOut(span(p, phases.switchStart, phases.switchEnd));
-      act.frames[0].style.transform = `translate3d(${(-4 * k).toFixed(2)}%, 0, 0) scale(${push.toFixed(4)})`;
-      act.frames[1].style.transform = `translate3d(${(4 * (1 - k)).toFixed(2)}%, 0, 0) scale(${push.toFixed(4)})`;
-      act.frames[1].style.opacity = k.toFixed(3);
+    if (bay) {
+      // The second room arrives from the side and pushes the first out; each picture
+      // lags its panel a little (parallax), so the move reads as depth, not a wipe.
+      const [first, second] = act.frames;
+      first.style.transform = `translate3d(${(-100 * k).toFixed(3)}%, 0, 0)`;
+      second.style.transform = `translate3d(${(100 * (1 - k)).toFixed(3)}%, 0, 0)`;
+      first.style.setProperty('--act-media', `translate3d(${(22 * k).toFixed(2)}%, 0, 0) scale(${push.toFixed(4)})`);
+      second.style.setProperty('--act-media', `translate3d(${(-22 * (1 - k)).toFixed(2)}%, 0, 0) scale(${(1 + (act.push - 1) * p).toFixed(4)})`);
+      second.style.visibility = k > 0 ? 'visible' : 'hidden';
+      // The headline has done its work by the time the second room arrives.
+      act.copy?.querySelectorAll<HTMLElement>('.t-title, .t-kicker').forEach((el) => {
+        el.style.opacity = (1 - easeInOut(span(k, 0, 0.35))).toFixed(3);
+      });
       if (act.captions.length > 1) {
-        // One caption at a time: the first leaves before the second arrives.
-        const out = easeInOut(span(k, 0, 0.45));
-        const inn = easeInOut(span(k, 0.55, 1));
+        // One caption at a time, each travelling with its room.
+        const out = easeInOut(span(k, 0, 0.5));
+        const inn = easeInOut(span(k, 0.45, 1));
         act.captions[0].style.opacity = (1 - out).toFixed(3);
-        act.captions[0].style.transform = `translate3d(0, ${(-12 * out).toFixed(1)}px, 0)`;
+        act.captions[0].style.transform = `translate3d(${(-28 * out).toFixed(2)}vw, 0, 0)`;
         act.captions[1].style.opacity = inn.toFixed(3);
-        act.captions[1].style.transform = `translate3d(0, ${(12 * (1 - inn)).toFixed(1)}px, 0)`;
+        act.captions[1].style.transform = `translate3d(${(28 * (1 - inn)).toFixed(2)}vw, ${(-act.captionLift * k).toFixed(1)}px, 0)`;
       }
     } else {
       const x = act.pan * (0.5 - f);
@@ -318,83 +378,40 @@ export function initActs(): Teardown | undefined {
       act.sheen.style.transform = `translate3d(${x.toFixed(2)}%, 0, 0)`;
     }
 
+    if (act.lens) {
+      act.lens.style.transform = `scale(1.5) translate3d(${(12 - 24 * f).toFixed(2)}%, ${(8 - 16 * f).toFixed(2)}%, 0)`;
+    }
+
+    // The car's headline: its letters come in behind the car, scrubbed with the film.
+    if (act.car) {
+      const film = act.films[0];
+      const fp = film ? span(film.clock === 'held' ? p : f, film.from, film.to) : p;
+      act.car.progress(span(fp, 0.06, 0.78));
+    }
+
     if (tier !== 'still') {
       act.films.forEach((film) => seek(film, span(film.clock === 'held' ? p : f, film.from, film.to)));
     }
   }
-
-  /* ── Reveals: one vocabulary ─────────────────────────────────────────────── */
+  /* ── Reveals: the site's one vocabulary (reveal.ts) ─────────────────────── */
   const splits: SplitText[] = [];
-  const titleRise = (title: HTMLElement, delay = 0) => {
-    const split = SplitText.create(title, {
-      type: 'lines',
-      mask: 'lines',
-      linesClass: 't-line',
-      aria: 'auto',
-      autoSplit: true,
-      onSplit: (self) => gsap.fromTo(self.lines, { yPercent: 105 }, {
-        yPercent: 0, duration: 1.15, ease: 'expo.out', stagger: 0.085, delay, clearProps: 'transform',
-      }),
-    });
-    splits.push(split);
-  };
-  const fadeRise = (els: Element[], delay = 0) => {
-    if (!els.length) return;
-    gsap.fromTo(els, { opacity: 0, y: 14 }, {
-      opacity: 1, y: 0, duration: 0.9, ease: 'power3.out', stagger: 0.07, delay, clearProps: 'transform,opacity',
-    });
-  };
 
   function enterCopy(act: Act) {
     act.entered = true;
     if (!act.copy || tier === 'still') return;
-    const titles = [...act.copy.querySelectorAll<HTMLElement>('.t-title, .t-display')];
-    titles.forEach((title) => titleRise(title));
-    fadeRise([...act.copy.querySelectorAll('.t-kicker, .t-sub, .t-body, .button-row, .act-captions, .hero-proof')], 0.18);
+    const hero = act.kind === 'hero';
+    act.copy.querySelectorAll<HTMLElement>('.t-title, .t-display').forEach((title) => {
+      // The garage's headline has its own entrance, scrubbed with the car (renderCar).
+      if (title.hasAttribute('data-car-title')) return;
+      const converged = converge(title, { delay: hero ? 0.25 : 0 });
+      splits.push(converged.split);
+      act.titles.push(converged);
+    });
+    act.copy.querySelectorAll<HTMLElement>('.t-kicker').forEach((kicker) => splits.push(cascade(kicker, hero ? 0.1 : 0)));
+    rise([...act.copy.querySelectorAll('.t-sub, .t-body, .button-row, .act-captions, .hero-proof')], hero ? 0.75 : 0.35);
   }
 
-  const buildPaperReveals = () => {
-    const triggers: ScrollTrigger[] = [];
-    root.querySelectorAll<HTMLElement>('[data-reveal="title"]').forEach((title) => {
-      triggers.push(ScrollTrigger.create({ trigger: title, start: 'top 86%', once: true, onEnter: () => titleRise(title) }));
-    });
-    root.querySelectorAll<HTMLElement>('[data-reveal="fade"]').forEach((el) => {
-      gsap.set(el, { opacity: 0, y: 14 });
-      triggers.push(ScrollTrigger.create({
-        trigger: el,
-        start: 'top 90%',
-        once: true,
-        onEnter: () => gsap.to(el, { opacity: 1, y: 0, duration: 0.9, ease: 'power3.out', clearProps: 'transform,opacity' }),
-      }));
-    });
-    // Statements fill from a pale grey to ink as they cross the reading line.
-    root.querySelectorAll<HTMLElement>('[data-reveal="fill"]').forEach((el) => {
-      const split = SplitText.create(el, { type: 'lines', linesClass: 't-fill-line', aria: 'auto', autoSplit: true,
-        onSplit: (self) => gsap.fromTo(self.lines, { color: 'rgb(23 34 42 / 0.2)' }, {
-          color: 'rgb(23 34 42 / 1)', ease: 'none', stagger: 0.6,
-          scrollTrigger: { trigger: el, start: 'top 78%', end: 'bottom 48%', scrub: 0.6 },
-        }),
-      });
-      splits.push(split);
-    });
-    // Photographs on paper open from the bottom edge and settle out of a slight zoom.
-    root.querySelectorAll<HTMLElement>('[data-reveal="media"]').forEach((el) => {
-      const img = el.querySelector('img');
-      gsap.set(el, { clipPath: 'inset(14% 0% 0% 0%)' });
-      if (img) gsap.set(img, { scale: 1.1 });
-      triggers.push(ScrollTrigger.create({
-        trigger: el,
-        start: 'top 88%',
-        once: true,
-        onEnter: () => {
-          gsap.to(el, { clipPath: 'inset(0% 0% 0% 0%)', duration: 1.3, ease: 'expo.out', clearProps: 'clipPath' });
-          if (img) gsap.to(img, { scale: 1, duration: 1.6, ease: 'expo.out', clearProps: 'transform' });
-        },
-      }));
-    });
-    return () => triggers.forEach((t) => t.kill());
-  };
-
+  const buildPaperReveals = () => bindReveals(root);
   /* ── The review ring ─────────────────────────────────────────────────────── */
   /**
    * Seventeen cards on a CSS cylinder (jh3y's construction: each cell is turned by
@@ -573,6 +590,77 @@ export function initActs(): Teardown | undefined {
     };
   };
 
+  /* ── The process track: sections that come in from the side ─────────────── */
+  /**
+   * The section holds (sticky stage) while its scroll carries the rail sideways. The
+   * travel is reserved in CSS; this reads it back from the rail and writes transforms:
+   * the rail, each outline numeral drifting against its panel, each picture's parallax,
+   * a lamp sweeping each surface as it crosses the centre, and the progress rule. Each
+   * step's title flies in (converge) the first time its panel reaches the middle.
+   */
+  const buildTrack = (): Teardown | undefined => {
+    const section = root.querySelector<HTMLElement>('[data-track]');
+    const rail = section?.querySelector<HTMLElement>('[data-track-rail]');
+    if (!section || !rail) return undefined;
+    const panels = [...rail.querySelectorAll<HTMLElement>('[data-track-panel]')];
+    const parts = panels.map((panel) => ({
+      num: panel.querySelector<HTMLElement>('[data-track-num]'),
+      img: panel.querySelector<HTMLElement>('[data-track-img]'),
+      media: panel.querySelector<HTMLElement>('.track-media'),
+      title: panel.querySelector<HTMLElement>('.track-title'),
+      entered: false,
+    }));
+    const bar = section.querySelector<HTMLElement>('[data-track-bar]');
+    const counter = section.querySelector<HTMLElement>('[data-track-index]');
+    let travel = 0;
+    let shown = -1;
+    const measureTrack = () => { travel = Math.max(0, rail.scrollWidth - window.innerWidth); };
+    const paint = (progress: number) => {
+      const x = -travel * progress;
+      rail.style.transform = `translate3d(${x.toFixed(1)}px, 0, 0)`;
+      const width = window.innerWidth;
+      let nearest = 0;
+      let best = Infinity;
+      panels.forEach((panel, i) => {
+        const centre = panel.offsetLeft + x + panel.offsetWidth / 2;
+        const d = (centre - width / 2) / width;
+        if (Math.abs(d) < best) { best = Math.abs(d); nearest = i; }
+        const part = parts[i];
+        part.num?.style.setProperty('transform', `translate3d(${(d * -140).toFixed(1)}px, 0, 0)`);
+        part.img?.style.setProperty('transform', `translate3d(${(d * -7).toFixed(2)}%, 0, 0)`);
+        part.media?.style.setProperty('--track-sheen', `${(d * -240).toFixed(1)}%`);
+        if (!part.entered && d < 0.3 && part.title) {
+          part.entered = true;
+          splits.push(converge(part.title, { duration: 1.2 }).split);
+        }
+      });
+      bar?.style.setProperty('transform', `scaleX(${progress.toFixed(4)})`);
+      if (nearest !== shown && counter) {
+        shown = nearest;
+        counter.textContent = String(nearest + 1).padStart(2, '0');
+      }
+    };
+    const trigger = ScrollTrigger.create({
+      trigger: section,
+      start: 'top top',
+      end: 'bottom bottom',
+      onUpdate: (self) => paint(self.progress),
+      onRefresh: (self) => { measureTrack(); paint(self.progress); },
+    });
+    measureTrack();
+    paint(trigger.progress);
+    return () => {
+      trigger.kill();
+      rail.style.removeProperty('transform');
+      parts.forEach((part) => {
+        part.num?.style.removeProperty('transform');
+        part.img?.style.removeProperty('transform');
+        part.media?.style.removeProperty('--track-sheen');
+      });
+      bar?.style.removeProperty('transform');
+    };
+  };
+
   /* ── Scroll intent: nothing video loads before it ────────────────────────── */
   let pointerTravel = 0;
   let pointerAt: { x: number; y: number } | null = null;
@@ -610,10 +698,16 @@ export function initActs(): Teardown | undefined {
       act.trigger?.kill();
       act.trigger = undefined;
       act.entered = false;
-      [act.fogIn, act.fogRise, act.copy, act.sheen, ...act.frames, ...act.captions].forEach((el) => {
+      act.titles = [];
+      act.car?.kill();
+      act.car = null;
+      const copyParts = act.copy ? [...act.copy.querySelectorAll<HTMLElement>('.t-title, .t-kicker')] : [];
+      [act.fogIn, act.fogRise, act.copy, act.sheen, act.lens, ...act.frames, ...act.captions, ...copyParts].forEach((el) => {
         if (!el) return;
         el.style.removeProperty('transform');
         el.style.removeProperty('opacity');
+        el.style.removeProperty('visibility');
+        el.style.removeProperty('--act-media');
       });
     });
     if (tickerFn) gsap.ticker.remove(tickerFn);
@@ -641,6 +735,7 @@ export function initActs(): Teardown | undefined {
 
     acts.forEach((act) => {
       measure(act);
+      buildCar(act);
       // The whole pass: from the stage's top edge entering at the bottom of the screen
       // to the act's last pixel leaving at the top. `render` splits it into approach,
       // hold, and departure itself, so one trigger is the act's only clock.
@@ -677,6 +772,8 @@ export function initActs(): Teardown | undefined {
     motionCleanups.push(buildPaperReveals());
     const ringTeardown = buildRing();
     if (ringTeardown) motionCleanups.push(ringTeardown);
+    const trackTeardown = buildTrack();
+    if (trackTeardown) motionCleanups.push(trackTeardown);
     void document.fonts?.ready.then(() => ScrollTrigger.refresh());
   };
 

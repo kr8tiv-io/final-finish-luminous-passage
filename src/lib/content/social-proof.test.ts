@@ -5,11 +5,13 @@ const root = new URL('../../', import.meta.url);
 const read = (path: string) => readFileSync(new URL(path, root), 'utf8');
 
 describe('customer evidence, not decorative testimonials', () => {
-  it('puts the white review stage immediately after the pouring opening', () => {
+  // 2026-09-22: the review grid became the review ring (Matt: "a 3D cylinder that
+  // spins"); it still comes straight after the pour, once.
+  it('puts the review ring immediately after the pouring opening', () => {
     const home = read('pages/index.astro');
     const firstEnd = home.indexOf('</section>');
-    expect(home.slice(firstEnd, home.indexOf('id="foundation"'))).toContain('<SocialProof');
-    expect(home.match(/<SocialProof/g)).toHaveLength(1);
+    expect(home.slice(firstEnd, home.indexOf('id="foundation"'))).toContain('<ReviewRing');
+    expect(home.match(/<ReviewRing/g)).toHaveLength(1);
   });
   it('keeps the Google total independent of the selected, uniquely attributed excerpts', () => {
     const proof = JSON.parse(read('data/customer-proof.json'));
@@ -33,10 +35,13 @@ describe('customer evidence, not decorative testimonials', () => {
     expect(component).toContain('data-journey-white-stage');
     expect(component).toContain('photo.caption');
   });
-  it('removes the dark speckled stair film instead of tinting the whole scene', () => {
+  // The stair act plays the pearl-graded walk (light patch relit out of the floor,
+  // scripts/relight-stair-floor.mjs); its lens shows the finish the floor actually is.
+  it('plays the pearl-graded stair film, never the speckled original', () => {
     const home = read('pages/index.astro');
     expect(home).not.toContain('/epoxy-walkway.mp4');
-    expect(home).toContain('pearl-stair');
+    expect(home).toContain('epoxy-walkway-pearl');
     expect(home).toContain('data-material-lens');
+    expect(home).toContain('midnight-aggregate');
   });
 });

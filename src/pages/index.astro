@@ -7,6 +7,8 @@ import ReviewRing from '../components/home/ReviewRing.astro';
 import GoogleMark from '../components/home/GoogleMark.astro';
 import PreparationLayers from '../components/home/PreparationLayers.astro';
 import FloorPlanning from '../components/home/FloorPlanning.astro';
+import ProcessTrack from '../components/home/ProcessTrack.astro';
+import FinishSamples from '../components/home/FinishSamples.astro';
 import TransformationGallery from '../components/projects/TransformationGallery';
 import ArchiveLattice from '../components/home/ArchiveLattice';
 import customerProof from '../data/customer-proof.json';
@@ -81,7 +83,7 @@ const allowPending = import.meta.env.DEV || import.meta.env.SITE_ENV === 'stagin
         <div class="act-copy">
           <div class="act-copy-inner">
             <p class="t-kicker">Edmonton garage &amp; commercial floor coatings</p>
-            <h1 id="hero-title" class="t-display">A better floor changes the whole space.</h1>
+            <h1 id="hero-title" class="t-display">A better floor changes <em>the whole space.</em></h1>
             <p class="t-body">Epoxy floor coatings for Edmonton garages, workshops, and commercial spaces. Thoughtful preparation. A finish chosen around you.</p>
             <div class="button-row">
               <a class="button button-primary" href="/contact#quote"><span>Request a quote</span><span aria-hidden="true">↗</span></a>
@@ -115,14 +117,14 @@ const allowPending = import.meta.env.DEV || import.meta.env.SITE_ENV === 'stagin
             </video>
           </div>
         </div>
-        <figure class="material-lens" data-material-lens aria-label="Pearl-grey epoxy material, detail view">
-          <div class="material-lens-glass"><img src="/images/brand/pearl-stair-v2.webp" alt="Detail of a softly reflective pearl-grey floor" width="1672" height="941" loading="lazy" decoding="async" /></div>
-          <figcaption><span>Surface study</span><strong>Pearl grey</strong></figcaption>
+        <figure class="material-lens" data-material-lens aria-label="Midnight Aggregate flake finish, detail view">
+          <div class="material-lens-glass"><img data-lens-pan src="/images/brand/texture/midnight-aggregate.webp" alt="Close view of a blue-black flake floor with pewter and pale chips under a clear coat" width="720" height="720" loading="lazy" decoding="async" /></div>
+          <figcaption><span>Surface study</span><strong>Midnight Aggregate</strong></figcaption>
         </figure>
         <div class="act-copy">
           <div class="act-copy-inner">
             <p class="t-kicker">Preparation, repair, precision</p>
-            <h2 id="foundation-title" class="t-title">The finish begins below the surface.</h2>
+            <h2 id="foundation-title" class="t-title">The finish begins <em>below the surface.</em></h2>
           </div>
         </div>
         <div class="act-fog act-fog--rise" aria-hidden="true"></div>
@@ -150,14 +152,14 @@ const allowPending = import.meta.env.DEV || import.meta.env.SITE_ENV === 'stagin
         <div class="act-plate" aria-hidden="true">
           <div class="act-frame act-room" id="garage">
             <img src="/images/brand/epoxy-garage-poster.jpg" alt="" width="1280" height="720" loading="lazy" decoding="async" />
-            <video data-film="garage" data-film-window="0,0.7" muted playsinline disablepictureinpicture preload="none">
+            <video data-film="garage" data-film-clock="held" data-film-window="0,0.5" muted playsinline disablepictureinpicture preload="none">
               <source media="(max-width: 680px)" src="/videos/follow-floor/480/epoxy-garage.mp4" type="video/mp4" />
               <source src="/videos/follow-floor/720/epoxy-garage.mp4" type="video/mp4" />
             </video>
           </div>
           <div class="act-frame act-room" id="vault">
             <img src="/images/brand/epoxy-basement-poster.jpg" alt="" width="1280" height="720" loading="lazy" decoding="async" />
-            <video data-film="vault" data-film-clock="held" data-film-window="0.42,1" muted playsinline disablepictureinpicture preload="none">
+            <video data-film="vault" data-film-clock="held" data-film-window="0.5,1" muted playsinline disablepictureinpicture preload="none">
               <source media="(max-width: 680px)" src="/videos/follow-floor/480/epoxy-basement.mp4" type="video/mp4" />
               <source src="/videos/follow-floor/720/epoxy-basement.mp4" type="video/mp4" />
             </video>
@@ -166,7 +168,7 @@ const allowPending = import.meta.env.DEV || import.meta.env.SITE_ENV === 'stagin
         <div class="act-copy">
           <div class="act-copy-inner">
             <p class="t-kicker">More room for your life</p>
-            <h2 id="reclaim-title" class="t-title">Reclaim your garage or basement.</h2>
+            <h2 id="reclaim-title" class="t-title" data-car-title>Reclaim your <em>garage or basement.</em></h2>
             <div class="act-captions">
               <p class="act-caption"><strong>The workshop. The gym. The car you look after.</strong><span>Garage floors for vehicles, storage, equipment, and everyday use.</span></p>
               <p class="act-caption"><strong>A lounge below the house.</strong><span>Storage that became a room. A hobby space, a place to train, or simply a more useful basement.</span></p>
@@ -194,7 +196,7 @@ const allowPending = import.meta.env.DEV || import.meta.env.SITE_ENV === 'stagin
     <section id="proof" class="sect sect--examples" aria-labelledby="proof-title">
       <div class="sect-inner examples-head">
         <p class="t-kicker">Before and after</p>
-        <h2 id="proof-title" class="t-title" data-reveal="title">See the difference.</h2>
+        <h2 id="proof-title" class="t-title" data-reveal="title">See the <em>difference.</em></h2>
       </div>
       <TransformationGallery client:visible={{ rootMargin: '800px' }} head={false} explore={false} labelledBy="proof-title" allowPending={allowPending} />
     </section>
@@ -230,7 +232,7 @@ const allowPending = import.meta.env.DEV || import.meta.env.SITE_ENV === 'stagin
         <div class="act-copy act-copy--center">
           <div class="act-copy-inner">
             <p class="t-kicker">Flake, solid, and metallic</p>
-            <h2 id="finish-title" class="t-title">Find your finish.</h2>
+            <h2 id="finish-title" class="t-title">Find your <em>finish.</em></h2>
             <div class="button-row">
               <a class="button button-secondary" href="/finishes"><span>Explore finishes</span></a>
               <a class="button button-primary" href="/floor-visualizer?from=finish-hall"><span>Make it yours</span><span aria-hidden="true">↗</span></a>
@@ -251,6 +253,7 @@ const allowPending = import.meta.env.DEV || import.meta.env.SITE_ENV === 'stagin
           <a class="link-quiet" href="/floor-visualizer?from=finish-hall" data-reveal="fade">Preview your own floor <span aria-hidden="true">↗</span></a>
         </div>
       </div>
+      <FinishSamples />
     </section>
 
     {/* ── Act 8 · Commercial: the plate drifts, light travels the floor ────── */}
@@ -265,7 +268,7 @@ const allowPending = import.meta.env.DEV || import.meta.env.SITE_ENV === 'stagin
         <div class="act-copy">
           <div class="act-copy-inner">
             <p class="t-kicker">Commercial epoxy flooring</p>
-            <h2 id="commercial-title" class="t-title">Built around your working day.</h2>
+            <h2 id="commercial-title" class="t-title">Built around your <em>working day.</em></h2>
           </div>
         </div>
         <div class="act-fog act-fog--rise" aria-hidden="true"></div>
@@ -284,6 +287,9 @@ const allowPending = import.meta.env.DEV || import.meta.env.SITE_ENV === 'stagin
       </div>
     </section>
 
+    {/* ── The process, sideways ────────────────────────────────────────────── */}
+    <ProcessTrack />
+
     <FloorPlanning />
 
     {/* ── Act 10 · Talk to Denis ───────────────────────────────────────────── */}
@@ -297,7 +303,7 @@ const allowPending = import.meta.env.DEV || import.meta.env.SITE_ENV === 'stagin
         <div class="act-copy act-copy--center">
           <div class="act-copy-inner">
             <p class="t-kicker">Your next step</p>
-            <h2 id="consultation-title" class="t-title">Let’s talk about your space.</h2>
+            <h2 id="consultation-title" class="t-title">Let’s talk about <em>your space.</em></h2>
             <div class="button-row">
               <a class="button button-primary" href="/contact#quote"><span>Request a quote</span><span aria-hidden="true">↗</span></a>
               <a class="button button-secondary" href="/floor-visualizer"><span>Preview a finish</span></a>
@@ -319,7 +325,6 @@ const allowPending = import.meta.env.DEV || import.meta.env.SITE_ENV === 'stagin
           <a class="link-quiet" href="/contact#quote" data-reveal="fade">Tell us about your project <span aria-hidden="true">↗</span></a>
         </div>
       </div>
-      <p class="sect-inner concept-note">The films and interiors on this page are concept visualizations of finishes. The project photographs are real Final Finish work.</p>
     </section>
   </main>
 

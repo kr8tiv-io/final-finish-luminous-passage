@@ -1,30 +1,89 @@
 ---
+/**
+ * The opening of every interior page, in the homepage's language (2026-09-22, Matt: "do
+ * the other pages in the same style ... the same type of font ... really dramatic
+ * headings").
+ *
+ * A picture held at the top of the page that dissolves into the paper below it (the
+ * same mist the homepage acts use), and a display headline printed on that paper, its
+ * last phrase set as the italic accent. `page-motion.ts` opens the picture, flies the
+ * headline in, and lets the picture drift as the page scrolls.
+ *
+ * The picture and the accent default by route so a page only passes what it wants to
+ * change. The pictures are concept visualisations; the footer carries the one line that
+ * says so, for every page.
+ */
 interface Props {
   eyebrow: string;
   title: string;
   lead: string;
+  /** The closing phrase set in italic. Default: the title's last two words. */
+  accent?: string;
+  /** A picture for the plate. Default: by route. `false` for a paper-only opening. */
+  image?: string | false;
   chapter?: string;
 }
 
-const { eyebrow, title, lead, chapter = 'Final Finish · Edmonton' } = Astro.props;
+const ROUTE_IMAGES: Record<string, string> = {
+  '/about': '/images/brand/consultation-court.webp',
+  '/finishes': '/images/brand/epoxy-finish-poster.jpg',
+  '/process': '/images/brand/foundation-chamber.webp',
+  '/service-area': '/images/brand/luminous-passage-keyframe.webp',
+  '/warranty': '/images/brand/epoxy-consultation-poster.jpg',
+  '/resources': '/images/brand/pearl-stair-v2.webp',
+  '/services': '/images/brand/luminous-finish-hall.webp',
+  '/services/commercial-epoxy-flooring': '/images/brand/epoxy-commercial-poster.jpg',
+  '/services/concrete-solutions': '/images/brand/epoxy-foundation-poster.jpg',
+  '/services/garage-floor-coating-edmonton': '/images/brand/epoxy-garage-poster.jpg',
+  '/services/residential-epoxy-flooring': '/images/brand/epoxy-basement-poster.jpg',
+};
+const FALLBACK_IMAGE = '/images/brand/epoxy-walkway-pearl-poster.jpg';
+
+const { eyebrow, title, lead, accent, image, chapter = 'Final Finish · Edmonton' } = Astro.props;
+const path = Astro.url.pathname.replace(/\/$/, '') || '/';
+const picture = image === false ? null : image ?? ROUTE_IMAGES[path] ?? FALLBACK_IMAGE;
+
+// The accent: an explicit phrase if the page gives one and it ends the title, else the
+// last two words (one for a three-word title).
+const words = title.trim().split(/\s+/);
+const fallbackAccent = words.slice(words.length > 3 ? -2 : -1).join(' ');
+const phrase = accent && title.trim().endsWith(accent) ? accent : fallbackAccent;
+const head = title.trim().slice(0, title.trim().length - phrase.length).trimEnd();
 ---
 
-<section class="interior-hero">
-  <div class="interior-frame" aria-hidden="true"></div>
+<section class:list={['interior-hero', { 'interior-hero--paper': !picture }]} data-interior-hero>
+  {picture && (
+    <div class="interior-plate" data-interior-plate aria-hidden="true">
+      <img src={picture} alt="" loading="eager" fetchpriority="high" decoding="async" data-interior-img />
+      <span class="interior-mist"></span>
+    </div>
+  )}
   <div class="interior-copy">
-    <p class="eyebrow">{eyebrow}</p>
-    <h1>{title}</h1>
-    <p>{lead}</p>
+    <p class="t-kicker" data-interior-kicker>{eyebrow}</p>
+    <h1 class="interior-title" data-interior-title>{head && <>{head} </>}<em>{phrase}</em></h1>
+    <p class="interior-lead" data-interior-lead>{lead}</p>
   </div>
   <span class="interior-chapter" aria-hidden="true">{chapter}</span>
 </section>
 
 <style>
-  .interior-hero { position: relative; display: grid; align-items: end; min-height: 70svh; padding: 11rem var(--gutter) var(--reading-space); overflow: hidden; background: linear-gradient(180deg,transparent 50%,var(--paper)), radial-gradient(ellipse at 82% 25%,rgba(111,166,202,.13),transparent 56%), var(--paper); }
-  .interior-frame { position: absolute; top: 9rem; right: 7vw; bottom: 0; width: min(36vw, 36rem); border: 1px solid rgba(22,79,131,.09); border-bottom: 0; border-radius: 50% 50% 0 0 / 18% 18% 0 0; mask-image: linear-gradient(#000,transparent 90%); }
-  .interior-copy { position: relative; z-index: 2; width: min(100%, var(--max)); margin: 0 auto; }
-  .interior-copy h1 { max-width: 15ch; margin: 0; font: 550 var(--type-hero)/1.02 var(--sans); letter-spacing: -.035em; text-wrap: balance; overflow-wrap: break-word; }
-  .interior-copy > p:last-child { max-width: 55ch; margin: 2rem 0 0; color: #3f4e57; font-size: var(--type-lead); line-height: 1.5; }
-  .interior-chapter { position: absolute; right: var(--gutter); bottom: 2rem; color: var(--muted); font-size: .875rem; letter-spacing: .025em; }
-  @media (max-width: 720px) { .interior-hero { min-height: 72svh; } .interior-frame { right: -18%; width: 70vw; opacity: .7; } }
+  .interior-hero { position: relative; display: grid; align-content: end; min-height: 100svh; padding: 0 var(--gutter) clamp(4rem, 9vw, 7.5rem); overflow: clip; background: transparent; }
+  .interior-hero--paper { min-height: 78svh; padding-top: 11rem; }
+  .interior-plate { position: absolute; inset: 0 0 auto 0; height: 74svh; overflow: hidden; }
+  .interior-plate img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: 50% 58%; transform-origin: 50% 40%; will-change: transform; }
+  /* The picture dissolves into the paper the page is printed on: the homepage's mist. */
+  .interior-mist { position: absolute; inset: auto 0 0 0; height: 42%; background: url('/images/brand/fog/fog-rise-1024.webp') 0 100% / 100% 100% no-repeat; }
+  .interior-plate::before { content: ''; position: absolute; inset: 0; z-index: 1; background: linear-gradient(180deg, rgb(var(--paper-rgb) / .55), transparent 26%); pointer-events: none; }
+  .interior-copy { position: relative; z-index: 2; width: min(100%, var(--max)); margin: 0 auto; padding-top: 58svh; }
+  .interior-hero--paper .interior-copy { padding-top: 0; }
+  .interior-title { max-width: 18ch; font-size: var(--t-title); line-height: .93; overflow-wrap: break-word; }
+  .interior-lead { max-width: 52ch; margin: 2rem 0 0; color: var(--ink-body); font-size: clamp(1.05rem, 1.25vw, 1.25rem); line-height: 1.6; text-wrap: pretty; }
+  .interior-chapter { position: absolute; right: var(--gutter); bottom: 2rem; z-index: 2; color: var(--ink-quiet); font-size: .66rem; letter-spacing: .16em; text-transform: uppercase; }
+  @media (max-width: 720px) {
+    .interior-hero { min-height: 92svh; padding-bottom: 4rem; }
+    .interior-plate { height: 58svh; }
+    .interior-copy { padding-top: 46svh; }
+    .interior-title { max-width: none; }
+    .interior-chapter { display: none; }
+  }
 </style>

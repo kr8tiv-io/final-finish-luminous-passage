@@ -14,11 +14,7 @@
   --ring-step: 21.18deg;
   position: relative;
   height: 230svh;
-  background-color: var(--paper);
-  background-image: var(--grid-lines);
-  background-size: var(--grid-size);
-  background-position: var(--gutter) 0;
-  background-repeat: repeat-x;
+  background: transparent;
 }
 .ring-stage { position: sticky; top: 0; height: 100lvh; display: grid; grid-template-rows: auto minmax(0, 1fr) auto; padding: clamp(5.5rem, 12svh, 8rem) var(--gutter) clamp(1.4rem, 4svh, 2.6rem); overflow: hidden; }
 .ring-head { text-align: center; }
@@ -55,7 +51,7 @@
 .g-mark { width: 1.15rem; height: 1.15rem; flex: 0 0 auto; }
 .ring-rating-meta small { font-size: .62rem; color: var(--ink-quiet); }
 .ring-controls { display: flex; align-items: center; gap: .9rem; }
-.ring-btn { display: grid; place-items: center; width: 44px; height: 44px; border: 1px solid rgb(var(--ink-rgb) / .2); border-radius: 50%; background: rgb(var(--paper-bright-rgb) / .8); color: var(--ink); font-size: .95rem; cursor: pointer; transition: background-color .25s, border-color .25s; }
+.ring-btn { display: grid; place-items: center; width: 44px; height: 44px; border: 1px solid rgb(var(--ink-rgb) / .2); border-radius: 0; background: rgb(var(--paper-bright-rgb) / .8); color: var(--ink); font-size: .95rem; cursor: pointer; transition: background-color .25s, border-color .25s; }
 .ring-btn:hover { background: var(--paper-bright); border-color: var(--cobalt); }
 .ring-btn:focus-visible { outline: 2px solid var(--cobalt); outline-offset: 3px; }
 .ring-count { margin: 0; min-width: 4.2rem; text-align: center; font-size: .7rem; letter-spacing: .14em; color: var(--ink-quiet); font-variant-numeric: tabular-nums; }

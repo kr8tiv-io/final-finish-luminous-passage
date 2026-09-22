@@ -1,0 +1,80 @@
+/* The process track: a sticky stage and a rail that travels sideways.
+ *
+ * Rail widths are in vw so the section's height can be reserved in CSS before any
+ * script runs: travel = rail width - 100vw, height = travel + one screen. `acts.ts`
+ * only reads that travel back (it measures the rail) and writes transforms.
+ */
+.track-sect {
+  --track-pad: 4vw;
+  --track-head: 42vw;
+  /* Sized by height too: on a short laptop screen a width-only panel ran up under the
+     header (Matt, 2026-09-22). The picture is 4:3, so this caps it near 40svh tall. */
+  --track-panel: min(30vw, 54svh);
+  --track-gap: 4vw;
+  --track-n: 6;
+  --track-rail: calc(2 * var(--track-pad) + var(--track-head) + var(--track-n) * (var(--track-panel) + var(--track-gap)));
+  --track-travel: calc(var(--track-rail) - 100vw);
+  position: relative;
+  height: calc(var(--track-travel) + 100lvh);
+  background: transparent;
+}
+.track-stage { position: sticky; top: 0; height: 100lvh; overflow: hidden; display: flex; flex-direction: column; justify-content: center; padding-top: clamp(4.5rem, 9svh, 6.5rem); padding-bottom: calc(100lvh - 100svh + clamp(2.5rem, 7svh, 4.5rem)); box-sizing: border-box; }
+.track-rail {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--track-gap);
+  width: var(--track-rail);
+  margin: 0;
+  padding: 0 var(--track-pad);
+  list-style: none;
+  will-change: transform;
+}
+.track-head { flex: 0 0 var(--track-head); padding-right: 2vw; }
+.track-head .t-title { max-width: 11ch; }
+.track-head .t-body { max-width: 28rem; }
+.track-panel { position: relative; flex: 0 0 var(--track-panel); display: grid; gap: 1.1rem; }
+.track-num {
+  position: absolute;
+  top: -.62em;
+  right: -.06em;
+  z-index: 2;
+  font-family: var(--display);
+  font-weight: 500;
+  font-size: min(clamp(5rem, 10vw, 11rem), 17svh);
+  line-height: 1;
+  color: transparent;
+  -webkit-text-stroke: 1px rgb(var(--ink-rgb) / .35);
+  pointer-events: none;
+  will-change: transform;
+}
+.track-media { position: relative; margin: 0; aspect-ratio: 4 / 3; overflow: hidden; background: rgb(var(--ink-rgb) / .06); }
+.track-media img { position: absolute; inset: -6%; width: 112%; height: 112%; object-fit: cover; will-change: transform; }
+/* A lamp passes over each surface as it crosses the centre (written by acts.ts). */
+.track-media::after { content: ''; position: absolute; inset: 0; background: linear-gradient(105deg, transparent 30%, rgb(255 255 255 / .18) 48%, transparent 66%); transform: translate3d(var(--track-sheen, -120%), 0, 0); pointer-events: none; }
+.track-title { margin: .4rem 0 0; font-family: var(--display); font-weight: 500; font-size: clamp(1.7rem, 2.4vw, 2.7rem); line-height: 1; text-transform: uppercase; letter-spacing: .004em; color: var(--ink); }
+.track-copy { margin: 0; max-width: 30rem; font-size: clamp(.95rem, 1vw, 1.05rem); line-height: 1.7; color: var(--ink-body); }
+.track-foot { position: absolute; left: var(--gutter); right: var(--gutter); bottom: calc(100lvh - 100svh + clamp(1.4rem, 4svh, 2.6rem)); display: flex; align-items: center; gap: 1.2rem; }
+.track-count { font-size: .68rem; letter-spacing: .16em; color: var(--ink-quiet); font-variant-numeric: tabular-nums; }
+.track-count span { color: var(--ink); }
+.track-bar { position: relative; flex: 1; height: 1px; background: rgb(var(--ink-rgb) / .14); }
+.track-bar span { position: absolute; inset: 0; background: var(--cobalt); transform: scaleX(0); transform-origin: left; }
+
+/* Flat: reduced motion and the `still` tier get a plain grid, no travel. */
+html[data-journey-tier='still'] .track-sect { height: auto; }
+html[data-journey-tier='still'] .track-stage { position: relative; height: auto; padding: 6rem 0; }
+html[data-journey-tier='still'] .track-rail { display: grid; grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr)); width: auto; gap: 3rem var(--gutter); padding: 0 var(--gutter); transform: none !important; }
+html[data-journey-tier='still'] .track-head { grid-column: 1 / -1; }
+html[data-journey-tier='still'] .track-foot { display: none; }
+@media (prefers-reduced-motion: reduce) {
+  .track-sect { height: auto; }
+  .track-stage { position: relative; height: auto; padding: 6rem 0; }
+  .track-rail { display: grid; grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr)); width: auto; gap: 3rem var(--gutter); padding: 0 var(--gutter); transform: none !important; }
+  .track-head { grid-column: 1 / -1; }
+  .track-foot { display: none; }
+}
+
+@media (max-width: 680px) {
+  .track-sect { --track-pad: 6vw; --track-head: 84vw; --track-panel: 78vw; --track-gap: 7vw; }
+  .track-num { font-size: 5.5rem; }
+  .track-title { font-size: 1.7rem; }
+}
