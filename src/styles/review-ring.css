@@ -1,0 +1,100 @@
+/* The review ring (Act 2). Composition only; `acts.ts` writes every transform.
+ *
+ * The section is taller than the screen and its stage is sticky, so the ring holds
+ * while scroll turns it. Each card stands on the cylinder at `rotateY(i * step)
+ * translateZ(radius)`; the ring itself is pulled back by one radius so the front
+ * card sits exactly on the screen plane and reads at 1:1. `--ring-radius` and
+ * `--ring-step` are written once per measure; the per-frame work is one
+ * `rotateY` on the ring plus an opacity per card.
+ */
+.ring-sect {
+  --ring-card-w: clamp(17rem, 23vw, 21.5rem);
+  --ring-card-h: clamp(15rem, 34svh, 19rem);
+  --ring-radius: 1000px;
+  --ring-step: 21.18deg;
+  position: relative;
+  height: 230svh;
+  background-color: var(--paper);
+  background-image: var(--grid-lines);
+  background-size: var(--grid-size);
+  background-position: var(--gutter) 0;
+  background-repeat: repeat-x;
+}
+.ring-stage { position: sticky; top: 0; height: 100lvh; display: grid; grid-template-rows: auto minmax(0, 1fr) auto; padding: clamp(5.5rem, 12svh, 8rem) var(--gutter) clamp(1.4rem, 4svh, 2.6rem); overflow: hidden; }
+.ring-head { text-align: center; }
+.ring-head .t-kicker { justify-content: center; margin-bottom: 1rem; }
+.ring-head .t-title { margin-inline: auto; font-size: clamp(2.1rem, 3.9vw, 4.4rem); max-width: 18ch; }
+
+.ring-viewport { position: relative; display: grid; place-items: center; perspective: 1900px; perspective-origin: 50% 45%; touch-action: pan-y; cursor: grab; outline: none; }
+.ring-viewport:active,
+.ring-viewport[data-dragging] { cursor: grabbing; }
+.ring-viewport[data-dragging] a { pointer-events: none; }
+.ring-viewport:focus-visible { box-shadow: inset 0 0 0 2px var(--cobalt); border-radius: .5rem; }
+/* Edge fade: the drum dissolves into the paper at both sides rather than being cut. */
+.ring-viewport { mask-image: linear-gradient(90deg, transparent, #000 14%, #000 86%, transparent); }
+.ring { position: relative; width: var(--ring-card-w); height: var(--ring-card-h); margin: 0; padding: 0; list-style: none; transform-style: preserve-3d; transform: translateZ(calc(-1 * var(--ring-radius))) rotateY(0deg); will-change: transform; }
+.ring-cell { position: absolute; inset: 0; transform-style: preserve-3d; transform: rotateY(calc(var(--i) * var(--ring-step))) translateZ(var(--ring-radius)); backface-visibility: hidden; }
+.ring-card { box-sizing: border-box; display: flex; flex-direction: column; width: 100%; height: 100%; margin: 0; padding: clamp(1.3rem, 1.9vw, 1.8rem); background: linear-gradient(170deg, var(--paper-bright) 20%, rgb(var(--paper-bright-rgb) / .9) 70%, rgb(var(--paper-rgb) / .86)); border-radius: .55rem; box-shadow: 0 0 0 1px rgb(var(--ink-rgb) / .05), 0 22px 60px rgb(var(--ink-rgb) / .07); backface-visibility: hidden; user-select: none; }
+.ring-card-top { display: flex; align-items: center; justify-content: space-between; }
+.ring-card-stars { color: var(--bronze); font-size: .8rem; letter-spacing: .14em; }
+.ring-card-index { font-size: .6rem; font-weight: 600; letter-spacing: .16em; color: var(--ink-quiet); font-variant-numeric: tabular-nums; }
+.ring-card-quote { margin: 1.1rem 0 1rem; font-family: var(--display); font-weight: 500; font-size: clamp(1.25rem, 1.45vw, 1.5rem); line-height: 1.28; letter-spacing: .002em; color: var(--ink); text-wrap: pretty; }
+.ring-card-foot { margin-top: auto; display: grid; gap: .25rem; }
+.ring-card-foot strong { font-size: .72rem; font-weight: 650; letter-spacing: .06em; text-transform: uppercase; }
+.ring-card-meta { font-size: .66rem; color: var(--ink-quiet); }
+.ring-card-meta a { color: inherit; text-underline-offset: .25rem; }
+.review-tag { color: var(--cobalt); }
+
+.ring-foot { display: flex; align-items: flex-end; justify-content: space-between; gap: 2rem; width: min(100%, var(--max)); margin-inline: auto; }
+.ring-rating { display: flex; align-items: center; gap: 1.2rem; }
+.ring-score { font-family: var(--display); font-weight: 500; font-size: clamp(3.4rem, 5vw, 5.4rem); line-height: .9; color: var(--ink); text-decoration: none; font-variant-numeric: tabular-nums; }
+.ring-rating-meta { display: grid; gap: .25rem; }
+.ring-stars { color: var(--bronze); font-size: 1rem; letter-spacing: .14em; }
+.ring-google { display: inline-flex; align-items: center; gap: .55rem; min-height: 32px; font-size: .8rem; font-weight: 600; color: var(--ink); text-decoration: none; }
+.ring-google:hover span:not([aria-hidden]) { text-decoration: underline; text-underline-offset: .3rem; }
+.g-mark { width: 1.15rem; height: 1.15rem; flex: 0 0 auto; }
+.ring-rating-meta small { font-size: .62rem; color: var(--ink-quiet); }
+.ring-controls { display: flex; align-items: center; gap: .9rem; }
+.ring-btn { display: grid; place-items: center; width: 44px; height: 44px; border: 1px solid rgb(var(--ink-rgb) / .2); border-radius: 50%; background: rgb(var(--paper-bright-rgb) / .8); color: var(--ink); font-size: .95rem; cursor: pointer; transition: background-color .25s, border-color .25s; }
+.ring-btn:hover { background: var(--paper-bright); border-color: var(--cobalt); }
+.ring-btn:focus-visible { outline: 2px solid var(--cobalt); outline-offset: 3px; }
+.ring-count { margin: 0; min-width: 4.2rem; text-align: center; font-size: .7rem; letter-spacing: .14em; color: var(--ink-quiet); font-variant-numeric: tabular-nums; }
+.ring-count span { color: var(--ink); }
+.ring-all { display: inline-flex; align-items: center; gap: .5rem; min-height: 44px; margin-left: .6rem; font-size: .76rem; color: var(--cobalt); text-underline-offset: .35rem; }
+
+/* Flat: reduced motion and the `still` tier get the same cards in a row. */
+html[data-journey-tier='still'] .ring-sect { height: auto; }
+html[data-journey-tier='still'] .ring-stage { position: relative; height: auto; }
+html[data-journey-tier='still'] .ring-viewport { perspective: none; mask-image: none; overflow-x: auto; scroll-snap-type: x mandatory; place-items: start; padding-block: 2.5rem; cursor: auto; }
+html[data-journey-tier='still'] .ring { display: flex; gap: 1rem; width: max-content; height: auto; transform: none !important; }
+html[data-journey-tier='still'] .ring-cell { position: relative; inset: auto; width: var(--ring-card-w); height: var(--ring-card-h); transform: none; scroll-snap-align: start; opacity: 1 !important; }
+html[data-journey-tier='still'] .ring-controls .ring-btn,
+html[data-journey-tier='still'] .ring-count { display: none; }
+@media (prefers-reduced-motion: reduce) {
+  .ring-sect { height: auto; }
+  .ring-stage { position: relative; height: auto; }
+  .ring-viewport { perspective: none; mask-image: none; overflow-x: auto; scroll-snap-type: x mandatory; place-items: start; padding-block: 2.5rem; }
+  .ring { display: flex; gap: 1rem; width: max-content; height: auto; transform: none !important; }
+  .ring-cell { position: relative; inset: auto; width: var(--ring-card-w); height: var(--ring-card-h); transform: none; scroll-snap-align: start; opacity: 1 !important; }
+}
+
+@media (max-width: 680px) {
+  .ring-sect { --ring-card-w: 74vw; --ring-card-h: clamp(15rem, 40svh, 18rem); height: 210svh; }
+  .ring-stage { padding: 5.2rem var(--gutter) 1.2rem; }
+  .ring-head .t-title { font-size: clamp(1.9rem, 8.4vw, 2.6rem); }
+  .ring-viewport { perspective: 1150px; mask-image: linear-gradient(90deg, transparent, #000 7%, #000 93%, transparent); }
+  .ring-card-quote { font-size: 1.2rem; }
+  .ring-foot { flex-direction: column; align-items: stretch; gap: .9rem; }
+  .ring-rating { gap: .9rem; }
+  .ring-score { font-size: 3rem; }
+  .ring-controls { justify-content: space-between; }
+  .ring-all { margin-left: 0; }
+}
+@media (max-height: 760px) and (min-width: 681px) {
+  .ring-stage { padding-top: 5rem; }
+  .ring-head .t-kicker { margin-bottom: .5rem; }
+  .ring-head .t-title { font-size: clamp(1.9rem, 3.2vw, 3.2rem); }
+  .ring-sect { --ring-card-h: clamp(13rem, 36svh, 16rem); }
+  .ring-card-quote { font-size: 1.15rem; margin-block: .7rem; }
+  .ring-score { font-size: 3.2rem; }
+}

@@ -2,28 +2,19 @@
 import BaseLayout from '../layouts/BaseLayout.astro';
 import SiteFooter from '../components/SiteFooter.astro';
 import SiteHeader from '../components/SiteHeader.astro';
-import JourneyMotionLoader from '../components/motion/JourneyMotionLoader';
-import FilmVeilLoader from '../components/motion/FilmVeilLoader';
-import SocialProof from '../components/home/SocialProof.astro';
-import ProjectStory from '../components/home/ProjectStory.astro';
-import projectStories from '../data/home-project-stories.json';
-import customerProof from '../data/customer-proof.json';
-import { ratingIsCurrent } from '../lib/content/review-navigation';
-import EditorialMotion from '../components/motion/EditorialMotion';
 import MotionPreferenceControl from '../components/motion/MotionPreferenceControl';
+import ReviewRing from '../components/home/ReviewRing.astro';
+import GoogleMark from '../components/home/GoogleMark.astro';
+import PreparationLayers from '../components/home/PreparationLayers.astro';
 import FloorPlanning from '../components/home/FloorPlanning.astro';
 import TransformationGallery from '../components/projects/TransformationGallery';
-import ChapterReading from '../components/home/ChapterReading.astro';
-import PreparationLayers from '../components/home/PreparationLayers.astro';
-import ResinReveal from '../components/home/ResinReveal.astro';
-import ReclaimBay from '../components/home/ReclaimBay.astro';
 import ArchiveLattice from '../components/home/ArchiveLattice';
+import customerProof from '../data/customer-proof.json';
+import { ratingIsCurrent } from '../lib/content/review-navigation';
 import {
   ARCHIVE_COLUMNS,
-  ARCHIVE_DATE_RANGE,
   ARCHIVE_JOB_COUNT,
   ARCHIVE_LEAD_INDEX,
-  ARCHIVE_PENDING_COUNT,
   ARCHIVE_PHONE_COLUMNS,
   ARCHIVE_PHOTO_COUNT,
   ARCHIVE_ROWS,
@@ -31,223 +22,185 @@ import {
   archiveResolveImage,
   archiveResolveIndex,
 } from '../data/archive-lattice';
-import '../styles/journey.css';
-import '../styles/reclaim-bay.css';
+import '../styles/acts.css';
 
+/*
+ * The homepage, 2026-09-22 direction ("acts and paper", see src/styles/acts.css).
+ *
+ * Six acts — a film or a photograph held on screen while scroll tells its part — and
+ * the white paper between them, on one grid, in one type pairing, with one motion
+ * grammar (src/lib/motion/acts.ts). Every act opens out of paper mist and closes into
+ * it, so an act and the paper after it are the same surface: nothing to seam.
+ *
+ * Retired from this page on Matt's review: the second reclaim room (the mancave film),
+ * the resin headline pin (duplicated "Flake, solid, or metallic"), the "good
+ * preparation shows" project story, the comparisons strip under the cylinder, the
+ * per-act concept labels (one disclosure line now closes the page), and the empty
+ * breaths between chapters.
+ */
 const title = 'Final Finish Epoxy | Edmonton Epoxy Floor Coatings';
 const description = 'Edmonton epoxy floor coatings for garages, homes, and commercial rooms. Denis and Final Finish prepare the slab, then build a flake, solid, or metallic finish that is easier to live with.';
-const currentRating = ratingIsCurrent(customerProof.rating.verifiedAt, customerProof.rating.refreshAfterDays);
-const ratingDate = new Intl.DateTimeFormat('en-CA', {month:'short',day:'numeric',year:'numeric',timeZone:'America/Edmonton'}).format(new Date(customerProof.rating.verifiedAt));
-// Keep unapproved spatial work available for local review, not the client route.
-const thresholdStudy = import.meta.env.DEV && Astro.url.searchParams.get('study') === 'threshold';
+const { rating } = customerProof;
+const currentRating = ratingIsCurrent(rating.verifiedAt, rating.refreshAfterDays);
+const ratingDate = new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' }).format(new Date(rating.verifiedAt));
+const allowPending = import.meta.env.DEV || import.meta.env.SITE_ENV === 'staging';
 ---
 
 <BaseLayout title={title} description={description}>
   <SiteHeader />
   <MotionPreferenceControl client:load />
 
-  <main id="main-content" class="journey" data-room="portico" data-threshold-study={thresholdStudy || undefined}>
-    <JourneyMotionLoader client:only="react" />
-    <EditorialMotion client:only="react" />
-    <FilmVeilLoader client:only="react" enableThresholdStudy={thresholdStudy} />
-    {thresholdStudy && <p class="threshold-study-note">Local 3D study · visual direction not approved</p>}
-    {/*
-      Act 1 is a sticky-in-flow act (storyboard §2 "Vertical, sticky · 2.6 vh
-      (phone 2.2)", §6 "Sticky-in-flow host, 100lvh, no fixed layers"). The
-      SECTION carries the act's scroll span — the director measures the chapter's
-      rect, so the span has to be the section's own height — and `.hero-stage` is
-      the one viewport the visitor looks at while that span runs. The reading layer
-      moves into it — the wash, the copy, the proof line and the act label — so a
-      2.6 vh act never stretches a one-viewport gradient across three of them, and
-      the absolutely positioned `.hero-proof` / `.chapter-index` keep resolving
-      `left: var(--gutter)` against a full-width box, exactly as before. The plate
-      stays outside it; see the note on it below.
-    */}
-    <section class="journey-chapter hero-chapter" id="portico" tabindex="-1" data-journey-chapter="portico" aria-labelledby="hero-title">
-      {/*
-        The plate stays a DIRECT child of the chapter. `journey.css` and
-        `readable-experience.css` both stage it with `[data-media-active] > .pour-stage`
-        — one for `opacity`, one for `position: fixed` — and a plate moved inside the
-        host silently fails both: measured, the hero rendered as bare paper with the
-        copy floating on it. Once staged it is `position: fixed`, so the act's length
-        cannot reach it; while unstaged it keeps the `height: 99svh` top-of-act
-        framing `readable-experience.css` gives it for the LCP entry.
-      */}
-      <div class="pour-stage" aria-hidden="true">
-        {/*
-          The phone is capped at the 854w rung by a `media` source rather than by a
-          `sizes` figure that misdescribes a full-bleed plate. At 390 px / DPR 3 the
-          density ladder asked for 1170w and took the 1280w file (95,140 B); this
-          hands it the 480 rung (50,658 B) and leaves the ladder untouched on
-          desktop. The `<img>` keeps its own src/srcset and is still the LCP element.
-        */}
-        <picture>
-          <source media="(max-width: 680px)" srcset="/images/brand/follow-floor/480/epoxy-pour-pearl-poster.jpg" />
-          <img
-            class="pour-poster"
-            loading="eager"
-            fetchpriority="high"
-            src="/images/brand/follow-floor/720/epoxy-pour-pearl-poster.jpg"
-            srcset="/images/brand/follow-floor/480/epoxy-pour-pearl-poster.jpg 854w, /images/brand/follow-floor/720/epoxy-pour-pearl-poster.jpg 1280w, /images/brand/follow-floor/1080/epoxy-pour-pearl-poster.jpg 1920w"
-            sizes="100vw"
-            alt=""
-            width="1280"
-            height="720"
-            decoding="async"
-          />
-        </picture>
-        <video
-          class="pour-film"
-          muted
-          playsinline
-          disablepictureinpicture
-          preload="none"
-        >
-          <source media="(max-width: 680px)" src="/videos/follow-floor/480/epoxy-pour-pearl.mp4" type="video/mp4" />
-          <source src="/videos/follow-floor/720/epoxy-pour-pearl.mp4" type="video/mp4" />
-        </video>
-      </div>
-      <div class="hero-stage">
-      <div class="hero-light" aria-hidden="true"></div>
-      <div class="chapter-content hero-content">
-        <p class="eyebrow">Edmonton garage & commercial floor coatings</p>
-        <h1 id="hero-title" class="display-title">A better floor changes the whole space.</h1>
-        <p class="lead">Epoxy floor coatings for Edmonton garages, workshops, and commercial spaces. Thoughtful preparation. A finish chosen around you.</p>
-        <div class="button-row">
-          <a class="button button-primary" href="/contact#quote"><span>Request a quote</span><span aria-hidden="true">↗</span></a>
-          <a class="button button-secondary" href="/floor-visualizer"><span>Try your floor</span></a>
-          <a class="text-call" href="tel:+17809911651">Call Denis <span>(780) 991-1651</span></a>
-        </div>
-        <nav class="hero-ribbon" data-hero-ribbon aria-label="Follow the floor chapters">
-          <span class="hero-ribbon-line" aria-hidden="true"></span>
-          <a href="#portico">The pour</a><a href="#customer-reviews">The proof</a><a href="#proof">See the difference</a><a href="#finish-hall">Your finish</a>
-        </nav>
-      </div>
-
-      <a class="hero-proof" href="#customer-reviews">{currentRating ? <><span aria-hidden="true">★★★★★</span> {customerProof.rating.value.toFixed(1)} · {customerProof.rating.count}+ Google reviews <small>Checked {ratingDate}</small></> : 'Hear from our customers'} <span aria-hidden="true">↓</span></a>
-      <p class="chapter-index" data-act-label>01 / The pour <span>Material concept film</span></p>
-      </div>
-    </section>
-
-    <SocialProof />
-
-    <div class="journey-breath" data-hall-from="portico" data-hall-to="foundation" aria-hidden="true"></div>
-
-    <section class="journey-chapter foundation-chapter" id="foundation" tabindex="-1" data-journey-chapter="foundation" aria-labelledby="foundation-title">
-      {/*
-        Act 3, option A (storyboard §5, ASSET-LEDGER "pearl-graded walkway film"):
-        the stair is the pearl-graded walkway film scrubbed by scroll, the same
-        contract as the pour, with `FOUNDATION_STAIR_TIMING` as its window so the
-        act keeps coherent bookend frames around the authored walk. The poster is
-        frame 0 of that master, so poster and first scrubbed frame are the same
-        picture. Option B (the 2.5D `DepthPlate` stair) stays on `/lab/stairs`.
-      */}
-      <div class="floor-film pearl-walk" aria-hidden="true">
-        <img class="floor-film-poster" loading="lazy" src="/images/brand/epoxy-walkway-pearl-poster.jpg" alt="" width="1280" height="720" decoding="async" />
-        <video class="floor-film-video" muted playsinline disablepictureinpicture preload="none">
-          <source media="(max-width: 680px)" src="/videos/follow-floor/480/epoxy-walkway-pearl.mp4" type="video/mp4" />
-          <source src="/videos/follow-floor/720/epoxy-walkway-pearl.mp4" type="video/mp4" />
-        </video>
-      </div>
-      <div class="chapter-content offset-content">
-        <div class="chapter-copy-surface">
-        <p class="eyebrow">Preparation, repair, precision</p>
-        <h2 id="foundation-title" class="chapter-title">The finish begins below the surface.</h2>
-        </div>
-      </div>
-      <figure class="material-lens" data-material-lens data-horizon-avoid aria-label="Pearl-grey epoxy material concept, detail view">
-        <div class="material-lens-glass"><img src="/images/brand/pearl-stair-v2.webp" alt="Detail of the softly reflective pearl-grey concept floor" width="1672" height="941" loading="lazy" /></div>
-        <figcaption><span>01 / Surface study</span><strong>Pearl grey</strong><small>Illustrative material · not an installed project</small></figcaption>
-      </figure>
-      <p class="chapter-index" data-act-label aria-hidden="true">03 / Beneath the surface <span>Architectural concept</span></p>
-    </section>
-
-    <ChapterReading id="foundation" number="03" label="What happens beneath the finish" href="/services/concrete-solutions" link="Explore concrete preparation">
-      <p>A beautiful finish starts with the concrete underneath. Discuss existing coatings, cracks, contamination, and moisture concerns with Denis before choosing a coating system.</p>
-      <p>The assessment guides the preparation. It is the part you may not see in the finished photograph, but it deserves just as much attention.</p>
-      <PreparationLayers />
-    </ChapterReading>
-
-    <div class="journey-breath" data-hall-from="foundation" data-hall-to="garage" aria-hidden="true"></div>
-
-    <ReclaimBay rooms={['garage', 'vault', 'mancave']}>
-      <Fragment slot="headline">
-        <div class="chapter-content">
-          <div class="chapter-copy-surface">
-            <p class="eyebrow">More room for your life</p>
-            <h2 id="reclaim-title" class="chapter-title">Reclaim your garage or basement.</h2>
-            <p class="reclaim-second-line">Make room for what you love.</p>
+  <main id="main-content" class="acts" data-acts>
+    {/* ── Act 1 · The pour ─────────────────────────────────────────────────── */}
+    <section id="portico" class="act act--hero" data-act="hero" style="--act-vh:235;--act-vh-phone:200" aria-labelledby="hero-title">
+      <div class="act-stage">
+        <div class="act-plate" aria-hidden="true">
+          <div class="act-frame">
+            <picture>
+              <source media="(max-width: 680px)" srcset="/images/brand/follow-floor/480/epoxy-pour-pearl-poster.jpg" />
+              <img
+                class="act-poster"
+                loading="eager"
+                fetchpriority="high"
+                src="/images/brand/follow-floor/720/epoxy-pour-pearl-poster.jpg"
+                srcset="/images/brand/follow-floor/480/epoxy-pour-pearl-poster.jpg 854w, /images/brand/follow-floor/720/epoxy-pour-pearl-poster.jpg 1280w, /images/brand/follow-floor/1080/epoxy-pour-pearl-poster.jpg 1920w"
+                sizes="100vw"
+                alt=""
+                width="1280"
+                height="720"
+                decoding="async"
+              />
+            </picture>
+            <video data-film="portico" data-film-window="0,0.9" muted playsinline disablepictureinpicture preload="none">
+              <source media="(max-width: 680px)" src="/videos/follow-floor/480/epoxy-pour-pearl.mp4" type="video/mp4" />
+              <source src="/videos/follow-floor/720/epoxy-pour-pearl.mp4" type="video/mp4" />
+            </video>
           </div>
         </div>
-      </Fragment>
-
-      <section class="journey-chapter reclaim-room garage-chapter" id="garage" tabindex="-1" data-journey-chapter="garage" data-bay-room="garage" style="--bay-slot:0" aria-labelledby="garage-title">
-        <div class="floor-film" aria-hidden="true">
-          <img class="floor-film-poster" loading="lazy" src="/images/brand/epoxy-garage-poster.jpg" alt="" width="1280" height="720" decoding="async" />
-          <video class="floor-film-video" muted playsinline disablepictureinpicture preload="none">
-            <source media="(max-width: 680px)" src="/videos/follow-floor/480/epoxy-garage.mp4" type="video/mp4" />
-            <source src="/videos/follow-floor/720/epoxy-garage.mp4" type="video/mp4" />
-          </video>
+        <div class="act-column" aria-hidden="true"></div>
+        <div class="act-copy">
+          <div class="act-copy-inner">
+            <p class="t-kicker">Edmonton garage &amp; commercial floor coatings</p>
+            <h1 id="hero-title" class="t-display">A better floor changes the whole space.</h1>
+            <p class="t-body">Epoxy floor coatings for Edmonton garages, workshops, and commercial spaces. Thoughtful preparation. A finish chosen around you.</p>
+            <div class="button-row">
+              <a class="button button-primary" href="/contact#quote"><span>Request a quote</span><span aria-hidden="true">↗</span></a>
+              <a class="button button-secondary" href="/floor-visualizer"><span>Try your floor</span></a>
+              <a class="text-call" href="tel:+17809911651">Call Denis <span>(780) 991-1651</span></a>
+            </div>
+            <a class="hero-proof" href="#customer-reviews">
+              <GoogleMark />
+              {currentRating
+                ? <span><span class="hero-stars" aria-hidden="true">★★★★★</span> {rating.value.toFixed(1)} · {rating.count} reviews on Google</span>
+                : <span>Hear from our customers</span>}
+              {currentRating && <small>Checked {ratingDate}</small>}
+            </a>
+          </div>
         </div>
-        <div class="reclaim-room__copy">
-          <h2 id="garage-title" class="reclaim-room-title">The workshop. The gym. The car you look after.</h2>
-          <p class="reclaim-room-sub">Garage floors for vehicles, storage, equipment, and everyday use.</p>
-        </div>
-        <p class="chapter-index" data-act-label aria-hidden="true">04 / Reclaim · garage <span>Architectural concept · not an installed project</span></p>
-      </section>
-
-      <div class="journey-breath" data-hall-from="garage" data-hall-to="vault" aria-hidden="true"></div>
-
-      <section class="journey-chapter reclaim-room vault-chapter" id="vault" tabindex="-1" data-journey-chapter="vault" data-bay-room="vault" style="--bay-slot:1" aria-labelledby="vault-title">
-        <div class="floor-film" aria-hidden="true">
-          <img class="floor-film-poster" loading="lazy" src="/images/brand/epoxy-basement-poster.jpg" alt="" width="1280" height="720" decoding="async" />
-          <video class="floor-film-video" muted playsinline disablepictureinpicture preload="none">
-            <source media="(max-width: 680px)" src="/videos/follow-floor/480/epoxy-basement.mp4" type="video/mp4" />
-            <source src="/videos/follow-floor/720/epoxy-basement.mp4" type="video/mp4" />
-          </video>
-        </div>
-        <div class="reclaim-room__copy">
-          <h2 id="vault-title" class="reclaim-room-title">The space was always there.</h2>
-          <p class="reclaim-room-sub">A hobby room, a place to train, or simply a more useful basement.</p>
-        </div>
-        <p class="chapter-index" data-act-label aria-hidden="true">04 / Reclaim · basement <span>Architectural concept · not an installed project</span></p>
-      </section>
-
-      <div class="journey-breath" data-hall-from="vault" data-hall-to="mancave" aria-hidden="true"></div>
-
-      <section class="journey-chapter reclaim-room mancave-chapter" id="mancave" tabindex="-1" data-journey-chapter="mancave" data-bay-room="mancave" style="--bay-slot:2" aria-labelledby="mancave-title">
-        <div class="floor-film" aria-hidden="true">
-          <img class="floor-film-poster" loading="lazy" src="/images/brand/epoxy-mancave-poster.jpg" alt="" width="1280" height="720" decoding="async" />
-          <video class="floor-film-video" muted playsinline disablepictureinpicture preload="none">
-            <source media="(max-width: 680px)" src="/videos/follow-floor/480/epoxy-mancave.mp4" type="video/mp4" />
-            <source src="/videos/follow-floor/720/epoxy-mancave.mp4" type="video/mp4" />
-          </video>
-        </div>
-        <div class="reclaim-room__copy">
-          <h2 id="mancave-title" class="reclaim-room-title">A lounge below the house.</h2>
-          <p class="reclaim-room-sub">Storage that became a room.</p>
-        </div>
-        <p class="chapter-index" data-act-label aria-hidden="true">04 / Reclaim · lounge <span>Architectural concept · not an installed project</span></p>
-      </section>
-    </ReclaimBay>
-
-    <ChapterReading id="mancave" number="04" label="Make room for what you love" href="/services/residential-epoxy-flooring" link="Explore residential floors">
-      <p>A workshop for the weekend. A place to train. Space for a hobby that has outgrown the kitchen table. The floor is a sensible place to start making an underused room feel considered.</p>
-      <p>Tell us what the space has to hold: vehicles, storage, equipment, or everyday use. That narrows the finish before anyone settles on a colour.</p>
-      <p>A coating is one part of a room. It does not replace moisture remediation, ventilation, heating, or a full renovation.</p>
-    </ChapterReading>
-
-    <div class="journey-breath" data-hall-from="mancave" data-hall-to="proof" aria-hidden="true"></div>
-
-    <section class="journey-chapter proof-chapter white-stage" id="proof" tabindex="-1" data-journey-chapter="proof" data-journey-white-stage aria-label="Real Final Finish transformations">
-      <TransformationGallery client:visible={{ rootMargin: '800px' }} allowPending={import.meta.env.DEV || import.meta.env.SITE_ENV === 'staging'} />
-      <div class="gallery-project-link editorial-width"><a class="chapter-link" href="/projects">Explore the project archive <span aria-hidden="true">↗</span></a></div>
-      <p class="chapter-index" data-act-label aria-hidden="true">05 / See the difference <span>Edmonton project archive</span></p>
+      </div>
     </section>
 
-    <div class="journey-breath" data-hall-from="proof" data-hall-to="archive" aria-hidden="true"></div>
+    {/* ── The proof, as a ring ─────────────────────────────────────────────── */}
+    <ReviewRing />
 
-    <section class="journey-chapter archive-chapter" id="archive" tabindex="-1" data-journey-chapter="archive" data-journey-white-stage aria-labelledby="archive-title">
+    {/* ── Act 3 · Beneath the surface ──────────────────────────────────────── */}
+    <section id="foundation" class="act" data-act="film" style="--act-vh:250;--act-vh-phone:215" aria-labelledby="foundation-title">
+      <div class="act-stage">
+        <div class="act-plate" aria-hidden="true">
+          <div class="act-frame">
+            <img src="/images/brand/epoxy-walkway-pearl-poster.jpg" alt="" width="1280" height="720" loading="lazy" decoding="async" />
+            <video data-film="foundation" data-film-window="0.12,0.95" data-film-walk="true" muted playsinline disablepictureinpicture preload="none">
+              <source media="(max-width: 680px)" src="/videos/follow-floor/480/epoxy-walkway-pearl.mp4" type="video/mp4" />
+              <source src="/videos/follow-floor/720/epoxy-walkway-pearl.mp4" type="video/mp4" />
+            </video>
+          </div>
+        </div>
+        <figure class="material-lens" data-material-lens aria-label="Pearl-grey epoxy material, detail view">
+          <div class="material-lens-glass"><img src="/images/brand/pearl-stair-v2.webp" alt="Detail of a softly reflective pearl-grey floor" width="1672" height="941" loading="lazy" decoding="async" /></div>
+          <figcaption><span>Surface study</span><strong>Pearl grey</strong></figcaption>
+        </figure>
+        <div class="act-copy">
+          <div class="act-copy-inner">
+            <p class="t-kicker">Preparation, repair, precision</p>
+            <h2 id="foundation-title" class="t-title">The finish begins below the surface.</h2>
+          </div>
+        </div>
+        <div class="act-fog act-fog--rise" aria-hidden="true"></div>
+        <div class="act-fog act-fog--in" aria-hidden="true"></div>
+      </div>
+    </section>
+
+    <section id="foundation-details" class="sect reading-sect" aria-labelledby="foundation-reading">
+      <div class="sect-inner reading">
+        <div class="reading-label"><h3 id="foundation-reading" data-reveal="title">What happens beneath the finish</h3></div>
+        <div class="reading-body">
+          <p class="t-statement" data-reveal="fill">A beautiful finish starts with the concrete underneath.</p>
+          <p class="t-body" data-reveal="fade">Discuss existing coatings, cracks, contamination, and moisture concerns with Denis before choosing a coating system. The assessment guides the preparation. It is the part you may not see in the finished photograph, but it deserves just as much attention.</p>
+          <a class="link-quiet" href="/services/concrete-solutions" data-reveal="fade">Explore concrete preparation <span aria-hidden="true">↗</span></a>
+        </div>
+      </div>
+      <div class="sect-inner prep-wrap">
+        <PreparationLayers />
+      </div>
+    </section>
+
+    {/* ── Act 4 · Reclaim: two rooms, one floor ────────────────────────────── */}
+    <section id="reclaim" class="act act--bay" data-act="bay" style="--act-vh:320;--act-vh-phone:270" aria-labelledby="reclaim-title">
+      <div class="act-stage">
+        <div class="act-plate" aria-hidden="true">
+          <div class="act-frame act-room" id="garage">
+            <img src="/images/brand/epoxy-garage-poster.jpg" alt="" width="1280" height="720" loading="lazy" decoding="async" />
+            <video data-film="garage" data-film-window="0,0.7" muted playsinline disablepictureinpicture preload="none">
+              <source media="(max-width: 680px)" src="/videos/follow-floor/480/epoxy-garage.mp4" type="video/mp4" />
+              <source src="/videos/follow-floor/720/epoxy-garage.mp4" type="video/mp4" />
+            </video>
+          </div>
+          <div class="act-frame act-room" id="vault">
+            <img src="/images/brand/epoxy-basement-poster.jpg" alt="" width="1280" height="720" loading="lazy" decoding="async" />
+            <video data-film="vault" data-film-clock="held" data-film-window="0.42,1" muted playsinline disablepictureinpicture preload="none">
+              <source media="(max-width: 680px)" src="/videos/follow-floor/480/epoxy-basement.mp4" type="video/mp4" />
+              <source src="/videos/follow-floor/720/epoxy-basement.mp4" type="video/mp4" />
+            </video>
+          </div>
+        </div>
+        <div class="act-copy">
+          <div class="act-copy-inner">
+            <p class="t-kicker">More room for your life</p>
+            <h2 id="reclaim-title" class="t-title">Reclaim your garage or basement.</h2>
+            <div class="act-captions">
+              <p class="act-caption"><strong>The workshop. The gym. The car you look after.</strong><span>Garage floors for vehicles, storage, equipment, and everyday use.</span></p>
+              <p class="act-caption"><strong>A lounge below the house.</strong><span>Storage that became a room. A hobby space, a place to train, or simply a more useful basement.</span></p>
+            </div>
+          </div>
+        </div>
+        <div class="act-fog act-fog--rise" aria-hidden="true"></div>
+        <div class="act-fog act-fog--in" aria-hidden="true"></div>
+      </div>
+    </section>
+
+    <section id="reclaim-details" class="sect reading-sect" aria-labelledby="reclaim-reading">
+      <div class="sect-inner reading">
+        <div class="reading-label"><h3 id="reclaim-reading" data-reveal="title">Make room for what you love</h3></div>
+        <div class="reading-body">
+          <p class="t-statement" data-reveal="fill">The space was always there.</p>
+          <p class="t-body" data-reveal="fade">A workshop for the weekend. A place to train. Space for a hobby that has outgrown the kitchen table. The floor is a sensible place to start making an underused room feel considered.</p>
+          <p class="t-body" data-reveal="fade">Tell us what the space has to hold: vehicles, storage, equipment, or everyday use. That narrows the finish before anyone settles on a colour. A coating is one part of a room. It does not replace moisture remediation, ventilation, heating, or a full renovation.</p>
+          <a class="link-quiet" href="/services/residential-epoxy-flooring" data-reveal="fade">Explore residential floors <span aria-hidden="true">↗</span></a>
+        </div>
+      </div>
+    </section>
+
+    {/* ── See the difference: the cylinder ─────────────────────────────────── */}
+    <section id="proof" class="sect sect--examples" aria-labelledby="proof-title">
+      <div class="sect-inner examples-head">
+        <p class="t-kicker">Before and after</p>
+        <h2 id="proof-title" class="t-title" data-reveal="title">See the difference.</h2>
+      </div>
+      <TransformationGallery client:visible={{ rootMargin: '800px' }} head={false} explore={false} labelledBy="proof-title" allowPending={allowPending} />
+    </section>
+
+    {/* ── The archive wall ─────────────────────────────────────────────────── */}
+    <section id="archive" class="archive-sect" data-archive-section aria-labelledby="archive-title">
       <ArchiveLattice
         client:visible={{ rootMargin: '900px' }}
         tiles={ARCHIVE_TILES}
@@ -259,101 +212,123 @@ const thresholdStudy = import.meta.env.DEV && Astro.url.searchParams.get('study'
         resolveIndex={archiveResolveIndex()}
         photoCount={ARCHIVE_PHOTO_COUNT}
         jobCount={ARCHIVE_JOB_COUNT}
-        dateRange={ARCHIVE_DATE_RANGE}
-        pendingCount={ARCHIVE_PENDING_COUNT}
-        staging={import.meta.env.DEV || import.meta.env.SITE_ENV === 'staging'}
       />
-      <p class="chapter-index" data-act-label aria-hidden="true">06 / The archive <span>{ARCHIVE_PHOTO_COUNT} photographs</span></p>
     </section>
 
-    <div class="journey-breath" data-hall-from="archive" data-hall-to="finish-hall" aria-hidden="true"></div>
-
-    <section class="journey-chapter finish-chapter" id="finish-hall" tabindex="-1" data-journey-chapter="finish-hall" aria-labelledby="finish-title">
-      <picture class="chapter-frame" data-chapter-frame aria-hidden="true">
-        <source type="image/avif" srcset="/images/brand/luminous-finish-hall.avif" />
-        <source type="image/webp" srcset="/images/brand/luminous-finish-hall.webp" />
-        <img src="/images/brand/luminous-finish-hall.jpg" alt="" width="1680" height="941" loading="lazy" decoding="async" />
-      </picture>
-      <div class="floor-film" aria-hidden="true">
-        <img class="floor-film-poster" loading="lazy" src="/images/brand/epoxy-finish-poster.jpg" alt="" width="1280" height="720" decoding="async" />
-        <video class="floor-film-video" muted playsinline disablepictureinpicture preload="none">
-          <source media="(max-width: 680px)" src="/videos/follow-floor/480/epoxy-finish.mp4" type="video/mp4" />
-          <source src="/videos/follow-floor/720/epoxy-finish.mp4" type="video/mp4" />
-        </video>
-      </div>
-      <div class="chapter-content">
-        <div class="chapter-copy-surface">
-        <p class="eyebrow">Flake · Solid · Metallic</p>
-        <h2 id="finish-title" class="chapter-title">Find your finish.</h2>
-        <div class="button-row">
-          <a class="button button-secondary" href="/finishes"><span>Explore finishes</span></a>
-          <a class="button button-primary" href="/floor-visualizer"><span>Make it yours</span></a>
+    {/* ── Act 7 · Your finish: the marbled walk, entered through poured resin ─ */}
+    <section id="finish-hall" class="act" data-act="film" data-fog-in="resin" style="--act-vh:245;--act-vh-phone:210" aria-labelledby="finish-title">
+      <div class="act-stage">
+        <div class="act-plate" aria-hidden="true">
+          <div class="act-frame">
+            <img src="/images/brand/epoxy-finish-poster.jpg" alt="" width="1280" height="720" loading="lazy" decoding="async" />
+            <video data-film="finish-hall" data-film-window="0.05,0.98" muted playsinline disablepictureinpicture preload="none">
+              <source media="(max-width: 680px)" src="/videos/follow-floor/480/epoxy-finish.mp4" type="video/mp4" />
+              <source src="/videos/follow-floor/720/epoxy-finish.mp4" type="video/mp4" />
+            </video>
+          </div>
         </div>
+        <div class="act-copy act-copy--center">
+          <div class="act-copy-inner">
+            <p class="t-kicker">Flake, solid, and metallic</p>
+            <h2 id="finish-title" class="t-title">Find your finish.</h2>
+            <div class="button-row">
+              <a class="button button-secondary" href="/finishes"><span>Explore finishes</span></a>
+              <a class="button button-primary" href="/floor-visualizer?from=finish-hall"><span>Make it yours</span><span aria-hidden="true">↗</span></a>
+            </div>
+          </div>
         </div>
+        <div class="act-fog act-fog--rise" aria-hidden="true"></div>
+        <div class="act-fog act-fog--in" aria-hidden="true"></div>
       </div>
-      <p class="chapter-index" data-act-label aria-hidden="true">07 / Your finish <span>Material concept film</span></p>
     </section>
 
-    <ResinReveal />
-
-    <ChapterReading id="finish-hall" number="07" label="A finish, not just a colour" href="/floor-visualizer" link="Preview your own floor">
-      <p>Quiet stone tones. An expressive flake blend. A softer metallic surface. Explore 30 inspiration finishes and compare favourites in the floor studio.</p>
-      <p>Your screen is a starting point, not a physical sample. Confirm available materials, texture, and the right coating system with Denis before choosing.</p>
-    </ChapterReading>
-
-    <div class="journey-breath" data-hall-from="finish-hall" data-hall-to="commercial" aria-hidden="true"></div>
-
-    <section class="journey-chapter commercial-chapter" id="commercial" tabindex="-1" data-journey-chapter="commercial" aria-labelledby="commercial-title">
-      <div class="floor-film" aria-hidden="true">
-        <img class="floor-film-poster" loading="lazy" src="/images/brand/epoxy-commercial-poster.jpg" alt="" width="1280" height="720" decoding="async" />
-      </div>
-      <div class="chapter-content">
-        <div class="chapter-copy-surface">
-        <p class="eyebrow">Commercial epoxy flooring</p>
-        <h2 id="commercial-title" class="chapter-title">Built around your working day.</h2>
+    <section id="finish-hall-details" class="sect reading-sect" aria-labelledby="finish-reading">
+      <div class="sect-inner reading">
+        <div class="reading-label"><h3 id="finish-reading" data-reveal="title">A finish, not just a colour</h3></div>
+        <div class="reading-body">
+          <p class="t-statement" data-reveal="fill">Quiet stone tones. An expressive flake blend. A softer metallic surface.</p>
+          <p class="t-body" data-reveal="fade">Explore 30 inspiration finishes and compare favourites in the floor studio. Your screen is a starting point, not a physical sample. Confirm available materials, texture, and the right coating system with Denis before choosing.</p>
+          <a class="link-quiet" href="/floor-visualizer?from=finish-hall" data-reveal="fade">Preview your own floor <span aria-hidden="true">↗</span></a>
         </div>
       </div>
-      <p class="chapter-index" data-act-label aria-hidden="true">08 / Commercial <span>Architectural concept</span></p>
     </section>
 
-    <ChapterReading id="commercial" number="08" label="Plan around the working day" href="/services/commercial-epoxy-flooring" link="Explore commercial floors">
-      <p>A shop floor, a showroom, a shared corridor. The right recommendation starts with how the space operates: traffic, cleaning, access, and the time you can set aside for installation.</p>
-      <p>Discuss equipment, operating conditions, and areas that must remain accessible. Preparation and return-to-use requirements belong in the project conversation, not a blanket promise.</p>
-    </ChapterReading>
+    {/* ── Act 8 · Commercial: the plate drifts, light travels the floor ────── */}
+    <section id="commercial" class="act act--commercial" data-act="film" data-push="1.14" data-pan="5" style="--act-vh:225;--act-vh-phone:195" aria-labelledby="commercial-title">
+      <div class="act-stage">
+        <div class="act-plate" aria-hidden="true">
+          <div class="act-frame">
+            <img src="/images/brand/epoxy-commercial-poster.jpg" alt="" width="1280" height="720" loading="lazy" decoding="async" />
+            <div class="act-sheen"></div>
+          </div>
+        </div>
+        <div class="act-copy">
+          <div class="act-copy-inner">
+            <p class="t-kicker">Commercial epoxy flooring</p>
+            <h2 id="commercial-title" class="t-title">Built around your working day.</h2>
+          </div>
+        </div>
+        <div class="act-fog act-fog--rise" aria-hidden="true"></div>
+        <div class="act-fog act-fog--in" aria-hidden="true"></div>
+      </div>
+    </section>
 
-    <ProjectStory story={projectStories[2]} />
+    <section id="commercial-details" class="sect reading-sect" aria-labelledby="commercial-reading">
+      <div class="sect-inner reading">
+        <div class="reading-label"><h3 id="commercial-reading" data-reveal="title">Plan around the working day</h3></div>
+        <div class="reading-body">
+          <p class="t-statement" data-reveal="fill">A shop floor, a showroom, a shared corridor.</p>
+          <p class="t-body" data-reveal="fade">The right recommendation starts with how the space operates: traffic, cleaning, access, and the time you can set aside for installation. Discuss equipment, operating conditions, and areas that must remain accessible. Preparation and return-to-use requirements belong in the project conversation, not a blanket promise.</p>
+          <a class="link-quiet" href="/services/commercial-epoxy-flooring" data-reveal="fade">Explore commercial floors <span aria-hidden="true">↗</span></a>
+        </div>
+      </div>
+    </section>
 
     <FloorPlanning />
 
-    <div class="journey-breath" data-hall-from="commercial" data-hall-to="consultation" aria-hidden="true"></div>
-
-    <section class="journey-chapter consultation-chapter" id="consultation" tabindex="-1" data-journey-chapter="consultation" aria-labelledby="consultation-title">
-      <div class="floor-film" aria-hidden="true">
-        <img class="floor-film-poster" loading="lazy" src="/images/brand/epoxy-consultation-poster.jpg" alt="" width="1280" height="720" decoding="async" />
+    {/* ── Act 10 · Talk to Denis ───────────────────────────────────────────── */}
+    <section id="consultation" class="act act--last" data-act="film" style="--act-vh:190;--act-vh-phone:170" aria-labelledby="consultation-title">
+      <div class="act-stage">
+        <div class="act-plate" aria-hidden="true">
+          <div class="act-frame">
+            <img src="/images/brand/epoxy-consultation-poster.jpg" alt="" width="1280" height="720" loading="lazy" decoding="async" />
+          </div>
+        </div>
+        <div class="act-copy act-copy--center">
+          <div class="act-copy-inner">
+            <p class="t-kicker">Your next step</p>
+            <h2 id="consultation-title" class="t-title">Let’s talk about your space.</h2>
+            <div class="button-row">
+              <a class="button button-primary" href="/contact#quote"><span>Request a quote</span><span aria-hidden="true">↗</span></a>
+              <a class="button button-secondary" href="/floor-visualizer"><span>Preview a finish</span></a>
+            </div>
+            <p class="trust-line"><a href="tel:+17809911651">Call Denis · (780) 991-1651</a><span aria-hidden="true">·</span><a href="mailto:finalfinishepoxy@gmail.com">finalfinishepoxy@gmail.com</a></p>
+          </div>
+        </div>
+        <div class="act-fog act-fog--rise" aria-hidden="true"></div>
+        <div class="act-fog act-fog--in" aria-hidden="true"></div>
       </div>
-      <div class="chapter-content consultation-content">
-        <div class="chapter-copy-surface">
-        <p class="eyebrow">Your next step</p>
-        <h2 id="consultation-title" class="chapter-title">Let’s talk about your space.</h2>
-        <div class="button-row">
-          <a class="button button-primary" href="/floor-visualizer"><span>Preview a finish</span></a>
-          <a class="button button-secondary" href="/contact#quote"><span>Request a quote</span></a>
-        </div>
-        <div class="trust-line">
-          <p><a href="tel:+17809911651">Call Denis · (780) 991-1651</a><br /><a href="mailto:finalfinishepoxy@gmail.com">finalfinishepoxy@gmail.com</a></p>
-        </div>
-        </div>
-      </div>
-      <p class="chapter-index" data-act-label aria-hidden="true">10 / Talk to Denis</p>
     </section>
 
-    <ChapterReading id="consultation" number="10" label="A useful first conversation" href="/contact#quote" link="Tell us about your project">
-      <p>Tell Denis where the space is, how you use it, and what you would like to change. An approximate size and any concerns about the concrete help start a useful conversation.</p>
-      <p>Preparation, repairs, finish choice, and access all shape the quote. Bring your questions and any shortlisted finishes; there is no need to have every detail worked out.</p>
-    </ChapterReading>
-
-    <div class="journey-breath journey-breath--end" aria-hidden="true"></div>
+    <section id="consultation-details" class="sect reading-sect reading-sect--last" aria-labelledby="consultation-reading">
+      <div class="sect-inner reading">
+        <div class="reading-label"><h3 id="consultation-reading" data-reveal="title">A useful first conversation</h3></div>
+        <div class="reading-body">
+          <p class="t-statement" data-reveal="fill">Tell Denis where the space is, how you use it, and what you would like to change.</p>
+          <p class="t-body" data-reveal="fade">An approximate size and any concerns about the concrete help start a useful conversation. Preparation, repairs, finish choice, and access all shape the quote. Bring your questions and any shortlisted finishes; there is no need to have every detail worked out.</p>
+          <a class="link-quiet" href="/contact#quote" data-reveal="fade">Tell us about your project <span aria-hidden="true">↗</span></a>
+        </div>
+      </div>
+      <p class="sect-inner concept-note">The films and interiors on this page are concept visualizations of finishes. The project photographs are real Final Finish work.</p>
+    </section>
   </main>
 
   <SiteFooter />
 </BaseLayout>
+
+<script>
+  import { bindRouteScoped } from '../lib/motion/route-lifecycle';
+  import { initActs } from '../lib/motion/acts';
+
+  bindRouteScoped(initActs);
+</script>

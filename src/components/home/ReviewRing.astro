@@ -1,0 +1,124 @@
+---
+import proof from '../../data/customer-proof.json';
+import { ratingIsCurrent } from '../../lib/content/review-navigation';
+import GoogleMark from './GoogleMark.astro';
+import '../../styles/review-ring.css';
+
+/**
+ * Act 2 — the proof, as a 3D ring (2026-09-22: Matt asked for "a 3D cylinder that spins
+ * around" instead of a grid of boxes, on phone and desktop).
+ *
+ * The seventeen cards stand on a CSS 3D cylinder; the section holds on screen while
+ * scroll turns the ring, and a drag, the arrow keys, or the arrow buttons turn it by
+ * hand. The text is DOM (crawlable, selectable, read in order by a screen reader as an
+ * ordered list); `acts.ts` owns every transform. Reduced motion and the `still` tier lay
+ * the same cards flat in a row.
+ *
+ * Every word is still a dated snapshot of the public Google listing held in
+ * `customer-proof.json` — seventeen verbatim excerpts and the 5.0 / 30 rating checked
+ * 2026-09-09. Nothing is written on a customer's behalf. The featured order and the
+ * derived topic tags are carried over from Step 19 unchanged.
+ */
+interface ProofReview {
+  readonly name: string;
+  readonly excerpt: string;
+  readonly rating: number;
+  readonly source: string;
+  readonly verifiedAt: string;
+  readonly isExcerpt: boolean;
+}
+
+const { rating } = proof;
+const reviews = proof.reviews as readonly ProofReview[];
+const currentRating = ratingIsCurrent(rating.verifiedAt, rating.refreshAfterDays);
+const stamp = (iso: string) => new Intl.DateTimeFormat('en-GB', {
+  day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC',
+}).format(new Date(iso));
+const checked = stamp(rating.verifiedAt);
+
+// COPY-DECK Act 2 featured order; an excerpt with an exclamation point never leads.
+const FEATURED_ORDER = [
+  'Glenda Clarke', 'Fred Hoetmer', 'Nate Whalen', 'Joseph Ingram',
+  'Antony Bubalo', 'Kyle Fulton', 'garry askin', 'Sean Schaefer',
+  'Marrabout 123', 'Frank Santoro', 'Andrew McCready', 'Paul Tran',
+];
+const quiet = (review: ProofReview) => !review.excerpt.includes('!');
+const featured = FEATURED_ORDER
+  .map((name) => reviews.find((review) => review.name === name))
+  .filter((review): review is ProofReview => review !== undefined && quiet(review));
+const ordered = [...featured, ...reviews.filter((review) => !featured.includes(review))];
+
+// Topic tags derived from the excerpt's own words (Step 19 rules, unchanged).
+const TOPIC_RULES: readonly { readonly label: string; readonly phrases: readonly string[] }[] = [
+  { label: 'Preparation', phrases: ['properly prepared', 'prepping', 'prepared before'] },
+  { label: 'Attention to detail', phrases: ['attention to detail', 'care and detail'] },
+  { label: 'Communication', phrases: ['communication'] },
+  { label: 'Commercial', phrases: ['showroom', 'dealership'] },
+  { label: 'Epoxy flooring', phrases: ['epoxy flooring'] },
+  { label: 'Job quality', phrases: ['excellent quality', 'amazing job', 'happy with the job', 'tremendous job'] },
+];
+const topicFor = (excerpt: string) => {
+  const words = excerpt.toLowerCase();
+  for (const rule of TOPIC_RULES) {
+    const phrase = rule.phrases.find((candidate) => words.includes(candidate));
+    if (phrase) return { label: rule.label, phrase };
+  }
+  return null;
+};
+const pad = (value: number) => String(value).padStart(2, '0');
+---
+<section id="customer-reviews" class="ring-sect" data-review-ring aria-labelledby="social-title">
+  <div class="ring-stage">
+    <header class="ring-head">
+      <p class="t-kicker">In their words</p>
+      <h2 id="social-title" class="t-title" data-reveal="title">The word from our customers.</h2>
+    </header>
+
+    <div class="ring-viewport" data-ring-viewport tabindex="0" role="group" aria-roledescription="carousel" aria-label="Google review excerpts. Drag, scroll, or use the arrow keys to turn the ring.">
+      <ol class="ring" data-ring>
+        {ordered.map((review, index) => {
+          const topic = topicFor(review.excerpt);
+          return (
+            <li class="ring-cell" data-ring-cell style={`--i:${index}`}>
+              <blockquote class="ring-card" data-review-card data-review-position={index + 1}>
+                <div class="ring-card-top">
+                  <span class="ring-card-stars" role="img" aria-label="5 out of 5 stars">★★★★★</span>
+                  <span class="ring-card-index" aria-hidden="true">{pad(index + 1)}</span>
+                </div>
+                <p class="ring-card-quote" data-review-quote>“{review.excerpt}”</p>
+                <footer class="ring-card-foot" data-review-caption>
+                  <strong>{review.name}</strong>
+                  <span class="ring-card-meta">
+                    {topic && <span class="review-tag" data-topic-source={topic.phrase}>{topic.label} · </span>}
+                    <a href={rating.source} data-review-link>Google review <span aria-hidden="true">↗</span></a>
+                  </span>
+                </footer>
+              </blockquote>
+            </li>
+          );
+        })}
+      </ol>
+    </div>
+
+    <footer class="ring-foot">
+      <div class="ring-rating" data-rating-block data-rating-fresh={String(currentRating)}>
+        <a href={rating.source} class="ring-score" aria-label={`${rating.value.toFixed(1)} out of 5 on Google, checked ${checked}`}>{rating.value.toFixed(1)}</a>
+        <div class="ring-rating-meta">
+          <span class="ring-stars" aria-hidden="true">★★★★★</span>
+          <a href={rating.source} class="ring-google">
+            <GoogleMark />
+            <span>{currentRating ? `${rating.count} reviews on Google` : 'See our latest Google rating'}</span>
+            <span aria-hidden="true">↗</span>
+          </a>
+          <small>Checked {checked}</small>
+        </div>
+      </div>
+      <div class="ring-controls">
+        <button type="button" class="ring-btn" data-ring-prev aria-label="Previous review">←</button>
+        <p class="ring-count" aria-hidden="true"><span data-ring-index>01</span> / {pad(ordered.length)}</p>
+        <button type="button" class="ring-btn" data-ring-next aria-label="Next review">→</button>
+        <a class="ring-all" href={rating.source}>Read every review <span aria-hidden="true">↗</span></a>
+      </div>
+    </footer>
+  </div>
+</section>

@@ -168,10 +168,6 @@ const PAGE_MODULES: ReadonlyArray<{
     selector: '[data-prep-layers]',
     load: () => import('../../scripts/preparation-layers').then((module) => module.initializePreparationLayers),
   },
-  {
-    selector: '[data-resin-stage]',
-    load: () => import('../../scripts/resin-reveal').then((module) => module.initializeResinReveal),
-  },
 ];
 
 function bindPageModules() {

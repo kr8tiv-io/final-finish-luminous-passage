@@ -11,7 +11,6 @@ import {
 import { selectedProjectPhotos, transformations } from '../../data/transformation-gallery';
 import { ensureGsapKit, ScrollTrigger } from '../../lib/motion/gsap-kit';
 import { journeyControls } from '../../lib/motion/journey-controls';
-import { journeyDirector } from '../../lib/motion/journey-director';
 import { onRouteTeardown } from '../../lib/motion/route-lifecycle';
 import { getArcCardState, getImageLoadingState, resolveGalleryRender } from '../../lib/projects/gallery';
 import {
@@ -30,7 +29,23 @@ import {
 import Comparison, { Picture } from './Comparison';
 import './transformation-gallery.css';
 
-type Props = { allowPending?: boolean };
+type Props = {
+  allowPending?: boolean;
+  /** Render the built-in heading and instruction line. The homepage sets its own title. */
+  head?: boolean;
+  /** Render the flat `Explore all comparisons` strip under the cylinder. */
+  explore?: boolean;
+  /** Id of an external heading that names this gallery when `head` is false. */
+  labelledBy?: string;
+};
+
+/** The window's scroll position as an external store (the homepage runs no director). */
+const subscribeScroll = (listener: () => void) => {
+  window.addEventListener('scroll', listener, { passive: true });
+  return () => window.removeEventListener('scroll', listener);
+};
+const readScroll = () => Math.round(window.scrollY);
+const readServerScroll = () => 0;
 
 /**
  * Everything the cylinder needs that only a measurement can supply. `null`
@@ -153,7 +168,7 @@ function WordSwapEyebrow({ swapKey }: { swapKey: number }) {
   </p>;
 }
 
-export default function TransformationGallery({ allowPending = false }: Props) {
+export default function TransformationGallery({ allowPending = false, head = true, explore = true, labelledBy }: Props) {
   const render = useMemo(() => resolveGalleryRender(transformations, { allowPending }), [allowPending]);
   const pairs = render.pairs;
   const passageRef = useRef<HTMLDivElement>(null);
@@ -182,7 +197,7 @@ export default function TransformationGallery({ allowPending = false }: Props) {
    * The one bump re-runs the admission effect exactly once.
    */
   const [settleTick, setSettleTick] = useState(0);
-  const journey = useSyncExternalStore(journeyDirector.subscribe, journeyDirector.getSnapshot, journeyDirector.getServerSnapshot);
+  const scrollY = useSyncExternalStore(subscribeScroll, readScroll, readServerScroll);
   const controls = useSyncExternalStore(journeyControls.subscribe, journeyControls.getSnapshot, journeyControls.getServerSnapshot);
   const passageEnabled = cylinder !== null;
 
@@ -339,17 +354,13 @@ export default function TransformationGallery({ allowPending = false }: Props) {
               setCylinder(geometry);
               gsap.set(ring, { z: -geometry.radius });
               writeFrontSlot();
-              journeyDirector.invalidateGeometry();
             },
             onUpdate: (self) => setProgress(self.progress),
-            onLeave: () => journeyDirector.invalidateGeometry(),
-            onLeaveBack: () => journeyDirector.invalidateGeometry(),
           },
         },
       );
 
       writeFrontSlot();
-      journeyDirector.invalidateGeometry();
       installCylinderProbe({
         rotation: () => Number(gsap.getProperty(ring, 'rotationY')),
         progress: () => tween.scrollTrigger?.progress ?? 0,
@@ -372,8 +383,7 @@ export default function TransformationGallery({ allowPending = false }: Props) {
         // the stylesheet reserves nothing, and inside it the height belongs to
         // the page again until a fresh measurement says otherwise.
         setPassageHost('reserved');
-        journeyDirector.invalidateGeometry();
-      };
+        };
     });
 
     // Step 12: the route lifecycle tears this down at `astro:before-swap`, and
@@ -443,7 +453,7 @@ export default function TransformationGallery({ allowPending = false }: Props) {
     scrollState: { activeIndex: cylinderState.activeIndex, position: cylinderState.position },
     // Deliberately the director's own coordinate, not a seeded one: a jump is
     // held until the *owner* reports movement, which is what makes it settle.
-    scrollY: journey.scrollY,
+    scrollY: scrollY,
     navigation: featuredNavigation,
     interactionIndex,
     count: pairs.length,
@@ -491,7 +501,7 @@ export default function TransformationGallery({ allowPending = false }: Props) {
     // A frame queued by the previous layout must not land on top of this jump.
     cancelQueued();
     setInteractionIndex(null);
-    setFeaturedNavigation({ index, scrollY: journey.scrollY });
+    setFeaturedNavigation({ index, scrollY: scrollY });
     pinTrack();
     if (!passageEnabled) {
       // Both axes: `inline` moves the snap ribbon to the card, `block` moves the
@@ -545,12 +555,12 @@ export default function TransformationGallery({ allowPending = false }: Props) {
     data-featured-index={passageState.activeIndex}
     data-featured-settled={settled}
     data-hold-window={cylinderState.inHoldWindow}
-    aria-labelledby="transformation-gallery-title"
+    aria-labelledby={head ? 'transformation-gallery-title' : labelledBy}
   >
-    <div className="transformation-gallery__head">
+    {head ? <div className="transformation-gallery__head">
       <div><h2 id="transformation-gallery-title">See the difference.</h2></div>
       <p>Drag the divider between the concrete and the finished floor. Same job, same room.</p>
-    </div>
+    </div> : null}
     {render.reviewBadge ? <p className="transformation-gallery__review-note">Project pairing review · not approved for publication</p> : null}
 
     <div className="transformation-gallery__passage" ref={passageRef}>
@@ -565,7 +575,7 @@ export default function TransformationGallery({ allowPending = false }: Props) {
           <p aria-live="polite" aria-atomic="true"><span>{String(passageState.activeIndex + 1).padStart(2, '0')}</span> / {String(pairs.length).padStart(2, '0')}</p>
           <button type="button" disabled={!hydrated || passageState.activeIndex === pairs.length - 1} onClick={() => scrollToFeatured(Math.min(pairs.length - 1, passageState.activeIndex + 1))} aria-label="Next featured project">→</button>
           <button type="button" disabled={!hydrated || passageState.activeIndex === pairs.length - 1} onClick={() => scrollToFeatured(pairs.length - 1)}>Last <span className="visually-hidden">featured project</span></button>
-          <a href="#transformation-explore">Skip featured comparisons</a>
+          {explore ? <a href="#transformation-explore">Skip featured comparisons</a> : null}
         </nav>
         <div className="transformation-gallery__featured-window" ref={featuredWindowRef}>
           <div className="transformation-gallery__ring" ref={ringRef}>
@@ -605,7 +615,7 @@ export default function TransformationGallery({ allowPending = false }: Props) {
                   onInteractionEnd={() => setInteractionIndex(null)}
                   // Keyboard focus is deliberate, so it does retarget.
                   onFocusWithin={(target) => {
-                    setFeaturedNavigation({ index, scrollY: journey.scrollY });
+                    setFeaturedNavigation({ index, scrollY: scrollY });
                     setInteractionIndex(index);
                     focusFeatured(index, target);
                   }}
@@ -620,7 +630,7 @@ export default function TransformationGallery({ allowPending = false }: Props) {
       </div>
     </div>
 
-    <section className="transformation-gallery__explore" id="transformation-explore" data-explore-index={exploreIndex} aria-labelledby="transformation-explore-title">
+    {explore ? <section className="transformation-gallery__explore" id="transformation-explore" data-explore-index={exploreIndex} aria-labelledby="transformation-explore-title">
       <div className="transformation-gallery__explore-head">
         <div><p className="eyebrow">Every matched view</p><h3 id="transformation-explore-title">Explore all comparisons.</h3></div>
         <nav aria-label="Explore project comparison navigation">
@@ -659,7 +669,7 @@ export default function TransformationGallery({ allowPending = false }: Props) {
           })}
         </div>
       </div>
-    </section>
+    </section> : null}
     <p className="transformation-gallery__source">Edmonton project archive · {passageState.activeIndex + 1} of {pairs.length}. Source images are from the public <a href="https://www.finalfinishepoxy.ca/projects">Final Finish Epoxy project archive</a>. {render.reviewBadge ? 'Pairings shown in this review are pending publication approval.' : 'Only publication-approved pairings are shown.'}</p>
   </section>;
 }

@@ -13,20 +13,30 @@
 }
 
 .prep-layers .prep-eyebrow {
-  margin: 0 0 1.1rem;
-  font: 700 0.65rem/1.5 var(--sans);
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+  margin: 0 0 1.2rem;
+  font: italic 400 clamp(1.05rem, 1.3vw, 1.4rem)/1.3 var(--display);
   color: var(--cobalt);
+}
+
+.prep-layers .prep-eyebrow::before {
+  content: '';
+  flex: 0 0 2.4rem;
+  height: 1px;
+  background: currentColor;
+  opacity: 0.55;
 }
 
 .prep-statement {
   margin: 0;
-  font-family: var(--sans);
-  font-size: clamp(2.5rem, 6vw, 5.25rem);
-  font-weight: 450;
-  line-height: 1.02;
-  letter-spacing: -0.06em;
+  font-family: var(--display);
+  font-size: clamp(2.35rem, 4.6vw, 5.5rem);
+  font-weight: 500;
+  line-height: 0.98;
+  letter-spacing: 0.004em;
+  text-transform: uppercase;
   color: var(--ink);
 }
 
@@ -111,8 +121,9 @@
 }
 
 .prep-caption-title {
-  font: 650 0.95rem/1.45 var(--sans);
-  letter-spacing: -0.01em;
+  font: 500 1.12rem/1.3 var(--display);
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
   color: var(--ink);
 }
 

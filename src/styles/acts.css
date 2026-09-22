@@ -1,0 +1,311 @@
+/* ─────────────────────────────────────────────────────────────────────────────
+ * The homepage, 2026-09-22 direction: acts and paper.
+ *
+ * One motion grammar for the whole page (Matt: "a bunch of different websites at
+ * once"). Two kinds of section alternate:
+ *
+ *   ACT    a film or a photograph held on screen by a sticky stage while scroll
+ *          runs its story. It begins covered in paper mist (`.act-fog--in`), the mist
+ *          lifts off, the film plays, a band of mist rises to carry the words, and at
+ *          the end the same mist (`.act-fog--rise`) closes over the whole stage.
+ *   PAPER  a white section on the page's grid: titles, reading copy, the review
+ *          ring, the before-and-after cylinder, the archive wall.
+ *
+ * Because every act starts and ends in the same paper the next section is printed
+ * on, there is no seam between them to find: no white line, no hard edge, no frame
+ * where the film appears unwashed. Every mist is a translate (compositor only) of a
+ * flat-paper image whose alpha is the only thing that varies (scripts/build-fog.mjs).
+ *
+ * Owners: this file owns composition. `src/lib/motion/acts.ts` is the only writer
+ * of the transforms and the `data-act-*` states it reads.
+ * ───────────────────────────────────────────────────────────────────────────── */
+
+.acts {
+  --grid-cols: 6;
+  --grid-line: rgb(var(--ink-rgb) / .055);
+  --grid-lines: linear-gradient(90deg, var(--grid-line) 1px, transparent 1px);
+  --grid-size: calc((100% - 2 * var(--gutter)) / var(--grid-cols)) 100%;
+  --fog-e: 20svh;
+  --t-display: clamp(2.65rem, 5vw, 6.2rem);
+  --t-title: clamp(2.35rem, 4.6vw, 5.5rem);
+  --t-sub: clamp(1.3rem, 1.9vw, 2rem);
+  --t-kicker: clamp(1.05rem, 1.3vw, 1.4rem);
+  --t-body: clamp(1rem, 1.06vw, 1.1rem);
+  --act-ease: cubic-bezier(.22, 1, .36, 1);
+  position: relative;
+  display: block;
+  background: var(--paper);
+  overflow: clip;
+}
+
+/* ── Type: one display face, one text face ────────────────────────────────── */
+.acts :is(.t-display, .t-title) {
+  margin: 0;
+  font-family: var(--display);
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: .004em;
+  color: var(--ink);
+  text-wrap: balance;
+  font-kerning: normal;
+}
+.acts .t-display { font-size: var(--t-display); line-height: .96; max-width: 14ch; }
+.acts .t-title { font-size: var(--t-title); line-height: .98; max-width: 16ch; }
+.acts .t-sub { margin: 1.1rem 0 0; font-family: var(--display); font-style: italic; font-weight: 400; font-size: var(--t-sub); line-height: 1.25; color: var(--ink-body); text-wrap: balance; }
+.acts .t-kicker { display: flex; align-items: center; gap: .9rem; margin: 0 0 1.4rem; font-family: var(--display); font-style: italic; font-weight: 400; font-size: var(--t-kicker); line-height: 1.3; color: var(--cobalt); }
+.acts .t-kicker::before { content: ''; flex: 0 0 2.4rem; height: 1px; background: currentColor; opacity: .55; }
+.acts .t-body { max-width: 34rem; margin: 1.4rem 0 0; font-size: var(--t-body); line-height: 1.78; color: var(--ink-body); text-wrap: pretty; }
+.acts .t-body + .t-body { margin-top: 1rem; }
+.acts .t-line { overflow: clip; padding-bottom: .06em; margin-bottom: -.06em; }
+.acts .t-index { margin: 0; font-size: .62rem; font-weight: 600; text-transform: uppercase; letter-spacing: .18em; color: var(--ink-quiet); font-variant-numeric: tabular-nums; }
+
+.acts .button-row { display: flex; flex-wrap: wrap; align-items: center; gap: .8rem; margin-top: 2.2rem; }
+.acts .button { min-height: 48px; padding: .85rem 1.45rem; border-radius: 999px; font-size: .76rem; letter-spacing: .02em; gap: 1.2rem; }
+.acts .button-secondary { background: rgb(var(--paper-rgb) / .7); border-color: rgb(var(--ink-rgb) / .22); }
+.acts .text-call { display: inline-flex; align-items: center; gap: .5rem; min-height: 44px; font-size: .76rem; text-underline-offset: .3rem; }
+.acts .text-call span { color: var(--ink-quiet); }
+.acts .link-quiet { display: inline-flex; align-items: center; gap: 1rem; min-height: 44px; margin-top: 1.6rem; color: var(--cobalt); font-size: .85rem; text-underline-offset: .45rem; text-decoration-thickness: 1px; }
+
+/* ── Paper sections ───────────────────────────────────────────────────────── */
+.sect {
+  position: relative;
+  padding: clamp(6rem, 12vw, 11rem) var(--gutter);
+  background-color: var(--paper);
+  background-image: var(--grid-lines);
+  background-size: var(--grid-size);
+  background-position: var(--gutter) 0;
+  background-repeat: repeat-x;
+}
+.sect > .sect-inner { width: min(100%, var(--max)); margin-inline: auto; }
+.sect--tight { padding-block: clamp(4rem, 8vw, 7rem); }
+.sect-split { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.05fr); gap: clamp(2.5rem, 8vw, 9rem); align-items: start; }
+.sect-split > :first-child .t-title { max-width: 11ch; }
+.sect-head { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); gap: clamp(2rem, 7vw, 8rem); align-items: end; margin-bottom: clamp(3rem, 6vw, 6rem); }
+
+/* ── Acts ─────────────────────────────────────────────────────────────────── */
+.act { position: relative; height: calc(var(--act-vh, 240) * 1svh); background: var(--paper); }
+.act-stage { position: sticky; top: 0; height: 100lvh; overflow: hidden; contain: layout paint; }
+.act-plate { position: absolute; inset: 0; z-index: 0; overflow: hidden; }
+.act-plate > .act-frame { position: absolute; inset: 0; transform-origin: 50% 58%; will-change: transform, opacity; }
+.act-plate img,
+.act-plate video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: var(--act-focus, 50% 55%); }
+.act-plate video { opacity: 0; transition: opacity .4s linear; }
+.act-plate video[data-ready] { opacity: 1; }
+/* A breath of shade under the band so the words never meet a bright highlight head-on. */
+.act-plate::after { content: ''; position: absolute; inset: 0; background: linear-gradient(180deg, rgb(var(--ink-rgb) / .06), transparent 30%, transparent 70%, rgb(var(--ink-rgb) / .05)); pointer-events: none; }
+
+/* The mists. Heights are the stage plus one edge; JS writes only `transform`. */
+.act-fog { position: absolute; left: 0; right: 0; top: 0; height: calc(100% + var(--fog-e)); pointer-events: none; will-change: transform; }
+/* The entry mist is the stage's soft top edge while it arrives (only its fading edge is
+   inside the stage), then lifts off; it sits over everything, words included. */
+.act-fog--in { z-index: 6; }
+/* The band carries the words: under them, over the film. */
+.act-fog--rise { z-index: 2; }
+.act[data-act-near] .act-fog--in {
+  background:
+    url('/images/brand/fog/fog-fall-1024.webp') 0 100% / 100% var(--fog-e) no-repeat,
+    linear-gradient(var(--paper), var(--paper)) 0 0 / 100% calc(100% - var(--fog-e)) no-repeat;
+}
+.act[data-act-near][data-fog-in='resin'] .act-fog--in {
+  background:
+    url('/images/brand/fog/resin-fall-2048.webp') 0 100% / 100% var(--fog-e) no-repeat,
+    linear-gradient(var(--paper), var(--paper)) 0 0 / 100% calc(100% - var(--fog-e)) no-repeat;
+}
+.act[data-act-near] .act-fog--rise {
+  background:
+    var(--grid-lines) var(--gutter) 100% / calc((100% - 2 * var(--gutter)) / var(--grid-cols)) calc(100% - var(--fog-e)) repeat-x,
+    url('/images/brand/fog/fog-rise-1024.webp') 0 0 / 100% var(--fog-e) no-repeat,
+    linear-gradient(var(--paper), var(--paper)) 0 100% / 100% calc(100% - var(--fog-e)) no-repeat;
+}
+/* Before JS places them: the entry mist parked with only its soft edge inside the top
+   of the stage (-100% of its own height is stage + edge; + one edge = the stage), the
+   band parked below the stage. */
+.act-fog--in { transform: translate3d(0, calc(-100% + var(--fog-e)), 0); }
+.act-fog--rise { transform: translate3d(0, 100lvh, 0); }
+
+/* The words. They sit on the band of mist, low on the stage, above the film. */
+.act-copy { position: absolute; z-index: 4; left: var(--gutter); right: var(--gutter); bottom: calc(100lvh - 100svh + clamp(4.5rem, 10svh, 7.5rem)); width: min(calc(100% - 2 * var(--gutter)), var(--max)); margin-inline: auto; }
+.act-copy-inner { max-width: min(48rem, 100%); }
+.act-copy--center { text-align: center; }
+.act-copy--center .act-copy-inner { margin-inline: auto; }
+.act-copy--center .t-kicker { justify-content: center; }
+.act-copy--center :is(.t-title, .t-display) { margin-inline: auto; }
+.act-copy--center .button-row { justify-content: center; }
+.act-foot { position: absolute; z-index: 4; left: var(--gutter); right: var(--gutter); bottom: calc(100lvh - 100svh + 1.9rem); display: flex; justify-content: space-between; gap: 1rem; pointer-events: none; }
+
+/* ── Act 1: the pour ──────────────────────────────────────────────────────── */
+/* The pour holds the right of frame; the words sit in a paper column on the left
+   that dissolves into the film (no panel, no rule). The exit is the one mist. */
+.act--hero .act-plate img,
+.act--hero .act-plate video { object-position: 64% 52%; }
+.act--hero .act-column { position: absolute; inset: 0; z-index: 1; pointer-events: none;
+  background: linear-gradient(90deg, var(--paper) 0, rgb(var(--paper-rgb) / .97) 36%, rgb(var(--paper-rgb) / .78) 50%, rgb(var(--paper-rgb) / .26) 63%, transparent 76%); }
+/* The hero's paper floor: its stage leaves the screen with paper along its bottom edge,
+   so the review ring below meets paper, not a cut through the pour. */
+.act--hero .act-stage::after { content: ''; position: absolute; left: 0; right: 0; bottom: calc(100lvh - 100svh); z-index: 3; height: var(--fog-e); pointer-events: none; background: url('/images/brand/fog/fog-rise-1024.webp') 0 0 / 100% 100% no-repeat; }
+.act--hero .act-stage::before { content: ''; position: absolute; left: 0; right: 0; bottom: 0; z-index: 3; height: calc(100lvh - 100svh); background: var(--paper); pointer-events: none; }
+.act--hero .act-copy { top: 0; bottom: 0; display: grid; align-content: center; padding-top: 5rem; }
+.act--hero .act-copy-inner { max-width: min(48rem, 56%); }
+.act--hero .t-display { max-width: none; }
+.act--hero .t-body { max-width: 30rem; }
+.hero-proof { display: inline-flex; flex-wrap: wrap; align-items: center; gap: .6rem 1rem; min-height: 44px; margin-top: 2.2rem; font-size: .74rem; color: var(--ink); text-decoration: none; }
+.hero-proof small { font-size: .62rem; color: var(--ink-quiet); }
+.hero-proof .g-mark { width: 1.05rem; height: 1.05rem; }
+
+/* ── Act 4: two rooms, one floor ──────────────────────────────────────────── */
+.act-room { position: absolute; inset: 0; }
+.act-room + .act-room { opacity: 0; }
+.act-captions { position: relative; min-height: 5.2rem; margin-top: 1.4rem; }
+.act-caption { position: absolute; inset: 0 auto auto 0; max-width: 32rem; }
+.act-caption + .act-caption { opacity: 0; }
+.act-caption strong { display: block; font-family: var(--display); font-weight: 500; font-size: clamp(1.25rem, 1.7vw, 1.75rem); line-height: 1.2; color: var(--ink); text-transform: uppercase; letter-spacing: .01em; }
+.act-caption span { display: block; margin-top: .45rem; font-size: .88rem; line-height: 1.6; color: var(--ink-body); }
+
+/* ── Act 3: the lens, kept (Matt likes the section) ───────────────────────── */
+.act .material-lens { position: absolute; z-index: 3; right: max(8vw, 4rem); top: 18svh; margin: 0; width: clamp(9rem, 15vw, 16rem); }
+.act .material-lens-glass { position: relative; aspect-ratio: 1; overflow: hidden; border-radius: .25rem; padding: 2px; background: rgb(var(--paper-bright-rgb) / .35); box-shadow: 0 0 0 1px rgb(var(--paper-bright-rgb) / .6), 0 18px 60px rgb(var(--ink-rgb) / .12); }
+.act .material-lens-glass img { width: 100%; height: 100%; object-fit: cover; object-position: 50% 100%; transform: scale(2.2); transform-origin: 50% 100%; }
+.act .material-lens figcaption { display: grid; gap: .3rem; padding: .85rem 0 0; }
+.act .material-lens figcaption span { font-size: .56rem; text-transform: uppercase; letter-spacing: .16em; color: rgb(var(--paper-bright-rgb) / .92); text-shadow: 0 1px 8px rgb(var(--ink-rgb) / .35); }
+.act .material-lens figcaption strong { font-family: var(--display); font-style: italic; font-weight: 400; font-size: 1.25rem; color: var(--paper-bright); text-shadow: 0 1px 10px rgb(var(--ink-rgb) / .4); }
+
+/* ── Reading asides (paper after an act) ──────────────────────────────────── */
+.reading { display: grid; grid-template-columns: minmax(0, .9fr) minmax(0, 1.2fr); gap: clamp(2rem, 7vw, 8rem); align-items: start; }
+.reading-label { display: flex; align-items: baseline; gap: 1rem; }
+.reading-label .t-index { color: var(--cobalt); }
+.reading-label h3 { margin: 0; font-family: var(--display); font-weight: 500; font-size: clamp(1.5rem, 2.2vw, 2.3rem); line-height: 1.1; text-transform: uppercase; letter-spacing: .01em; }
+.reading-body .t-body:first-child { margin-top: 0; }
+.reading-body .t-statement { margin: 0; font-family: var(--display); font-weight: 500; font-size: clamp(1.45rem, 2.3vw, 2.35rem); line-height: 1.22; letter-spacing: .005em; color: var(--ink); text-wrap: pretty; }
+
+.reading-sect { padding-block: clamp(5.5rem, 10vw, 9.5rem); }
+.reading-label h3 { max-width: 20ch; }
+.reading-body .t-statement + .t-body { margin-top: 1.8rem; }
+.prep-wrap { margin-top: clamp(4rem, 8vw, 7rem); }
+
+/* ── The quiet disclosure for concept visuals (one line, not a label per act) ── */
+.concept-note { margin: 0; font-size: .64rem; line-height: 1.7; color: var(--ink-quiet); letter-spacing: .02em; }
+.reading-sect--last .concept-note { margin-top: clamp(4rem, 7vw, 6rem); padding-top: 1.4rem; border-top: 1px solid rgb(var(--ink-rgb) / .1); }
+
+/* ── Act 1 extras ─────────────────────────────────────────────────────────── */
+.hero-proof > span { display: inline-flex; align-items: center; gap: .5rem; }
+.hero-stars { color: var(--bronze); letter-spacing: .12em; font-size: .72rem; }
+
+/* ── See the difference ───────────────────────────────────────────────────── */
+.sect--examples { padding-bottom: 0; }
+/* The comparisons sit on the page's own paper and grid, not on a tinted panel. */
+.acts .transformation-gallery { background: transparent; padding-top: clamp(1.5rem, 3vw, 3rem); }
+.acts .transformation-gallery::before { display: none; }
+.examples-head { text-align: center; }
+.examples-head .t-kicker { justify-content: center; }
+.examples-head .t-title { margin-inline: auto; }
+
+/* ── Act 8: the plate drifts and a band of light travels the floor ────────── */
+.act-sheen {
+  position: absolute; inset: 0; z-index: 1; pointer-events: none;
+  background: linear-gradient(104deg, transparent 36%, rgb(255 255 255 / .08) 45%, rgb(255 255 255 / .22) 50%, rgb(255 255 255 / .08) 55%, transparent 64%);
+  -webkit-mask-image: linear-gradient(180deg, transparent 40%, #000 68%);
+  mask-image: linear-gradient(180deg, transparent 40%, #000 68%);
+  transform: translate3d(-70%, 0, 0);
+  will-change: transform;
+}
+
+/* ── Act 10: the words stay; the page ends on them ────────────────────────── */
+.act .trust-line { display: flex; flex-wrap: wrap; justify-content: center; gap: .4rem .9rem; margin: 1.6rem 0 0; font-size: .8rem; color: var(--ink-quiet); }
+.act .trust-line a { display: inline-flex; align-items: center; min-height: 44px; color: var(--ink); text-underline-offset: .3rem; }
+
+/* ── Planning questions ───────────────────────────────────────────────────── */
+.planning .planning-intro .t-title { max-width: 11ch; }
+.planning-answers details { border-bottom: 1px solid rgb(var(--ink-rgb) / .14); }
+.planning-answers details:first-child { border-top: 1px solid rgb(var(--ink-rgb) / .14); }
+.planning-answers summary { position: relative; display: flex; align-items: baseline; gap: 1.2rem; min-height: 68px; padding: 1.5rem 2.8rem 1.5rem 0; list-style: none; cursor: pointer; font-family: var(--display); font-weight: 500; font-size: clamp(1.25rem, 1.65vw, 1.6rem); line-height: 1.25; color: var(--ink); }
+.planning-answers summary::-webkit-details-marker { display: none; }
+.planning-answers summary::after { content: ''; position: absolute; right: .35rem; top: 50%; width: .95rem; height: .95rem; color: var(--cobalt); background: linear-gradient(currentColor, currentColor) 50% 50% / 100% 1px no-repeat, linear-gradient(currentColor, currentColor) 50% 50% / 1px 100% no-repeat; transform: translateY(-50%); transition: transform .5s var(--act-ease); }
+.planning-answers details[open] summary::after { transform: translateY(-50%) rotate(45deg); }
+.planning-answers summary:hover { color: var(--cobalt); }
+.planning-answers summary:focus-visible { outline: 2px solid var(--cobalt); outline-offset: 5px; }
+.planning-number { flex: 0 0 auto; font-family: var(--sans); font-size: .62rem; font-weight: 600; letter-spacing: .16em; color: var(--ink-quiet); font-variant-numeric: tabular-nums; }
+.planning-answer { padding: 0 2.8rem 1.9rem calc(1.2rem + 1.6em); }
+.planning-answer p { margin: 0; font-size: var(--t-body); line-height: 1.78; color: var(--ink-body); }
+.planning-answer a { display: inline-flex; align-items: center; gap: .5rem; min-height: 44px; margin-top: .5rem; font-size: .82rem; color: var(--cobalt); text-underline-offset: .35rem; }
+
+/* ── The motion switch (outside <main>; its old rules lived in journey.css) ── */
+.journey-motion-control { position: fixed; right: 1.1rem; bottom: max(1rem, env(safe-area-inset-bottom)); z-index: 60; display: inline-flex; align-items: center; gap: .6rem; min-height: 44px; padding: .6rem .95rem; border: 1px solid rgb(var(--ink-rgb) / .14); border-radius: 999px; background: rgb(var(--paper-rgb) / .94); color: var(--cobalt); font: 600 .64rem/1.3 var(--sans); letter-spacing: .04em; cursor: pointer; transition: border-color .25s, background-color .25s; }
+.journey-motion-control:hover { border-color: var(--cobalt); background: var(--paper-bright); }
+.journey-motion-control:focus-visible { outline: 2px solid var(--cobalt); outline-offset: 3px; }
+@media (max-width: 680px) {
+  .journey-motion-control { width: 44px; height: 44px; padding: 0; justify-content: center; gap: 0; font-size: .85rem; }
+  .journey-motion-control .motion-control-label { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+}
+
+/* ── The footer speaks in the page's display face here ────────────────────── */
+body:has(main[data-acts]) .site-footer .footer-statement { font-family: var(--display); font-weight: 500; text-transform: uppercase; letter-spacing: .004em; line-height: 1.02; text-wrap: balance; }
+body:has(main[data-acts]) .site-footer > * > .eyebrow,
+body:has(main[data-acts]) .site-footer .eyebrow { font-family: var(--display); font-style: italic; font-weight: 400; font-size: clamp(1.05rem, 1.3vw, 1.35rem); letter-spacing: 0; text-transform: none; color: var(--cobalt); }
+
+/* ── The site-wide floor band stays off this page ─────────────────────────── */
+/* Every act brings its own floor, so the fixed band (and the 1 px horizon line at
+   its top edge) would only ever draw across paper here. `display: none` rather than
+   removal: the band is the layout canvas's anchor, and the menu floor still needs
+   that canvas. A zero-sized band also short-circuits the horizon hit test. */
+body:has(main[data-acts]) .surface-band { display: none; }
+
+/* ── Tiers ────────────────────────────────────────────────────────────────── */
+/* `still` (reduced motion, Save-Data, 2G): the same story, told without motion.
+   Acts become a picture and its words, one after the other, on paper. */
+html[data-journey-tier='still'] .act { height: auto; }
+html[data-journey-tier='still'] .act-stage { position: relative; height: auto; overflow: visible; display: grid; }
+html[data-journey-tier='still'] .act-plate { position: relative; inset: auto; aspect-ratio: 16 / 9; max-height: 80svh; }
+html[data-journey-tier='still'] .act-plate video { display: none; }
+html[data-journey-tier='still'] .act-fog,
+html[data-journey-tier='still'] .act--hero .act-column { display: none; }
+html[data-journey-tier='still'] .act-copy { position: relative; inset: auto; bottom: auto; padding: 3rem var(--gutter) 4rem; width: auto; }
+html[data-journey-tier='still'] .act-foot { position: relative; inset: auto; padding: 0 var(--gutter) 2rem; }
+html[data-journey-tier='still'] .act-room + .act-room { opacity: 1; position: relative; }
+html[data-journey-tier='still'] .act-caption + .act-caption { opacity: 1; position: relative; margin-top: 1rem; }
+html[data-journey-tier='still'] .act--hero .act-copy-inner { max-width: 44rem; }
+html[data-journey-tier='still'] .act .material-lens { display: none; }
+
+@media (prefers-reduced-motion: reduce) {
+  .act { height: auto; }
+  .act-stage { position: relative; height: auto; overflow: visible; display: grid; }
+  .act-plate { position: relative; inset: auto; aspect-ratio: 16 / 9; max-height: 80svh; }
+  .act-plate video, .act-fog, .act--hero .act-column { display: none; }
+  .act-copy { position: relative; inset: auto; bottom: auto; padding: 3rem var(--gutter) 4rem; width: auto; }
+  .act-foot { position: relative; inset: auto; padding: 0 var(--gutter) 2rem; }
+  .act-room + .act-room, .act-caption + .act-caption { opacity: 1; position: relative; }
+}
+
+/* Phone acts are shorter: a thumb covers a screen faster than a wheel does. */
+@media (max-width: 680px) and (prefers-reduced-motion: no-preference) {
+  html:not([data-journey-tier='still']) .act { height: calc(var(--act-vh-phone, var(--act-vh, 240)) * 1svh); }
+}
+
+/* ── Tablet ───────────────────────────────────────────────────────────────── */
+@media (max-width: 1100px) {
+  .act--hero .act-copy-inner { max-width: 62%; }
+  .act--hero .act-column { background: linear-gradient(90deg, var(--paper) 0, rgb(var(--paper-rgb) / .96) 42%, rgb(var(--paper-rgb) / .6) 62%, transparent 82%); }
+}
+
+/* ── Phone ────────────────────────────────────────────────────────────────── */
+@media (max-width: 680px) {
+  .acts { --grid-cols: 4; --fog-e: 16svh; --t-display: clamp(2.35rem, 11vw, 3.4rem); --t-title: clamp(2.1rem, 9.6vw, 3.1rem); }
+  .sect { padding: 5rem var(--gutter); }
+  .reading-sect { padding-block: 4.5rem; }
+  .planning-answer { padding: 0 0 1.6rem; }
+  .planning-answers summary { padding-right: 2.4rem; }
+  .sect-split, .sect-head, .reading { grid-template-columns: minmax(0, 1fr); gap: 2rem; }
+  /* The pour holds the top of the phone; the words hold the paper below it. */
+  .act--hero .act-plate { bottom: 44%; }
+  .act--hero .act-plate::before { content: ''; position: absolute; inset: auto 0 0 0; height: 45%; z-index: 1; background: linear-gradient(180deg, transparent, var(--paper)); }
+  .act--hero .act-column { display: none; }
+  .act--hero .act-copy { top: auto; bottom: calc(100lvh - 100svh + 1.4rem); display: block; padding-top: 0; }
+  .act--hero .act-copy-inner { max-width: none; }
+  .act--hero .t-body { font-size: .95rem; line-height: 1.65; margin-top: 1rem; }
+  .act--hero .button-row { margin-top: 1.4rem; }
+  .act--hero .button-row .button { flex: 1 1 auto; justify-content: center; }
+  .hero-proof { margin-top: 1rem; }
+  .act-copy { bottom: calc(100lvh - 100svh + 3.2rem); }
+  .act-captions { min-height: 6.6rem; }
+  .act .material-lens { top: 12svh; right: var(--gutter); width: 7.5rem; }
+  .act-foot { bottom: calc(100lvh - 100svh + 1rem); }
+}

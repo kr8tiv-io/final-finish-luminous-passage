@@ -29,18 +29,18 @@
    reaching for `!important` or adding the `.white-stage` class, whose blend
    pseudo-elements `journey.css`'s Step 11 note warns against placing after
    `#proof`. The act's own copy carries its own scrim instead. */
-body .journey .journey-chapter.archive-chapter:not(.hero-chapter):not(.white-stage) {
+.archive-sect {
+  position: relative;
   display: block;
-  min-height: 350lvh;
+  min-height: 280lvh;
   padding: 0;
   background: var(--paper);
   align-content: start;
   scroll-margin-top: 6rem;
 }
 
-body .journey .journey-chapter.archive-chapter:not(.hero-chapter):not(.white-stage)::after {
-  display: none;
-}
+/* (2026-09-22) On the acts page the section is a plain `.archive-sect`; nothing outside
+   this file sizes it any more. */
 
 .al {
   position: sticky;
@@ -75,9 +75,7 @@ body .journey .journey-chapter.archive-chapter:not(.hero-chapter):not(.white-sta
 }
 
 @media (max-width: 759px) {
-  body .journey .journey-chapter.archive-chapter:not(.hero-chapter):not(.white-stage) {
-    min-height: 240lvh;
-  }
+  .archive-sect { min-height: 230lvh; }
   .al { --al-tile-h: max(calc(100lvh / 6), calc(100vw / 5.2)); }
 }
 
@@ -210,7 +208,7 @@ body .journey .journey-chapter.archive-chapter:not(.hero-chapter):not(.white-sta
   position: absolute;
   left: 50%;
   top: 50%;
-  z-index: 2;
+  z-index: 4;
   width: min(100% - 2 * var(--gutter), 34rem);
   translate: -50% -50%;
   padding: clamp(1.6rem, 3.4vw, 2.6rem) clamp(1.5rem, 3vw, 2.4rem);
@@ -232,16 +230,18 @@ body .journey .journey-chapter.archive-chapter:not(.hero-chapter):not(.white-sta
 .al-copy a { pointer-events: auto; }
 [data-al-copy='off'] .al-copy { visibility: hidden; }
 
-.al-copy__eyebrow { margin-bottom: 1.2rem; color: var(--muted); }
+.al-copy__eyebrow { display: flex; align-items: center; justify-content: center; gap: .9rem; margin: 0 0 1.2rem; font-family: var(--display); font-style: italic; font-size: clamp(1.05rem, 1.3vw, 1.35rem); color: var(--cobalt); }
+.al-copy__eyebrow::before, .al-copy__eyebrow::after { content: ''; flex: 0 0 1.8rem; height: 1px; background: currentColor; opacity: .5; }
 
 .al-copy__title {
   max-width: 14ch;
   margin: 0 auto;
-  font-family: var(--sans);
-  font-size: clamp(2.2rem, 4.4vw, 4rem);
-  font-weight: 450;
-  line-height: 1.08;
-  letter-spacing: -0.055em;
+  font-family: var(--display);
+  font-size: clamp(2.4rem, 4.8vw, 4.6rem);
+  font-weight: 500;
+  line-height: .98;
+  letter-spacing: .004em;
+  text-transform: uppercase;
   text-wrap: balance;
 }
 
@@ -271,6 +271,26 @@ body .journey .journey-chapter.archive-chapter:not(.hero-chapter):not(.white-sta
   text-decoration-thickness: 1px;
 }
 
+.al-copy__link--primary { display: flex; justify-content: center; margin-top: 1.4rem; font-size: .92rem; }
+.al-copy__link--quiet { display: flex; justify-content: center; margin-top: .2rem; color: var(--ink-quiet); font-size: .74rem; }
+
+/* Paper edges (2026-09-22): the wall dissolves into the paper at its top and bottom, so
+   it scrolls on under the paper before it and hands the next act's misty top paper, not
+   a cut row of photographs. Static, no script; above the tiles, below the copy. */
+.al::before,
+.al::after {
+  content: '';
+  position: absolute; left: 0; right: 0; z-index: 3;
+  height: 16svh;
+  pointer-events: none;
+  background-size: 100% 100%;
+  background-repeat: no-repeat;
+}
+.al::before { top: 0; background-image: url('/images/brand/fog/fog-fall-1024.webp'); }
+.al::after { bottom: 0; background-image: url('/images/brand/fog/fog-rise-1024.webp'); }
+html[data-journey-motion='still'] .al::before,
+html[data-journey-motion='still'] .al::after { display: none; }
+
 .al-copy__pending {
   margin: 1rem 0 0;
   font-size: 0.62rem;
@@ -287,7 +307,7 @@ body .journey .journey-chapter.archive-chapter:not(.hero-chapter):not(.white-sta
    it no longer needs; that is the one condition in which this act changes the
    page's scroll height, and it happens twenty viewports below the fold.
    --------------------------------------------------------------------------- */
-html[data-journey-motion='still'] body .journey .journey-chapter.archive-chapter:not(.hero-chapter):not(.white-stage) {
+html[data-journey-motion='still'] .archive-sect {
   min-height: auto;
   padding: clamp(4rem, 9vw, 8rem) 0;
 }

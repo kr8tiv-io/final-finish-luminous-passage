@@ -3,7 +3,7 @@ import { useEffect, useRef, useState, type CSSProperties } from 'react';
 import type { ArchiveResolveImage, ArchiveTile } from '../../data/archive-lattice';
 import { ensureGsapKit, Flip } from '../../lib/motion/gsap-kit';
 import { journeyControls } from '../../lib/motion/journey-controls';
-import { JOURNEY_CHAPTER_IDS, journeyDirector } from '../../lib/motion/journey-director';
+import { JOURNEY_CHAPTER_IDS } from '../../lib/motion/journey-director';
 import { onRouteTeardown } from '../../lib/motion/route-lifecycle';
 import './archive-lattice.css';
 
@@ -58,9 +58,9 @@ interface Props {
   readonly resolveIndex: number;
   readonly photoCount: number;
   readonly jobCount: number;
-  readonly dateRange: string;
-  readonly pendingCount: number;
-  /** Staging and dev only: says why the photographs are dimmed. */
+  /** Retired with the dimmed state (2026-09-22); accepted so older callers still type-check. */
+  readonly dateRange?: string;
+  readonly pendingCount?: number;
   readonly staging?: boolean;
 }
 
@@ -68,24 +68,33 @@ interface Props {
 /* The act's phase map, in act progress                                        */
 /* -------------------------------------------------------------------------- */
 
-/** `unwrap-to-lattice` — the front slot Flips in, the rest fade up outward. */
-const UNWRAP_END = 0.2;
+/**
+ * `unwrap-to-lattice` — the front slot Flips in, the rest fade up outward. Since
+ * 2026-09-22 the unwrap runs on the APPROACH (the wall assembles while it scrolls
+ * into place, see `paint`), so the held act starts already drifting.
+ */
+const UNWRAP_END = 0.02;
 /** Diagonal drift, first half. */
-const DRIFT_A_END = 0.36;
+const DRIFT_A_END = 0.24;
 /** `hold-window` — every scroll-linked transform frozen while the copy is read. */
-const HOLD_END = 0.62;
-/** Diagonal drift, second half, ending with the resolve tile homing to centre. */
-const DRIFT_B_END = 0.84;
+const HOLD_END = 0.56;
+/**
+ * Diagonal drift, second half. The per-row and per-column lags that scatter the wall
+ * into a collage relax back to zero over it, so the wall leaves the screen as the
+ * neat grid it arrived as (Matt: the transition out was choppy — the scatter kept
+ * growing and opened holes).
+ */
+const DRIFT_B_END = 0.9;
 /** The resolve completes before the act does, so it is settled at the boundary. */
-const RESOLVE_SPAN = 0.12;
+const RESOLVE_SPAN = 0.08;
 /** How long the resolve tile spends easing from the drift to the host's centre. */
 const HOMING_SPAN = 0.1;
 
-/** The copy arrives inside the hold window and leaves before the resolve. */
-const COPY_IN_START = 0.28;
+/** The copy arrives inside the hold window and leaves as the wall regroups. */
+const COPY_IN_START = 0.12;
 const COPY_IN_SPAN = 0.1;
-const COPY_OUT_START = 0.76;
-const COPY_OUT_SPAN = 0.08;
+const COPY_OUT_START = 0.66;
+const COPY_OUT_SPAN = 0.1;
 
 /** Fraction of the plane the diagonal covers across the act. */
 const TRAVEL_X = 1.15;
@@ -97,6 +106,18 @@ const PHONE_TRAVEL_Y = 0.58;
 /** Per-row / per-column parallax lag (`caption-drift`, isladjan per-layer lags). */
 const ROW_LAG = 0.055;
 const COLUMN_LAG = 0.028;
+
+/**
+ * The resolve (one tile flying to full bleed at the end) is retired: Matt, 2026-09-22,
+ * "it's not an impressive image and it doesn't really make a lot of sense there". The
+ * wall now simply scrolls on and off with paper edges top and bottom (CSS, `.al::before`
+ * / `.al::after`), so it meets the paper before it and the next act's misty top without
+ * a seam. The phase functions stay exported so the unit tests keep describing the map;
+ * nothing renders the resolve.
+ */
+const RESOLVE_ENABLED = false;
+/** Final Finish's public Facebook page — the same URL the footer and the schema carry. */
+const FACEBOOK_URL = 'https://www.facebook.com/profile.php?id=61573826827114';
 
 /** Below this the lattice trims to `phoneColumns` and shortens its diagonal. */
 const PHONE_WIDTH = 760;
@@ -201,9 +222,6 @@ export default function ArchiveLattice({
   resolveIndex,
   photoCount,
   jobCount,
-  dateRange,
-  pendingCount,
-  staging = false,
 }: Props) {
   const rootRef = useRef<HTMLDivElement>(null);
   const planeRef = useRef<HTMLUListElement>(null);
@@ -264,7 +282,7 @@ export default function ArchiveLattice({
     if (!root || !plane) return undefined;
     ensureGsapKit();
 
-    const section = root.closest<HTMLElement>('.journey-chapter');
+    const section = root.closest<HTMLElement>('[data-archive-section]');
     const tileNodes = [...plane.querySelectorAll<HTMLElement>('.al-tile')];
     const resolveNode = tileNodes[renderResolve] ?? null;
     const leadFit = tileNodes[renderLead]?.querySelector<HTMLElement>('.al-tile__fit') ?? null;
@@ -439,10 +457,15 @@ export default function ArchiveLattice({
       }
       const box = geometry;
       if (!box) return;
-      const snapshot = journeyDirector.getSnapshot();
-      const t = actProgress(snapshot.activeIndex, snapshot.chapterProgress, box.ratio);
+      // The act's own progress, straight off its own section: 0 the frame the host
+      // sticks, 1 the frame it lets go. (The homepage no longer runs the director.)
+      const rect = section?.getBoundingClientRect();
+      const t = rect ? clamp01(-rect.top / Math.max(1, rect.height - window.innerHeight)) : 0;
+      // The approach: 0 as the section's top enters at the bottom of the screen, 1 the
+      // frame it sticks. The wall assembles over it, so it never arrives as blank paper.
+      const approach = rect ? clamp01(1 - rect.top / Math.max(1, window.innerHeight)) : 1;
 
-      const entered = clamp01(t / UNWRAP_END);
+      const entered = smooth(approach);
       setVar('enter', entered);
       unwrapTween?.progress(entered);
 
@@ -454,7 +477,7 @@ export default function ArchiveLattice({
         root.dataset.alCopy = next;
       }
 
-      const resolved = resolveProgress(t);
+      const resolved = RESOLVE_ENABLED ? resolveProgress(t) : 0;
       setVar('resolve', resolved);
       setVar('dim', resolved);
       if (resolved > 0) enterResolve();
@@ -464,9 +487,12 @@ export default function ArchiveLattice({
       /* The diagonal. Frozen for the whole unwrap, the hold window and the
          resolve, so on those three stretches this loop writes nothing at all. */
       const drift = driftProgress(t);
-      const homing = smooth(clamp01((t - (DRIFT_B_END - HOMING_SPAN)) / HOMING_SPAN));
+      const homing = RESOLVE_ENABLED ? smooth(clamp01((t - (DRIFT_B_END - HOMING_SPAN)) / HOMING_SPAN)) : 0;
       const baseX = -drift * box.travelX;
       const baseY = -drift * box.travelY;
+      // The scatter relaxes over the second drift: a pure translation of a wrapped
+      // plane is the whole grid again, so the wall regroups while still moving on.
+      const lag = t <= HOLD_END ? 1 : 1 - smooth(clamp01((t - HOLD_END) / (DRIFT_B_END - HOLD_END)));
 
       for (let index = 0; index < tileNodes.length; index += 1) {
         if (resolving && index === renderResolve) continue;
@@ -474,8 +500,8 @@ export default function ArchiveLattice({
         const row = Math.floor(index / box.columns);
         const originX = column * box.tileWidth;
         const originY = row * box.tileHeight;
-        let x = wrap(originX + baseX * (1 + row * ROW_LAG), box.planeWidth) - originX;
-        let y = wrap(originY + baseY * (1 + column * COLUMN_LAG), box.planeHeight) - originY;
+        let x = wrap(originX + baseX * (1 + row * ROW_LAG * lag), box.planeWidth) - originX;
+        let y = wrap(originY + baseY * (1 + column * COLUMN_LAG * lag), box.planeHeight) - originY;
 
         if (index === renderResolve && homing > 0) {
           const homeX = (box.hostWidth - box.tileWidth) / 2 - box.planeLeft - originX;
@@ -526,7 +552,18 @@ export default function ArchiveLattice({
     };
 
     remeasure();
-    const unsubscribe = journeyDirector.subscribe(paint);
+    // One rAF-throttled scroll listener. Lenis drives the window's own scroll, so this
+    // fires for wheel, touch, keyboard and anchor jumps alike.
+    let frame = 0;
+    const onScroll = () => {
+      if (frame) return;
+      frame = window.requestAnimationFrame(() => { frame = 0; paint(); });
+    };
+    window.addEventListener('scroll', onScroll, { passive: true });
+    const unsubscribe = () => {
+      window.removeEventListener('scroll', onScroll);
+      if (frame) window.cancelAnimationFrame(frame);
+    };
     window.addEventListener('resize', remeasure, { passive: true });
     window.addEventListener('orientationchange', remeasure, { passive: true });
     void document.fonts?.ready.then(remeasure);
@@ -559,7 +596,7 @@ export default function ArchiveLattice({
       aria-label={`A grid of ${photoCount} photographs from the Final Finish project archive.`}
     >
       {rendered.map((tile, index) => {
-        const isResolve = index === renderResolve;
+        const isResolve = RESOLVE_ENABLED && index === renderResolve;
         return <li
           key={tile.id}
           className={isResolve ? 'al-tile al-tile--resolve' : 'al-tile'}
@@ -568,7 +605,11 @@ export default function ArchiveLattice({
             '--al-c': index % renderColumns,
             '--al-r': Math.floor(index / renderColumns),
             '--al-d': tileDelay(index, renderColumns, rows, renderLead).toFixed(3),
-            '--al-alpha': tile.approvalRequired ? 0.6 : 1,
+            // Full strength. A single photograph carries no before/after pairing claim,
+            // so it publishes without Denis's pairing approval (the Step 11 rule);
+            // only pairings wait for him. `approvalRequired` still travels with the
+            // tile for the day a caption is added.
+            '--al-alpha': 1,
           } as CSSProperties}
         >
           <figure className="al-tile__fit">
@@ -612,27 +653,18 @@ export default function ArchiveLattice({
     </ul>
 
     <div className="al-copy">
-      <p className="eyebrow al-copy__eyebrow">From the project archive</p>
-      <h2 className="al-copy__title" id="archive-title">Every floor here is a real job.</h2>
-      {/* Single expressions, not adjacent interpolations: two text nodes side
-          by side need React's own `<!-- -->` separators to survive hydration,
-          and one string per element removes the question entirely. */}
-      <p className="al-copy__count">{`${photoCount} photographs. ${jobCount} floors. ${dateRange}.`}</p>
-      {/* `al-copy__link`, not `chapter-link`: `intent-motion.ts` selects
-          `.journey a.chapter-link` and APPENDS an `.intent-glint` span to every
-          match at page load — long before a `client:visible` island hydrates.
-          React then meets a child it never rendered and throws away the whole
-          tree (measured: React #418, one extra SPAN at node 403 of 406). That
-          script's own comment says "do not append children inside hydrated
-          React controls"; this class is how this link stays out of its reach
-          without editing a file another agent owns. The look is mirrored in
-          `archive-lattice.css`. */}
-      <a className="al-copy__link" href="/projects">
-        {`See all ${jobCount} projects `}<span aria-hidden="true">↗</span>
+      <p className="al-copy__eyebrow">Real Edmonton floors</p>
+      <h2 className="al-copy__title" id="archive-title">Explore our work.</h2>
+      {/* `al-copy__link`, not `chapter-link`: `intent-motion.ts` appends a child
+          to every `.journey a.chapter-link` at load, and React throws away a tree
+          that meets a child it never rendered (React #418). Matt, 2026-09-22:
+          the fuller body of work lives on the Facebook page, so that is the link. */}
+      <a className="al-copy__link al-copy__link--primary" href={FACEBOOK_URL} rel="me noopener" target="_blank">
+        {'Find us on Facebook '}<span aria-hidden="true">↗</span>
       </a>
-      {staging && pendingCount > 0 && <p className="al-copy__pending">
-        Dimmed photographs are awaiting Denis&rsquo;s approval.
-      </p>}
+      <a className="al-copy__link al-copy__link--quiet" href="/projects">
+        {`Or browse ${jobCount} projects here`}
+      </a>
     </div>
   </div>;
 }

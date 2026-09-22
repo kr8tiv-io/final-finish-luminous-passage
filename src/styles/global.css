@@ -57,6 +57,49 @@
   line-gap-override: 0%;
 }
 
+/* Cormorant Garamond, the display face (2026-09-22 direction).
+ *
+ * Matt asked for titles in the spirit of white-desert.com, whose display face is the
+ * commercial Cardinal Classic Long. Cormorant Garamond (OFL) is the closest free match:
+ * a sharp, classical garamond whose capitals set with the same quiet authority. Two
+ * files only: 500 roman for every title (preloaded in BaseLayout) and 400 italic for
+ * kickers, loaded on first use. Latin subset, copied byte-for-byte from
+ * `@fontsource/cormorant-garamond` (devDependency, provenance only); the unicode-range
+ * is verbatim from its `500.css`.
+ */
+@font-face {
+  font-family: 'Cormorant Garamond';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url('/fonts/cormorant-garamond-latin-500.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA,
+    U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193,
+    U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: 'Cormorant Garamond';
+  font-style: italic;
+  font-weight: 400;
+  font-display: swap;
+  src: url('/fonts/cormorant-garamond-latin-400-italic.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA,
+    U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193,
+    U+2212, U+2215, U+FEFF, U+FFFD;
+}
+/* Georgia, bent to Cormorant's measure so a late font never reflows a title.
+   Measured from the font bytes on a 124-character title sample
+   (`output/assess-0922/font-metrics.mjs`): width ratio 0.8908, and the line box
+   Cormorant actually draws (ascent 0.92em, descent 0.29em) divided through by it. */
+@font-face {
+  font-family: 'Cormorant Fallback';
+  src: local('Georgia'), local('Times New Roman');
+  size-adjust: 89.08%;
+  ascent-override: 103.27%;
+  descent-override: 32.55%;
+  line-gap-override: 0%;
+}
+
 /* ── The palette (Step 16) ───────────────────────────────────────────────────
  *
  * Paper, ink, cobalt and bronze, and every tint any stylesheet is allowed to use.
@@ -95,6 +138,7 @@
   --line: rgb(var(--ink-rgb) / .16);
   --shadow: 0 28px 80px rgba(31, 39, 42, 0.12);
   --sans: 'Manrope Variable', 'Manrope Fallback', 'Segoe UI', Arial, sans-serif;
+  --display: 'Cormorant Garamond', 'Cormorant Fallback', Georgia, serif;
   --serif: var(--sans);
   --body: var(--sans);
   --ease-out: cubic-bezier(.22, 1, .36, 1);
