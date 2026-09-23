@@ -65,7 +65,7 @@ const pageSchema = faqSchema ? [articleSchema, faqSchema] : articleSchema;
   <SiteHeader />
   <main id="main-content">
     <header class="article-hero">
-      <nav aria-label="Breadcrumb"><a href="/">Home</a><span>/</span><a href="/resources/">Resources</a><span>/</span><strong>{data.category.replace('-', ' ')}</strong></nav>
+      <nav aria-label="Breadcrumb"><a href="/">Home</a><span>/</span><a href="/resources">Resources</a><span>/</span><strong>{data.category.replace('-', ' ')}</strong></nav>
       <p class="eyebrow">{data.category.replace('-', ' ')} · Edmonton floor library</p>
       <h1>{data.title}</h1>
       <p class="deck">{data.description}</p>

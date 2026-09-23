@@ -23,8 +23,24 @@ export default defineConfig({
     // robotsText). `filter` excludes the local-review-only `/dev/*` tree (already 404s in
     // production, see src/pages/dev/surface.astro) and the 404 page itself, in case a future
     // Astro/integration version ever starts treating error pages as normal routes.
+    // `/lab/*` is the staging-only spike tree (404 in production); on-demand routes still
+    // reach the integration's route list, so it is filtered here too. `serialize` lists each
+    // URL in its canonical form (BaseLayout): guides keep their trailing slash
+    // (resourcePath), every other page has none. A sitemap URL that differs from the
+    // page's own canonical is a conflicting signal.
     ...(deployment.crawlAllowed ? [sitemap({
-      filter: (page) => !new URL(page).pathname.startsWith('/dev/') && new URL(page).pathname !== '/404',
+      filter: (page) => {
+        const path = new URL(page).pathname;
+        return !path.startsWith('/dev/') && !path.startsWith('/lab/') && path !== '/404' && path !== '/404/';
+      },
+      serialize: (item) => {
+        const url = new URL(item.url);
+        if (url.pathname !== '/' && url.pathname.endsWith('/') && !/^\/resources\/[^/]+\/$/.test(url.pathname)) {
+          url.pathname = url.pathname.slice(0, -1);
+          item.url = url.toString();
+        }
+        return item;
+      },
     })] : []),
   ],
 

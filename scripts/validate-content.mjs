@@ -49,7 +49,11 @@ function firstCommitDate(absolutePath) {
   try {
     const raw = execFileSync('git', ['log', '--follow', '--format=%aI', '--', absolutePath], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] });
     const lines = raw.split('\n').map((line) => line.trim()).filter(Boolean);
-    return lines.length ? new Date(lines[lines.length - 1]) : null;
+    // The author's own calendar day (the date part of %aI, which carries the author's
+    // offset), at midnight UTC like a frontmatter date. Converting the full timestamp
+    // to UTC made an evening commit in Edmonton land on the next day, so a guide
+    // dated the day it was written failed as "predating" its own commit.
+    return lines.length ? new Date(lines[lines.length - 1].slice(0, 10)) : null;
   } catch {
     return null; // not a git checkout, git missing, or file untracked — skip this specific check
   }
