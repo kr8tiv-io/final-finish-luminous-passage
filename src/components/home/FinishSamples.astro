@@ -10,6 +10,13 @@ import { finishPresets } from '../../lib/visualizer/finishes';
  * claim, and the reading copy above already says a screen is a starting point.
  */
 const pick = (id: string) => finishPresets.find((finish) => finish.id === id);
+/* The 3D samples' own render (output/cohesion/capture-samples.mjs + split-samples.mjs):
+   one transparent picture per tablet, for touch screens, where the scene does not run. */
+const tablets = [
+  { id: 'flake', width: 611, height: 462 },
+  { id: 'solid', width: 619, height: 462 },
+  { id: 'metallic', width: 612, height: 462 },
+] as const;
 const samples = [
   { id: 'flake', family: 'Flake', finish: pick('midnight-aggregate'), swatch: "url('/images/brand/texture/midnight-aggregate.webp') 50% 50% / cover" },
   { id: 'solid', family: 'Solid', finish: pick('graphite'), swatch: 'radial-gradient(ellipse at 22% 16%, rgb(255 255 255 / .22), transparent 46%), linear-gradient(150deg, #3d4648, #2a3235 52%, #171e21)' },
@@ -21,6 +28,21 @@ const samples = [
     <ul class="samples-flat" aria-hidden="true">
       {samples.map((sample) => <li style={`background:${sample.swatch}`}></li>)}
     </ul>
+    <div class="samples-hand" aria-hidden="true">
+      {tablets.map((tablet) => (
+        <img
+          class={`samples-tablet samples-tablet--${tablet.id}`}
+          src={`/images/brand/samples/sample-tablet-${tablet.id}-sm.webp`}
+          srcset={`/images/brand/samples/sample-tablet-${tablet.id}-sm.webp 360w, /images/brand/samples/sample-tablet-${tablet.id}-lg.webp ${tablet.width}w`}
+          sizes="46vw"
+          width={tablet.width}
+          height={tablet.height}
+          alt=""
+          loading="lazy"
+          decoding="async"
+        />
+      ))}
+    </div>
     <FinishSamples3D client:visible={{ rootMargin: '600px' }} />
   </div>
   <ol class="samples-captions">
@@ -53,11 +75,42 @@ const samples = [
   /* No :global() here: Astro does not rewrite it inside :has()/:not(), and the class
      sits on this component's own (scoped) caption elements anyway. */
   .samples-captions:has(.is-focus) .samples-caption:not(.is-focus) { opacity: .42; }
+  /* Touch screens (phones, tablets): the 3D scene does not run there, so the samples are
+     its own render, one picture per tablet, held as a fanned hand; the outer two sit
+     behind the middle one, as they do in the 3D row (Matt, 2026-09-22: "make it look a
+     little bit more like the tablets"). Where scroll-driven animation exists they fan
+     out of a stack as the stage comes up, the phone's version of the 3D deck. */
+  .samples-hand { display: none; }
+  @media (hover: none) and (pointer: coarse) {
+    .samples-flat { display: none; }
+    /* A little wider than the column: the shadows need no gutter. */
+    .samples-hand { position: absolute; inset: 0 calc(-.6 * var(--gutter)); display: block; view-timeline-name: --samples-hand; }
+    .samples-tablet { position: absolute; top: 50%; width: 42%; height: auto; translate: 0 -50%; }
+    .samples-tablet--flake { left: 0; }
+    .samples-tablet--solid { left: 27.5%; z-index: 1; width: 45%; }
+    .samples-tablet--metallic { right: 0; }
+  }
+  @media (hover: none) and (pointer: coarse) and (prefers-reduced-motion: no-preference) {
+    @supports (animation-timeline: view()) {
+      .samples-tablet { animation: samples-fan linear both; animation-timeline: --samples-hand; animation-range: entry 10% cover 48%; }
+      .samples-tablet--flake { --fan-x: 64%; --fan-r: 6deg; }
+      .samples-tablet--metallic { --fan-x: -64%; --fan-r: -6deg; }
+    }
+  }
+  @keyframes samples-fan {
+    from { transform: translateX(var(--fan-x, 0)) rotate(var(--fan-r, 0deg)) scale(.9); opacity: 0; }
+    30% { opacity: 1; }
+    to { transform: none; opacity: 1; }
+  }
   @media (max-width: 860px) {
     .samples { grid-template-columns: 1fr; }
     /* aspect-ratio + min-height would widen the stage past a phone's width. */
     .samples-stage { aspect-ratio: auto; min-height: 0; height: clamp(12rem, 52vw, 20rem); }
     .samples-flat { inset: 8% 0 12%; gap: 4%; }
     .samples-captions { border-left: 0; border-top: 1px solid rgb(var(--ink-rgb) / .16); padding: 1.4rem 0 0; }
+  }
+  /* The hand of tablets is shorter than the flat swatches' box was. */
+  @media (hover: none) and (pointer: coarse) and (max-width: 860px) {
+    .samples-stage { height: clamp(10.5rem, 46vw, 20rem); }
   }
 </style>

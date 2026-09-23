@@ -288,8 +288,30 @@ html[data-journey-tier='still'] .act .material-lens { display: none; }
   .act--hero .button-row .button { min-height: 46px; justify-content: center; }
   .act--hero .button-row .text-call { margin: 0; justify-content: center; flex-wrap: wrap; text-align: center; line-height: 1.3; }
   .hero-proof { margin-top: .7rem; }
+  /* The words carry their own mist over the pour (Matt, 2026-09-22: the headline wants
+     "a little bit more visibility" on a phone). It starts just above the kicker, so
+     the pour above the words stays clear, and deepens behind the lines. */
+  .act--hero .act-copy::before { content: ''; position: absolute; z-index: -1; left: calc(-1 * var(--gutter)); right: calc(-1 * var(--gutter)); top: -3.4rem; bottom: calc(-1 * (100lvh - 100svh + 1.4rem)); background: linear-gradient(180deg, rgb(var(--paper-rgb) / 0), rgb(var(--paper-rgb) / .64) 3.4rem, rgb(var(--paper-rgb) / .74) 45%, rgb(var(--paper-rgb) / .86)); pointer-events: none; }
   .act-copy { bottom: calc(100lvh - 100svh + 3.2rem); }
   .act-captions { min-height: 6.6rem; }
+  /* Act 4: the rooms hold the top of the screen and the words the paper below, as the
+     pour does. The band's mist is shorter and starts closer to the words, and each
+     room's picture fits the window above its band (the band's edge, published by
+     acts.ts as --act-clear-1/2), so a phone sees the floor and the car come in, not
+     the sky and the glass (Matt, 2026-09-22). The words stay where they were: any
+     lower and the captions' long first lines run under the motion switch. */
+  .act--bay { --fog-e: 9svh; --act-band-gap: .035; }
+  .act--bay .act-room > :is(img, video) { bottom: auto; height: calc(var(--act-room-clear) + var(--fog-e)); -webkit-mask-image: linear-gradient(180deg, #000 calc(100% - var(--fog-e)), transparent); mask-image: linear-gradient(180deg, #000 calc(100% - var(--fog-e)), transparent); }
+  .act--bay #garage { --act-room-clear: var(--act-clear-1, 42svh); }
+  .act--bay #vault { --act-room-clear: var(--act-clear-2, 60svh); }
+  .act--bay #garage > :is(img, video) { object-position: 60% 100%; }
+  .act--bay #vault > :is(img, video) { object-position: 64% 100%; }
+  /* Each mist's solid paper overlaps its soft edge by a pixel: at a phone's fractional
+     edge heights the two layers left a hairline between them that let the film through
+     (a dark line across the screen where the band starts). */
+  .act[data-act-near] .act-fog--rise { background-size: calc((100% - 2 * var(--gutter)) / var(--grid-cols)) calc(100% - var(--fog-e) + 1px), 100% var(--fog-e), 100% calc(100% - var(--fog-e) + 1px); }
+  .act[data-act-near] .act-fog--in,
+  .act[data-act-near][data-fog-in='resin'] .act-fog--in { background-size: 100% var(--fog-e), 100% calc(100% - var(--fog-e) + 1px); }
   .act .material-lens { top: 12svh; right: var(--gutter); width: 7.5rem; }
   .act-foot { bottom: calc(100lvh - 100svh + 1rem); }
 }
@@ -300,6 +322,8 @@ html[data-journey-tier='still'] .act .material-lens { display: none; }
   /* The headline and the lead already say Edmonton; the kicker is the one line spare. */
   .act--hero .t-kicker { display: none; }
   .act--hero .button-row .button { min-height: 44px; }
+  /* The rooms' window is the space above the words: the kicker gives its line to it. */
+  .act--bay .t-kicker { display: none; }
 }
 
 /* Landscape phones (a screen only ~340 px tall): the pinned hero keeps the essentials,

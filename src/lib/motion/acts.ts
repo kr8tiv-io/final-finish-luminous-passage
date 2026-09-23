@@ -227,8 +227,10 @@ export function initActs(): Teardown | undefined {
     if (act.copy && act.kind !== 'hero') {
       act.copyTop = act.copy.offsetTop;
       act.copyH = Math.max(1, act.copy.offsetHeight);
-      // The band's solid paper begins a little above the first line of the words.
-      act.bandTop = Math.max(act.H * 0.12, act.copyTop - act.H * 0.07);
+      // The band's solid paper begins a little above the first line of the words: by
+      // `--act-band-gap` of the stage (acts.css; phones tighten it for the two rooms).
+      const gap = parseFloat(getComputedStyle(act.el).getPropertyValue('--act-band-gap')) || 0.07;
+      act.bandTop = Math.max(act.H * 0.12, act.copyTop - act.H * gap);
       // Two-room acts: for the second room it settles just above the captions.
       const captions = act.copy.querySelector<HTMLElement>('.act-captions');
       act.bandTop2 = captions ? Math.max(act.bandTop, act.copyTop + captions.offsetTop - act.H * 0.06) : act.bandTop;
@@ -237,6 +239,12 @@ export function initActs(): Teardown | undefined {
       act.copyH = 1;
       act.bandTop = act.H;
       act.bandTop2 = act.H;
+    }
+    if (act.kind === 'bay') {
+      // Where each room is seen clear of its band's mist. Phones fit the rooms'
+      // pictures to these windows (acts.css), so the floor is in them, not the sky.
+      act.el.style.setProperty('--act-clear-1', `${Math.round(act.bandTop - act.E)}px`);
+      act.el.style.setProperty('--act-clear-2', `${Math.round(act.bandTop2 - act.E)}px`);
     }
   };
 
@@ -776,6 +784,8 @@ export function initActs(): Teardown | undefined {
         el.style.removeProperty('visibility');
         el.style.removeProperty('--act-media');
       });
+      act.el.style.removeProperty('--act-clear-1');
+      act.el.style.removeProperty('--act-clear-2');
     });
     if (tickerFn) gsap.ticker.remove(tickerFn);
     tickerFn = null;
