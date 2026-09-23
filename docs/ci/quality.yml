@@ -1,22 +1,24 @@
 # ---------------------------------------------------------------------------
-# NOT PUSHED BY THE REBUILD AGENTS — EDITED AS TEXT ONLY.
+# PARKED CI WORKFLOW (docs/ci/quality.yml) — not active on GitHub.
 #
-# The GitHub token this project's agents hold lacks the `workflow` scope, so a
-# push that touches `.github/workflows/**` is rejected by GitHub before it
-# reaches the branch. This file is therefore committed on the step branch as
-# text and must be pushed (or pasted) by a human with a `workflow`-scoped
-# token before CI will ever run it. Nothing in this repo has executed it yet;
-# treat every job below as unverified-on-CI until a real run exists.
-# Locally the same commands are `npm run check`, `npm test`,
-# `npm run build:staging`, `npm run measure:delivery -- --label ci --port 4334`
-# and `npm run check:budgets`, all of which HAVE been run.
+# To use it, move this file to .github/workflows/quality.yml and push with a
+# token that has the `workflow` scope (`gh auth refresh -h github.com -s workflow`),
+# then start it from the Actions tab (quality -> Run workflow).
+#
+# It is manual-only on purpose. Every job checks out the Git LFS assets (films,
+# posters, photographs, .glb): about 264 MB per run. The organisation's free LFS
+# allowance is 1 GB of downloads a month, so running this on every push would
+# exhaust it within a handful of pushes and break ordinary clones.
+#
+# Nothing has executed it on GitHub yet; treat every job below as unverified on
+# CI until a real run exists. Locally the same commands are `npm run check`,
+# `npm test`, `npm run build:staging`,
+# `npm run measure:delivery -- --label ci --port 4334` and `npm run check:budgets`,
+# all of which have been run.
 # ---------------------------------------------------------------------------
 name: quality
 
 on:
-  push:
-    branches: ['**']
-  pull_request:
   workflow_dispatch:
 
 concurrency:

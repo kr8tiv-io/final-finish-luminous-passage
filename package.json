@@ -13,6 +13,7 @@
     "postbuild": "node scripts/build-prerender-headers.mjs && node scripts/build-llms.mjs",
     "build:staging": "node scripts/build-with-env.mjs staging",
     "build:production": "node scripts/build-with-env.mjs production",
+    "package:static-preview": "node scripts/package-static-preview.mjs",
     "start": "node ./dist/server/entry.mjs",
     "build:3d": "blender --background --factory-startup --python tools/blender/build_luminous_passage.py",
     "validate:3d": "node tools/blender/validate-committed-assets.mjs",

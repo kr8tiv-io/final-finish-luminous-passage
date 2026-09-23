@@ -1,0 +1,6 @@
+# Copied to /_astro/.htaccess. Content-hashed bundles: safe to cache forever.
+# Everything outside /_astro/ keeps the host's default caching, so a redeployed
+# video or image shows up without a cache purge.
+<IfModule mod_headers.c>
+  Header set Cache-Control "public, max-age=31536000, immutable"
+</IfModule>

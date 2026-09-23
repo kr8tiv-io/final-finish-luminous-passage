@@ -1,160 +1,191 @@
-<p align="center">
-  <img src="public/images/brand/follow-floor/720/epoxy-pour-pearl-poster.jpg" alt="Concept film: the original epoxy pour, locally graded toward pearl and cool blue" width="100%" />
-</p>
+<div align="center">
 
-<h1 align="center">Final Finish Epoxy · Follow the Floor</h1>
+![Final Finish Epoxy: the homepage on desktop and on a phone](docs/readme/hero.jpg)
 
-<p align="center">
-  <strong>A little theatre. A very practical transformation.</strong><br />
-  A material-led digital experience for an Edmonton flooring client—<br />
-  from the first pour to a conversation about the customer's own space.
-</p>
+# Final Finish Epoxy — *Acts & Paper*
 
-<p align="center">
-  Astro · React · Three.js · GSAP · Blender<br />
-  Warm white / architectural typography / real project evidence
-</p>
+### A floor you can almost touch through the screen.
 
-## The idea
+The rebuild of [finalfinishepoxy.ca](https://www.finalfinishepoxy.ca) for **Denis**, founder of Final Finish Epoxy Coatings in Edmonton, Alberta. Scroll-driven films held on paper, a 3D preparation stack and sample tablets, real before-and-afters, and 75 server-rendered pages written for people, for Google and for AI answer engines.
+Designed and built by **[kr8tiv.io](https://kr8tiv.io)**.
 
-The floor is the thread. A flowing material becomes a finished room; a room becomes a possibility; a real project brings that possibility back to earth. Every invitation should lead somewhere useful: explore preparation, reclaim a garage or basement, choose a finish, or talk to Denis.
+> **The films set the mood. The HTML is the product.** Every word, FAQ and line of JSON-LD ships in the page. Turn the motion off and the site still reads, ranks and converts.
 
-The opening is the **pouring epoxy film**, visible immediately and drawn forward by native scrolling. There is deliberately no artificial floor-colour selector over the film. Finish exploration belongs in the studio, where the visitor has a stable view and meaningful controls.
+[![Preview](https://img.shields.io/badge/preview-lightgrey--wasp.hostingersite.com-164F83?style=for-the-badge)](https://lightgrey-wasp-945457.hostingersite.com)
+[![Built by kr8tiv.io](https://img.shields.io/badge/built%20by-kr8tiv.io-17222A?style=for-the-badge)](https://kr8tiv.io)
+[![Astro 7 + React 19](https://img.shields.io/badge/Astro%207-React%2019%20islands-164F83?style=for-the-badge)](#tech-stack)
+[![Motion](https://img.shields.io/badge/motion-GSAP%20%2B%20three.js-A57D42?style=for-the-badge)](#the-concept--acts-and-paper)
+[![Pages](https://img.shields.io/badge/pages-75%20prerendered-17222A?style=for-the-badge)](#search-and-ai-search)
+[![Unit tests](https://img.shields.io/badge/unit%20tests-417%20passing-2E6B4F?style=for-the-badge)](#run-it)
 
-Manrope provides one precise typographic voice. Warm white gives the work space; charcoal keeps the reading clear; cobalt identifies actions. Architectural films are labelled concepts and kept distinct from the client's project photographs.
+[The concept](#the-concept--acts-and-paper) · [Act by act](#the-homepage-act-by-act) · [Phones](#built-for-phones) · [Search & AI](#search-and-ai-search) · [Honest by construction](#honest-by-construction) · [Run it](#run-it) · [Deploy](#deploy)
 
-## In the browser
+</div>
 
-The current readability pass follows one rule: **the scene moves; the message lands**. Short architectural statements lead into warm-white editorial passages, while Manrope's spacing, body text and controls share a single scale. The original pour now has a locally produced pearl-blue grade with identical timing. [Implementation notes and release boundaries](docs/cinematic-readability-implementation.md) distinguish working changes from approval gates.
+---
 
-![The pearl-blue opening, captured from the built application](docs/readability/images/opening-desktop.png)
+## What this is
 
-*Actual local browser capture. The pouring imagery is concept footage, not a photographed Final Finish installation.*
+Final Finish Epoxy Coatings is Denis's floor-coating business in Edmonton: garages, basements, workshops, barns, kitchens and bathrooms, showrooms and warehouses, finished in flake, solid or metallic over properly prepared concrete. Google shows **5.0 from 30 reviews**. His current site is a Squarespace template.
 
-### Proof, then possibility
+This repository is its replacement. The brief was to look like a six-figure agency build while keeping the site bright, readable and fast on a phone; to keep the pour film that opens it; and to out-rank the Edmonton competition in Google and in AI answers without inventing a single claim.
 
-The pouring film now gives way to a generous white customer stage: **17 genuine, individually attributed Google excerpts**, equal-size cards, native horizontal exploration, and controls that stop for reading. The rating is dated evidence, not an invented live feed: Google showed **5.0 from 30 reviews** when checked on September 8, 2026 in Edmonton.
+---
 
-Three same-view before/after candidates form the staging comparison collection. The journey director coordinates the featured passage, and the exploration ribbon has its own native horizontal movement. Divider positions belong to the visitor. These are **pending pairings**, not fifteen approved transformations; production withholds them until approval is recorded. A separate preparation story keeps differently angled photographs distinct.
+## The concept — acts and paper
 
-The shared navigation has a moving material inset, a fine reading-progress line and direct chapter links beneath the opening. Short statements settle over deliberately quiet compositions; longer explanations occupy connected white reading surfaces. There are no letter-sized white halos. Seventeen review cards include editorial topic labels and discreet initials; HTML planning content answers useful questions about concrete condition, room use and quoting.
+Two kinds of section alternate down the homepage.
 
-![The white customer-proof stage, captured from the built application](docs/readability/images/customer-proof-desktop.png)
+| | |
+|---|---|
+| **Act** | A film or photograph held on a sticky stage while your scroll runs its story. It arrives under paper mist, the mist lifts, the film plays frame by frame with the scroll, a band of mist rises to carry the words, and the same mist closes over it at the end. |
+| **Paper** | A white section on the page's grid: reading copy, the review ring, the before-and-after cylinder, the archive wall, the 3D pieces. |
 
-*Actual desktop browser capture; the phone layout and touch targets are also covered by browser emulation, not yet physical-device certification.*
+Every act starts and ends in the same paper the next section is printed on, so there is no seam to find: no white line, no hard cut, no frame where a film shows up unwashed.
 
-### A comparison, not a magic trick
+- **One controller.** `src/lib/motion/acts.ts` is the only writer of transforms; `src/styles/acts.css` owns composition. A second owner is how scroll sites start to shake, so there isn't one.
+- **Films are scrubbed, never autoplayed.** Each one is revealed on its own poster frame and then glides to the frame your scroll asked for, so a film never double-exposes over its poster.
+- **Films load on intent.** Nothing heavier than a poster downloads until the first scroll, and a phone gets its own 480p encodes.
 
-Three real transformations travel through a shallow ribbon. The active photograph faces the visitor squarely; its divider reveals the original and finished room without bending either image. Direct navigation lands immediately so controls cannot slip away mid-click. On phones, the same collection uses native horizontal browsing. The expanded collection has its own track and remembers the visitor's comparison positions.
+---
 
-![Featured before-and-after comparison in the current browser implementation](docs/readability/images/transformations-desktop.png)
+## The homepage, act by act
 
-<p align="center">
-  <img src="docs/readability/images/opening-phone.png" alt="Phone opening: visible pour above a readable heading and direct actions" width="30%" />
-  &nbsp;
-  <img src="docs/readability/images/customer-proof-phone.png" alt="Phone review stage: readable cards with deliberate navigation" width="30%" />
-  &nbsp;
-  <img src="docs/readability/images/transformations-phone.png" alt="Phone comparison: a genuine original and finished floor with an accessible divider" width="30%" />
-</p>
+![Four homepage moments on desktop: the 3D preparation stack, the before-and-after cylinder, the review ring and the finish samples](docs/readme/acts.jpg)
 
-*Actual browser screenshots: built opening/proof and independently reviewed local gallery. Project pairings remain staging candidates awaiting client approval.*
+| # | Section | What you see |
+|---|---|---|
+| 01 | **The pour** | A pearl-graded epoxy pour, scrubbed by your scroll. The headline's words converge; the Google rating sits under the calls to action with the date it was checked. |
+| — | **In their words** | A ring of real Google review excerpts that turns as you scroll, each card linked to its review. |
+| 03 | **Beneath the surface** | A slow walk up a pearl-toned stair, a magnifier over a flake floor, then a 3D cross-section of the system from bare slab to clear coat. |
+| 04 | **Reclaim** | A car rolls into a glass garage while the headline's letters stream in behind it; then the basement slides in as a lounge. |
+| 05 | **See the difference** | Real before-and-after pairs on a turning cylinder, a slider on the front card. Phones get a native swipe ribbon. |
+| 06 | **The archive** | 96 project photographs on one wall, resolving from the cylinder's front card. |
+| 07 | **Find your finish** | A resin reveal into the finish hall, then three 3D sample slabs (flake, solid, metallic) that fan out and tip toward you as a light swings across them. |
+| 08 | **Commercial** | A showroom floor with a band of light travelling across it; downtime, operating conditions and scope. |
+| — | **The sequence** | The six steps of the job on a horizontal track, then the planning questions people actually ask. |
+| 10 | **Talk to Denis** | The last act ends on the words and the way in: a three-step quote request with photo upload on the contact page, or just call. |
 
-Watch the actual [desktop transition recording](docs/readability/motion/desktop-motion.webm) or [emulated-phone transition recording](docs/readability/motion/phone-motion.webm). These are browser captures, not aspirational Blender renders.
+The interior pages share the same system:
 
-![Pearl-grey stair concept used in the implemented surface study](public/images/brand/pearl-stair-v2.jpg)
+![Three interior pages: services, a guide and contact](docs/readme/pages.jpg)
 
-*The new stair material study: luminous pearl-grey epoxy, pale architecture, and intentional daylight. This generated concept replaces the dark-speckled stair film with a still and a moving square detail lens; it is not client project evidence or a new video.*
+---
 
-Wider asymmetric transitions, a stable shader edge and locked media handoffs replace drifting visual noise. [The iteration notes](docs/follow-the-floor/PROOF-AND-MOTION-POLISH.md) record source evidence, image provenance and the limits of this implementation.
+## Built for phones
 
-| Surface | What this implementation does |
-| --- | --- |
-| Opening and journey | Native-scroll director, decoded-frame readiness, aspect-correct film compositing, direct chapter links, and a persistent motion control. |
-| Spatial study | A small Blender-authored threshold with an exported camera track. It did not meet the visual gate and is available only at `/?study=threshold#garage` in local development, not the default journey. |
-| Private finish studio | Thirty stable inspiration IDs, perspective-correct floor projection, local photo normalization, manual corners, original/preview comparison, and local object erase/restore with undo. |
-| Consultation | Three stages, selected-finish handoff, optional photographs with explicit attachment consent, and the chosen contact channel required. |
-| Evidence | Seventeen genuine review excerpts immediately after the opening; three visually selected overlay comparisons and one separate preparation story, eight real photographs in total. Source and pending client confirmation are explicit. |
-| Search foundation | Useful server-rendered headings, descriptions, links and business identity; staging indexing is disabled. Original evidence and editorial review remain essential. |
+![Five phone screens: the hero, the garage, the lounge, the sample tablets and the menu](docs/readme/phone.jpg)
 
-## Motion with one owner
+- **Three tiers, one story.** `full` (desktop: films and WebGL), `balanced` (touch: films scrub, no WebGL canvas), `still` (reduced motion, Save-Data or 2G: the same narrative told without motion).
+- **The pour holds the top of the screen**, and the words carry their own paper mist over it. No part of the headline sits below 3:1 contrast on an iPhone 15 Pro, a Pixel 7 or an iPhone SE.
+- **The rooms are framed for the window you actually get.** On a phone each reclaim film is fitted to the space above its band of mist, so you see the car arrive and the floor it arrives on, not the sky.
+- **The sample slabs are the desktop scene's own render**, cut into three tablets and fanned with CSS scroll-driven animation, so a phone gets the 3D look without a WebGL context.
+- **Budgets are enforced.** Phone arrival stays under 0.8 MB; `budgets.json` is checked by `npm run check:budgets`.
 
-```text
-Native scroll → journey director → ready media + spatial camera
-                         ↓
-                 GSAP editorial reveals
+---
 
-Local interaction → React state → stable studio / quote controls
+## Search and AI search
+
+- **75 indexable pages, all prerendered:** the homepage; garage floor coating in Edmonton, residential, commercial and concrete services; projects; finishes; the floor visualizer (30 inspiration finishes, your own photo); process; about; service area; warranty; contact; and a library of **60 guides**.
+- **Answer-first guides.** Each one opens with the answer, cites its sources and ends with the questions people ask, rendered on the page and mirrored in `FAQPage` JSON-LD.
+- **One business entity.** A single `HomeAndConstructionBusiness` node (`/#business`) that every `Service`, `Article` and FAQ points at, with `BreadcrumbList` on every page.
+- **Built for answer engines.** `llms.txt` and `llms-full.txt` are generated from the built pages at build time.
+- **Canonical by construction.** The sitemap exists in production only and lists canonical URLs only. Staging and previews are `noindex` and point their canonicals at www.finalfinishepoxy.ca, so a preview can never compete with the real site.
+- **No rating gaming.** No self-serving `AggregateRating` markup; the rating on the page is a dated snapshot with a freshness check (`npm run check:reviews`).
+
+---
+
+## Honest by construction
+
+- Every factual claim traces to Denis's own site, his Google listing, or Denis himself: [`docs/context/CLAIMS-LEDGER.md`](docs/context/CLAIMS-LEDGER.md).
+- `scripts/validate-content.mjs` fails the build if a guide names a competitor or a town beyond Edmonton; states a price, years in business or a warranty length as fact; recommends a polyaspartic or polyurea install; or still says "draft" once published.
+- Before-and-after pairs stay labelled pending until Denis approves each one: [`docs/approvals/2026-09-project-pairs.md`](docs/approvals/2026-09-project-pairs.md).
+- The films are architectural concepts and say so; nothing is presented as a Final Finish installation unless it is one.
+
+---
+
+## Tech stack
+
+| | |
+|---|---|
+| **Framework** | Astro 7 (server output, Node adapter) with React 19 islands and the Astro client router |
+| **Motion** | GSAP 3.15 (ScrollTrigger, SplitText, Flip, DrawSVG) and Lenis |
+| **3D** | three.js 0.182, React Three Fiber 9, drei |
+| **Type** | Cormorant Garamond and Manrope, self-hosted and subset |
+| **Palette** | paper `#faf9f6` · ink `#17222a` · cobalt `#164f83` · bronze `#a57d42` |
+| **Content** | Astro content collections with zod schemas |
+| **Media** | sharp, AVIF/WebP ladders, 480/720/1080 film encodes; originals in Git LFS |
+| **Quote form** | `/api/quote` over Nodemailer (SMTP) or Resend |
+| **Tests** | Vitest (417 unit tests), Playwright end-to-end, content validation |
+
+```
+src/
+  pages/               75 routes, /api/quote
+  components/home/     the homepage pieces: ReviewRing, PreparationLayers (3D), FinishSamples (3D), ArchiveLattice, ProcessTrack
+  components/nav/      the full-screen menu (the header's own <nav>, moved and Flip-animated)
+  lib/motion/          acts.ts (the one controller), route-lifecycle.ts, reveal.ts, the layout canvas
+  styles/              design-system.css (type and tokens), acts.css (composition)
+  content/resources/   the 60 guides
+scripts/               build-with-env, build-llms, validate-content, package-static-preview, measure-delivery, check-budgets
+deploy/static-preview/ .htaccess for the Hostinger preview
+docs/context/          the plan, claims ledger, motion vocabulary, delivery budgets
+docs/ci/               the parked CI workflow (see its header)
 ```
 
-Three.js renders the imagery and spatial study; GSAP handles editorial choreography; Framer Motion is confined to local interface transitions. Reading and editing surfaces stay steady. The homepage has one demand-rendered WebGL canvas, with useful HTML and posters when enhancement is unavailable.
+---
 
-Current and adjacent media are staged rather than loading the whole film library on arrival. Local H.264 encodes use 24 fps, six-frame keyframe intervals, fast-start and no audio. The new pour derivatives preserve all 241 original frames. [The grade manifest](docs/pearl-pour-asset-manifest.md) records source hashes and exact encoded sizes.
+## Run it
 
-This pass also removed invisible first-load work: full-resolution comparison pairs no longer load before hydration, inactive cinematic layers remain genuinely offscreen, and native video poster attributes no longer duplicate the responsive image layer. The built phone capture's arrival transfer fell from about **3.35 MB to 0.72 MB** in the recorded local checks. Desktop loads a deferred film and WebGL renderer in addition to essentials. These are sampled local transfers, not field Core Web Vitals or complete-route certification; see [the verification ledger](docs/readability/VERIFICATION.md).
-
-## Status: first visual gate, not launch-ready
-
-The original Grok checkout is preserved; implementation is isolated on `feature/follow-the-floor`. The [30-package implementation ledger](docs/follow-the-floor/IMPLEMENTATION.md) distinguishes working features from remaining work.
-
-The important unfinished gates include production-quality material samples and architecture, the studio's opening room example, full cinematic route templates, the fifty-guide editorial review, physical Apple/Android checks, and production abuse protection. Browser emulation does not establish physical-device compatibility.
-
-A new local Blender stair-ascent study also failed its visual-quality gate. No new stair film was published: the stronger pearl-grey still remains in place. Its reproducible study and future hold/walk/landing timing contract are documented in [the stair production notes](tools/blender/PEARL_STAIR_ASCENT.md).
-
-The existing fifty guides currently carry production-emittable metadata. **That metadata is not proof of editorial approval.** This branch has not reverified every article or Denis's company-specific claims. Do not publish the redesign until the content gate is closed.
-
-No live-domain cutover has occurred. A protected, temporary Hostinger environment is the intended staging destination, not a completed deployment.
-
-## Run the isolated preview
-
-Node.js 22.12 or newer is required. Use the appropriate existing environment configuration; do not commit credentials.
-
-```powershell
-$env:SITE_ENV = 'staging'
-$env:PUBLIC_SITE_URL = 'http://127.0.0.1:4333'
-npm run dev -- --host 127.0.0.1 --port 4333 --background
-npm run dev -- status
+```bash
+git lfs install && git lfs pull   # films, posters and photographs live in Git LFS
+npm ci
+SITE_ENV=staging PUBLIC_SITE_URL=http://127.0.0.1:4333 npm run dev -- --host 127.0.0.1 --port 4333
 ```
 
-Use `npm run dev -- logs` and `npm run dev -- stop` from this worktree only.
+```bash
+npm run check          # astro check
+npm test               # unit tests
+npm run test:content   # content collection rules
+npx playwright test    # end to end (set FFE_BASE_URL to test a built server)
+```
 
-| Check | Command |
-| --- | --- |
-| Unit regressions | `npm test` |
-| Astro / TypeScript | `npm run check` |
-| Current homepage, routes, studio and accessibility | `npx playwright test` (one worker; reuse port 4333) |
-| Transformation ownership and endpoints | `npx playwright test tests/e2e/transformation-ribbon.spec.ts` |
-| Readability and no-JavaScript checks | `npx playwright test --config=playwright.readability.config.ts` |
-| Built-page captures and transfer evidence | `npx playwright test --config=playwright.delivery.config.ts` (built server on 4334) |
-| Existing content checks | `npm run test:content` |
-| Project asset checks | `npm run test:project-assets` |
-| Legacy asset contract | `npm run validate:3d` |
-| New threshold contract | `node --test tools/blender/tests/test_follow_floor_threshold.mjs` |
-| Staging build | `npm run build:staging` |
-| Recoverable working-tree copy | `node scripts/checkpoint-follow-floor.mjs` |
+---
 
-The updated behavioural tests use the already-running local server and do not send real email or call an image provider. Chromium/WebKit phone profiles are emulations. Keep the configured single worker: concurrent cold Vite route compilation stalled this Windows development server during verification. The [verification ledger](docs/readability/VERIFICATION.md) records passing checks, retries and open gates rather than implying every environment is certified.
+## Deploy
 
-## Privacy and reliability
+**Production, on the real domain.** A Node server:
 
-Photos remain local unless the visitor explicitly attaches them to a quote. The shared admission path checks encoded type, dimensions and size before bitmap allocation; normalized image geometry is shared by corners and projection. Animated images are rejected. Replacement invalidates prior photo work.
+```bash
+PUBLIC_SITE_URL=https://www.finalfinishepoxy.ca npm run build:production
+SITE_ENV=production PUBLIC_SITE_URL=https://www.finalfinishepoxy.ca npm start
+```
 
-Automatic detection is **disabled** until provider terms, spending limits and production processing controls are approved. Manual preview is available without it.
+The quote form needs `QUOTE_RECIPIENT`, `QUOTE_SENDER`, and either `SMTP_HOST`, `SMTP_PORT`, `SMTP_SECURE`, `SMTP_USER` and `SMTP_PASSWORD`, or `RESEND_API_KEY`. The visualizer's automatic floor detection stays off unless it is enabled and `FAL_KEY` is set. The cutover also needs 301s for the old Squarespace URLs, Search Console, and the Google Business Profile's website link.
 
-Quote delivery has same-origin JSON validation, bounded payloads, explicit attachment handling and delivery deadlines. Network uncertainty is reported honestly rather than silently inviting a duplicate enquiry. Remaining release requirements include a shared abuse store, bot protection, trusted proxy configuration and isolated native image processing. This is not a completed penetration test.
+**Preview, on Hostinger shared hosting.** A static copy of the staging build:
 
-## Assets and provenance
+```bash
+PUBLIC_SITE_URL=https://<preview>.hostingersite.com npm run build:staging
+npm run package:static-preview
+```
 
-- Existing films and source photographs are preserved. Responsive film derivatives have their own hash manifest under `public/videos/follow-floor`.
-- The new threshold's Blender builder, transaction tests and GLB contract live under `tools/blender`; runtime assets and their manifest are in `public/scenes/follow-floor-threshold`.
-- Client project derivatives live under `public/images/projects/generated`; pairing records are separate from presentation.
-- Concept architecture is not project evidence. Procedural finish previews are not verified supplier samples.
-- GSAP uses its own commercial license; do not describe the entire dependency stack as MIT-licensed.
+Deploy the zip with the Hostinger MCP (`hosting_deployStaticWebsite`, which replaces the whole site), then clear the site's cache. A static preview has no `/api` routes, so its quote form shows the "call Denis" message instead of sending.
 
-## The people behind the floor
+---
 
-**Final Finish Epoxy** · Denis · Edmonton, Alberta<br />
-[(780) 991-1651](tel:+17809911651) · [finalfinishepoxy@gmail.com](mailto:finalfinishepoxy@gmail.com)
+## Status
 
-Design direction and implementation for the client by **[kr8tiv.io](https://kr8tiv.io)**.
+- **Preview:** live at [lightgrey-wasp-945457.hostingersite.com](https://lightgrey-wasp-945457.hostingersite.com) (September 2026, `noindex`).
+- **Waiting on Denis:** approval of the before-and-after pairs; whether a primer coat belongs in the preparation diagram; access to his hosting and domain for the cutover.
+- **CI:** [`docs/ci/quality.yml`](docs/ci/quality.yml) is parked; its header explains why and how to switch it on.
+- **Known test debt:** two navigation end-to-end assertions predate the acts homepage (they expect a single canvas and the old journey director).
 
-<p align="center"><em>Follow the floor. Find what the room could become.</em></p>
+---
+
+<div align="center">
+
+**Final Finish Epoxy Coatings** · Edmonton, Alberta · (780) 991-1651 · finalfinishepoxy@gmail.com
+
+Designed and built by **[kr8tiv.io](https://kr8tiv.io)**
+
+</div>

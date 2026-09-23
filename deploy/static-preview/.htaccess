@@ -1,0 +1,45 @@
+# Final Finish Epoxy — static preview host (Hostinger shared hosting, LiteSpeed).
+#
+# The preview is the staging build's dist/client served as files. The node server
+# is not running here, so this file carries what src/middleware.ts and
+# dist/prerender-headers.json add in production. scripts/package-static-preview.mjs
+# copies it to the root of the upload.
+
+Options -Indexes -MultiViews
+DirectorySlash On
+AddDefaultCharset UTF-8
+
+# /404 is an on-demand route in the app; the package renders it to /404.html.
+ErrorDocument 404 /404.html
+
+# Step 30 permanent redirects (mirrors PERMANENT_REDIRECTS in src/middleware.ts).
+RewriteEngine On
+RewriteRule ^areas/?$ /service-area [R=301,L]
+RewriteRule ^areas/(edmonton|sherwood-park|st-albert|leduc|fort-saskatchewan|spruce-grove|beaumont)/?$ /service-area [R=301,L]
+
+# Serve the canonical slash-less page URLs (/services, /projects, ...) directly, the
+# way the node server does, instead of letting the directory-slash rule 301 every
+# internal link to /services/.
+RewriteCond %{REQUEST_URI} !/$
+RewriteCond %{REQUEST_FILENAME} -d
+RewriteCond %{REQUEST_FILENAME}/index.html -f
+RewriteRule ^(.+)$ /$1/index.html [L]
+
+<IfModule mod_headers.c>
+  # A preview is never indexed (robots.txt disallows everything too).
+  Header always set X-Robots-Tag "noindex, nofollow"
+  # The headers the app sends for every prerendered route.
+  Header always set Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline' blob:; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; media-src 'self' blob:; connect-src 'self' blob:; font-src 'self' data:; frame-ancestors 'none'; base-uri 'self'; form-action 'self'"
+  Header always set X-Frame-Options "DENY"
+  Header always set Referrer-Policy "strict-origin-when-cross-origin"
+  Header always set Permissions-Policy "camera=(), microphone=(), geolocation=()"
+  Header always set X-Content-Type-Options "nosniff"
+</IfModule>
+
+<IfModule mod_mime.c>
+  AddType font/woff2 .woff2
+  AddType image/avif .avif
+  AddType image/webp .webp
+  AddType model/gltf-binary .glb
+  AddType application/manifest+json .webmanifest
+</IfModule>
