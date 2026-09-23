@@ -108,8 +108,9 @@ const pageSchema = faqSchema ? [articleSchema, faqSchema] : articleSchema;
   .article-hero > * { width: min(100%, 68rem); margin-inline: auto; }
   nav { display: flex; flex-wrap: wrap; align-items: center; gap: .55rem; margin-bottom: 3rem !important; color: var(--muted); font-size: .875rem; }
   nav a { color: inherit; }
-  .article-hero h1 { margin: .8rem 0 1.6rem; font: 500 clamp(3rem, 6.3vw, 7.2rem)/.94 var(--display); letter-spacing: -.004em; text-transform: uppercase; text-wrap: balance; overflow-wrap: break-word; }
-  .deck { max-width: 58ch; margin-left: 0; color: #3f4e57; font-size: var(--type-lead); line-height: 1.5; }
+  /* One left edge for the breadcrumb, eyebrow, title and deck: the 68rem column. */
+  .article-hero h1 { margin: .8rem auto 1.6rem; font: 500 clamp(3rem, 6.3vw, 7.2rem)/.94 var(--display); letter-spacing: -.004em; text-transform: uppercase; text-wrap: balance; overflow-wrap: break-word; }
+  .article-hero .deck { max-width: 58ch; margin-left: max(0px, (100% - 68rem) / 2); margin-right: auto; color: #3f4e57; font-size: var(--type-lead); line-height: 1.5; }
   .article-grid { display: grid; grid-template-columns: minmax(12rem, .42fr) minmax(0, 1fr); gap: 3rem 6vw; width: min(calc(100% - 2 * var(--gutter)), var(--max)); margin: 0 auto; padding: clamp(4rem, 9vw, 9rem) 0; }
   .article-rail { position: sticky; top: 7rem; align-self: start; }
   .review-note { display: grid; gap: .55rem; padding: 1.15rem; border: 1px solid #e3d5aa; background: #fff8e3; color: #645a3d; font-size: .72rem; }
