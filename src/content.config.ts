@@ -26,6 +26,13 @@ const sharedSchema = z.object({
 	reviewerWorkflow: reviewWorkflowSchema,
 	reviewWorkflow: reviewWorkflowSchema.optional(),
 	relatedResources: z.array(z.string()).default([]),
+	// Short, direct answers to the questions people type. Rendered on the page (never
+	// hidden) and mirrored as FAQPage JSON-LD by ResourceLayout; swept for claims by
+	// scripts/validate-content.mjs like the body is.
+	faq: z.array(z.object({
+		question: z.string().min(12).max(120).regex(/\?$/, 'a question ends with "?"'),
+		answer: z.string().min(60).max(600),
+	})).max(6).default([]),
 	draft: z.boolean().default(true),
 	reviewStatus: z.enum(['needs-review', 'in-review', 'approved', 'published']).default('needs-review'),
 	updatedAt: z.coerce.date(),

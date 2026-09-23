@@ -1,5 +1,6 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
+import { deploymentSettings } from '../../lib/deployment.js';
 import SiteHeader from '../../components/SiteHeader.astro';
 import SiteFooter from '../../components/SiteFooter.astro';
 import InteriorHero from '../../components/InteriorHero.astro';
@@ -10,17 +11,19 @@ import SectionShell from '../../components/SectionShell.astro';
  * grinding. Those three are what this page sells; everything else on it is a
  * question to ask, not a service being claimed.
  */
+// The provider is the site graph's business node (BaseLayout), by @id and by the same name.
+const businessId = new URL('/#business', deploymentSettings(import.meta.env.SITE_ENV, Astro.site).canonicalOrigin).toString();
 const jsonLd = {
   '@context': 'https://schema.org',
   '@type': 'Service',
   name: 'Concrete repair, levelling, and diamond grinding',
   serviceType: 'Concrete preparation and restoration',
-  provider: { '@type': 'HomeAndConstructionBusiness', name: 'Final Finish Epoxy', telephone: '+1-780-991-1651', email: 'finalfinishepoxy@gmail.com' },
+  provider: { '@type': 'HomeAndConstructionBusiness', '@id': businessId, name: 'Final Finish Epoxy Coatings', telephone: '+1-780-991-1651', email: 'finalfinishepoxy@gmail.com' },
   areaServed: { '@type': 'City', name: 'Edmonton' },
   description: 'Concrete repair, surface levelling and restoration, and diamond grinding in Edmonton, as preparation for a coating or as work on its own.',
 };
 ---
-<BaseLayout title="Concrete Repair, Levelling and Diamond Grinding Edmonton | Final Finish" description="Concrete repair, levelling, restoration, and diamond grinding in Edmonton. What each one is for, when a coating is the wrong answer, and what goes in the quote." canonicalPath="/services/concrete-solutions">
+<BaseLayout title="Concrete Repair, Levelling and Grinding Edmonton | Final Finish" description="Concrete repair, levelling, restoration, and diamond grinding in Edmonton. What each one is for, when a coating is the wrong answer, and what goes in the quote." canonicalPath="/services/concrete-solutions">
   <script slot="head" is:inline type="application/ld+json" set:html={JSON.stringify(jsonLd)} />
   <SiteHeader />
   <main id="main-content">
@@ -44,7 +47,7 @@ const jsonLd = {
         </article>
         <article class="editorial-card">
           <h3>Levelling and restoration</h3>
-          <p>Bringing a floor back toward flat. Elevation changes, low spots, and a worn-out old surface all make a room harder to use and harder to coat evenly.</p>
+          <p>Bringing a floor back toward flat. Elevation changes, low spots, and a worn-out old surface all make a room harder to use and harder to coat evenly. The <a href="/resources/levelling-concrete-before-coating/">levelling guide</a> explains flat versus level.</p>
         </article>
       </div>
     </SectionShell>
@@ -80,7 +83,7 @@ const jsonLd = {
       <p class="section-kicker">What we do not promise here</p>
       <h2 class="section-title">Moisture is a question, not a guarantee.</h2>
       <p class="section-lead">Efflorescence, damp patches, or a floor that was recently flooded are reasons to investigate. They do not identify a source, and no product label settles it.</p>
-      <p>If testing is proposed, ask for the method, the locations, the timing, and the results, plus the product documentation that ties those results to the system going down. A broad moisture-barrier label is not that record. Read the <a href="/resources/concrete-moisture-testing-floor-coatings">moisture-testing guide</a> before you treat any test as a pass. If you are weighing grinding and polishing against a coating, the <a href="/resources/concrete-polishing-vs-floor-coating">polishing comparison</a> keeps that decision on the substrate.</p>
+      <p>If testing is proposed, ask for the method, the locations, the timing, and the results, plus the product documentation that ties those results to the system going down. A broad moisture-barrier label is not that record. Read the <a href="/resources/concrete-moisture-testing-floor-coatings">moisture-testing guide</a> before you treat any test as a pass. If you are weighing grinding and polishing against a coating, the <a href="/resources/concrete-polishing-vs-floor-coating">polishing comparison</a> keeps that decision on the substrate. If a sealer is the other option, see the <a href="/resources/concrete-sealer-vs-floor-coating/">sealer comparison</a>.</p>
       <div class="button-row">
         <a class="button button-primary" href="/contact#quote">Send photos of the slab</a>
         <a class="button button-secondary" href="/services/garage-floor-coating-edmonton">Coat a garage floor</a>

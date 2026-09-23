@@ -89,18 +89,24 @@ for (const name of files) {
   const sections = body.split(/^##+\s+.+$/gm).slice(1);
   if (!sections.some((section) => /[\p{L}]{2,}/u.test(section))) failures.push(`${name}: needs explanatory prose beneath a section heading`);
 
+  // The FAQ lives in frontmatter but renders on the page and in FAQPage JSON-LD, so it is
+  // reader-facing copy: it gets the same claims sweep and the same checks as the body.
+  const faqText = [...frontmatter.matchAll(/^\s+-?\s*(?:question|answer): "(.*)"$/gm)].map((match) => match[1]).join('\n');
+  const readerText = `${body}\n${faqText}`;
+  if (/^faq:/m.test(frontmatter) && !faqText) failures.push(`${name}: faq block present but no quoted question/answer pairs found`);
+
   // Claims sweep (Step 31 requirement 2).
-  for (const check of claimChecks) if (check.re.test(body)) failures.push(`${name}: contains ${check.name}`);
-  if (hasExclamationOutsideQuotes(body)) failures.push(`${name}: contains "!" outside quotes`);
+  for (const check of claimChecks) if (check.re.test(readerText)) failures.push(`${name}: contains ${check.name}`);
+  if (hasExclamationOutsideQuotes(readerText)) failures.push(`${name}: contains "!" outside quotes`);
 
   // No leftover placeholder/editorial language in a published body (Step 31 requirement 7).
   const draftFlag = /^draft:\s*(\w+)/m.exec(frontmatter)?.[1];
   const reviewStatus = /^reviewStatus:\s*"(.*)"$/m.exec(frontmatter)?.[1];
   const isPublished = draftFlag === 'false' && (reviewStatus === 'approved' || reviewStatus === 'published');
   if (isPublished) {
-    if (/\bdraft\b/i.test(body)) failures.push(`${name}: published body still says "draft"`);
-    if (/\bTODO\b/.test(body)) failures.push(`${name}: published body contains TODO`);
-    if (/\blorem\b/i.test(body)) failures.push(`${name}: published body contains lorem ipsum placeholder text`);
+    if (/\bdraft\b/i.test(readerText)) failures.push(`${name}: published body still says "draft"`);
+    if (/\bTODO\b/.test(readerText)) failures.push(`${name}: published body contains TODO`);
+    if (/\blorem\b/i.test(readerText)) failures.push(`${name}: published body contains lorem ipsum placeholder text`);
   }
 
   // Truthful dates (Step 31 requirement 3): updatedAt must parse, must not be in the future, and

@@ -1,5 +1,6 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
+import { deploymentSettings } from '../../lib/deployment.js';
 import SiteHeader from '../../components/SiteHeader.astro';
 import SiteFooter from '../../components/SiteFooter.astro';
 import InteriorHero from '../../components/InteriorHero.astro';
@@ -11,12 +12,14 @@ import SectionShell from '../../components/SectionShell.astro';
  * page stays inside both lists. Downtime, reopening, and return-to-service timing
  * are described as things the quote states, never as numbers this page supplies.
  */
+// The provider is the site graph's business node (BaseLayout), by @id and by the same name.
+const businessId = new URL('/#business', deploymentSettings(import.meta.env.SITE_ENV, Astro.site).canonicalOrigin).toString();
 const jsonLd = {
   '@context': 'https://schema.org',
   '@type': 'Service',
   name: 'Commercial epoxy flooring',
   serviceType: 'Commercial floor coating, surface preparation, and anti-slip finishes',
-  provider: { '@type': 'HomeAndConstructionBusiness', name: 'Final Finish Epoxy', telephone: '+1-780-991-1651', email: 'finalfinishepoxy@gmail.com' },
+  provider: { '@type': 'HomeAndConstructionBusiness', '@id': businessId, name: 'Final Finish Epoxy Coatings', telephone: '+1-780-991-1651', email: 'finalfinishepoxy@gmail.com' },
   areaServed: { '@type': 'City', name: 'Edmonton' },
   description: 'Surface preparation, crack filling, and anti-slip floor coatings for Edmonton warehouses, showrooms, and industrial facilities.',
 };
@@ -47,7 +50,7 @@ const jsonLd = {
         <li><strong>Cleaning.</strong> A coarse anti-slip surface that your machine cannot clean trades one problem for another.</li>
         <li><strong>Access.</strong> Which zones can close, and for how long. That usually sets the whole schedule.</li>
       </ul>
-      <p>If the answer is that nothing can close, say so early. It is a real constraint and it changes the plan. The <a href="/resources/slip-resistance-floor-coatings">slip-resistance guide</a> and the <a href="/resources/warehouse-floor-coating-planning">warehouse planning guide</a> cover the questions worth raising.</p>
+      <p>If the answer is that nothing can close, say so early. It is a real constraint and it changes the plan. The <a href="/resources/slip-resistance-floor-coatings">slip-resistance guide</a> and the <a href="/resources/warehouse-floor-coating-planning">warehouse planning guide</a> cover the questions worth raising. Service bays and farm shops have their own guides: <a href="/resources/auto-shop-floor-coating/">auto shops</a> and <a href="/resources/barn-farm-shop-floor-coating/">barns and farm shops</a>.</p>
     </SectionShell>
 
     <SectionShell>

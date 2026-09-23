@@ -41,7 +41,10 @@ test('publishes an Article schema on a resources guide with a real, non-invented
   const article = JSON.parse((await articleScript.textContent()) ?? '{}');
   expect(article['@type']).toBe('Article');
   expect(article.headline).toBeTruthy();
-  expect(article.author).toEqual({ '@type': 'Organization', name: 'Final Finish Epoxy' });
+  // One entity: the guide's author and publisher are the business node of the site graph.
+  expect(article.author).toMatchObject({ '@type': 'Organization', name: 'Final Finish Epoxy Coatings' });
+  expect(article.author['@id']).toMatch(/\/#business$/);
+  expect(article.publisher).toEqual(article.author);
   expect(new Date(article.datePublished).toString()).not.toBe('Invalid Date');
   expect(new Date(article.dateModified).getTime()).toBeGreaterThanOrEqual(new Date(article.datePublished).getTime());
 });

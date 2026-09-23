@@ -1,5 +1,6 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
+import { deploymentSettings } from '../../lib/deployment.js';
 import SiteHeader from '../../components/SiteHeader.astro';
 import SiteFooter from '../../components/SiteFooter.astro';
 import InteriorHero from '../../components/InteriorHero.astro';
@@ -12,12 +13,14 @@ import SectionShell from '../../components/SectionShell.astro';
  * kitchen, bathroom — plus the basement rooms the homepage talks about. The two
  * pages link to each other and do not repeat each other's arguments.
  */
+// The provider is the site graph's business node (BaseLayout), by @id and by the same name.
+const businessId = new URL('/#business', deploymentSettings(import.meta.env.SITE_ENV, Astro.site).canonicalOrigin).toString();
 const jsonLd = {
   '@context': 'https://schema.org',
   '@type': 'Service',
   name: 'Residential epoxy flooring',
   serviceType: 'Residential epoxy and decorative floor coating',
-  provider: { '@type': 'HomeAndConstructionBusiness', name: 'Final Finish Epoxy', telephone: '+1-780-991-1651', email: 'finalfinishepoxy@gmail.com' },
+  provider: { '@type': 'HomeAndConstructionBusiness', '@id': businessId, name: 'Final Finish Epoxy Coatings', telephone: '+1-780-991-1651', email: 'finalfinishepoxy@gmail.com' },
   areaServed: { '@type': 'City', name: 'Edmonton' },
   description: 'Decorative epoxy, flake, and metallic floor coatings for Edmonton barns, workshops, basements, kitchens, and bathrooms.',
 };
@@ -36,7 +39,7 @@ const jsonLd = {
       <p class="section-kicker">What it is</p>
       <h2 class="section-title">A finish chosen around the room, not a catalogue.</h2>
       <p class="section-lead">Residential work covers barns, workshops, basements, kitchens, and bathrooms. Three finish families are available: decorative epoxy, flake, and metallic.</p>
-      <p>What changes between rooms is not the chemistry. It is the light, the traffic, and what the space has to hold. A barn floor and a basement floor want different things from the same three materials.</p>
+      <p>What changes between rooms is not the chemistry. It is the light, the traffic, and what the space has to hold. A barn floor and a basement floor want different things from the same three materials. The guides to <a href="/resources/kitchen-bathroom-epoxy-floors/">kitchen and bathroom floors</a> and <a href="/resources/barn-farm-shop-floor-coating/">barn and farm shop floors</a> go room by room.</p>
       <p>For a garage, start at the <a href="/services/garage-floor-coating-edmonton">garage floor coating page</a> instead. It covers vehicles, salt, and storage in detail.</p>
     </SectionShell>
 
@@ -57,7 +60,7 @@ const jsonLd = {
           <p>A poured composition rather than a repeating pattern. Every floor lands differently, so look at samples and agree where the effect stops. The <a href="/resources/metallic-epoxy-expectations">metallic expectations guide</a> covers what to ask.</p>
         </article>
       </div>
-      <p>The <a href="/finishes">finish library</a> shows all three families, and the <a href="/floor-visualizer">floor visualizer</a> puts them on a photo of your own room.</p>
+      <p>The <a href="/finishes">finish library</a> shows all three families, and the <a href="/floor-visualizer">floor visualizer</a> puts them on a photo of your own room. The <a href="/resources/flake-vs-metallic-vs-solid-epoxy/">finish comparison</a> weighs them against each other.</p>
     </SectionShell>
 
     <SectionShell>

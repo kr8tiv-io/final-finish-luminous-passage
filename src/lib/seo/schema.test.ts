@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { buildBusinessSchema, buildSiteGraph, buildArticleSchema, GOOGLE_MAPS_LISTING_URL } from './schema';
+import { buildBusinessSchema, buildSiteGraph, buildArticleSchema, buildFaqSchema, GOOGLE_MAPS_LISTING_URL } from './schema';
 
 const businessInput = {
   businessId: 'https://www.finalfinishepoxy.ca/#business',
@@ -52,6 +52,37 @@ describe('buildArticleSchema', () => {
     expect(schema['@type']).toBe('Article');
     expect(schema.headline).toBeTruthy();
     expect(schema.datePublished).toBeTruthy();
-    expect(schema.author).toEqual({ '@type': 'Organization', name: 'Final Finish Epoxy' });
+    expect(schema.author).toEqual({ '@type': 'Organization', name: 'Final Finish Epoxy Coatings' });
+  });
+
+  it('points author and publisher at the business entity when given its @id', () => {
+    const businessId = 'https://www.finalfinishepoxy.ca/#business';
+    const schema = buildArticleSchema({
+      headline: 'Garage Coating Costs in Edmonton',
+      description: 'A guide.',
+      canonicalUrl: 'https://www.finalfinishepoxy.ca/resources/garage-floor-coating-cost-edmonton/',
+      datePublished: '2026-09-22T08:00:00-06:00',
+      dateModified: '2026-09-22T08:00:00-06:00',
+      businessId,
+      logoUrl: 'https://www.finalfinishepoxy.ca/icons/icon-512.png',
+      imageUrl: 'https://www.finalfinishepoxy.ca/images/brand/epoxy-finish-poster.jpg',
+      section: 'planning',
+    });
+    expect(schema.author).toMatchObject({ '@id': businessId, name: 'Final Finish Epoxy Coatings' });
+    expect(schema.publisher).toEqual(schema.author);
+    expect(schema.image).toEqual(['https://www.finalfinishepoxy.ca/images/brand/epoxy-finish-poster.jpg']);
+    expect(schema.mainEntityOfPage).toEqual({ '@type': 'WebPage', '@id': 'https://www.finalfinishepoxy.ca/resources/garage-floor-coating-cost-edmonton/' });
+  });
+});
+
+describe('buildFaqSchema', () => {
+  it('mirrors on-page questions as FAQPage, and returns null when there are none', () => {
+    const url = 'https://www.finalfinishepoxy.ca/resources/heated-garage-floor-coating/';
+    expect(buildFaqSchema([], url)).toBeNull();
+    const schema = buildFaqSchema([{ question: 'Can grinding damage in-floor heating tubes?', answer: 'Surface grinding removes only a thin layer.' }], url);
+    expect(schema?.['@type']).toBe('FAQPage');
+    expect(schema?.mainEntity).toEqual([
+      { '@type': 'Question', name: 'Can grinding damage in-floor heating tubes?', acceptedAnswer: { '@type': 'Answer', text: 'Surface grinding removes only a thin layer.' } },
+    ]);
   });
 });

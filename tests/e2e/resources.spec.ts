@@ -1,10 +1,11 @@
 import { expect, test } from '@playwright/test';
 
 test.describe('published resource library', () => {
-  test('presents all 50 guides inside the branded library', async ({ page }) => {
+  test('presents every guide inside the branded library', async ({ page }) => {
     await page.goto('/resources');
 
-    await expect(page.locator('.resource-card')).toHaveCount(50);
+    // 50 launch guides + 10 added 2026-09-22.
+    await expect(page.locator('.resource-card')).toHaveCount(60);
     await expect(page.getByRole('link', { name: 'Final Finish Epoxy home' })).toBeVisible();
     await expect(page.getByRole('note')).toHaveCount(0);
   });

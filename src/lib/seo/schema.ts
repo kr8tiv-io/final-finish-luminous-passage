@@ -95,9 +95,23 @@ export interface ArticleSchemaInput {
   canonicalUrl: string;
   datePublished: string;
   dateModified: string;
+  /** The site graph's business `@id`: author and publisher point at the same entity. */
+  businessId?: string;
+  logoUrl?: string;
+  imageUrl?: string;
+  section?: string;
 }
 
-export function buildArticleSchema({ headline, description, canonicalUrl, datePublished, dateModified }: ArticleSchemaInput) {
+export function buildArticleSchema({ headline, description, canonicalUrl, datePublished, dateModified, businessId, logoUrl, imageUrl, section }: ArticleSchemaInput) {
+  // One entity, named the same way the business node names it, so search engines and
+  // answer engines resolve the guides to the business rather than to a second, bare
+  // "Final Finish Epoxy" organisation.
+  const organisation = {
+    '@type': 'Organization',
+    ...(businessId ? { '@id': businessId } : {}),
+    name: 'Final Finish Epoxy Coatings',
+    ...(logoUrl ? { logo: { '@type': 'ImageObject', url: logoUrl } } : {}),
+  };
   return {
     '@context': 'https://schema.org',
     '@type': 'Article',
@@ -105,9 +119,32 @@ export function buildArticleSchema({ headline, description, canonicalUrl, datePu
     description,
     datePublished,
     dateModified,
-    mainEntityOfPage: canonicalUrl,
-    author: { '@type': 'Organization', name: 'Final Finish Epoxy' },
-    publisher: { '@type': 'Organization', name: 'Final Finish Epoxy' },
+    mainEntityOfPage: { '@type': 'WebPage', '@id': canonicalUrl },
+    ...(imageUrl ? { image: [imageUrl] } : {}),
+    ...(section ? { articleSection: section } : {}),
+    inLanguage: 'en-CA',
+    author: organisation,
+    publisher: organisation,
     isAccessibleForFree: true,
+  } as const;
+}
+
+export interface FaqItem {
+  question: string;
+  answer: string;
+}
+
+/** FAQPage for the questions a guide answers on the page itself (never hidden copy). */
+export function buildFaqSchema(items: readonly FaqItem[], canonicalUrl: string) {
+  if (!items.length) return null;
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'FAQPage',
+    '@id': `${canonicalUrl}#questions`,
+    mainEntity: items.map((item) => ({
+      '@type': 'Question',
+      name: item.question,
+      acceptedAnswer: { '@type': 'Answer', text: item.answer },
+    })),
   } as const;
 }
