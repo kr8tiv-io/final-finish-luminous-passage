@@ -34,10 +34,14 @@
 @media (max-width: 680px) {
   :root {
     --grid-cols: 4;
-    --t-display: clamp(2.8rem, 13.6vw, 4.3rem);
+    /* Height-capped on phones too: a short phone's hero has to fit under the header. */
+    --t-display: min(clamp(2.8rem, 13.6vw, 4.3rem), 7.6svh);
     --t-title: clamp(2.45rem, 11.6vw, 3.85rem);
     --t-title-sm: clamp(2.1rem, 9.5vw, 3.05rem);
   }
+}
+@media (max-width: 680px) and (max-height: 620px) {
+  :root { --t-display: min(clamp(2.5rem, 13.6vw, 4.3rem), 7.4svh); }
 }
 
 /* ── The paper every page is printed on ───────────────────────────────────── */

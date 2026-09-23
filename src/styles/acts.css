@@ -277,14 +277,40 @@ html[data-journey-tier='still'] .act .material-lens { display: none; }
   .act--hero .act-column { display: none; }
   .act--hero .act-copy { top: auto; bottom: calc(100lvh - 100svh + 1.4rem); display: block; padding-top: 0; }
   .act--hero .act-copy-inner { max-width: none; }
-  .act--hero .t-body { font-size: .95rem; line-height: 1.65; margin-top: 1rem; }
-  .act--hero .button-row { margin-top: 1.4rem; }
-  .act--hero .button-row .button { flex: 1 1 auto; justify-content: center; }
-  .hero-proof { margin-top: 1rem; }
+  /* The hero copy has to fit between the header and the bottom of the visible screen
+     (output/cohesion/hero-fit.mjs): the stage is pinned, so anything taller slides up
+     under the header. Kicker on one line where it fits, a compact button grid. */
+  .act--hero .t-kicker { font-size: clamp(.92rem, 3.9vw, 1.05rem); gap: .1rem .55rem; margin-bottom: .8rem; }
+  .act--hero .t-kicker::before { flex-basis: 1.2rem; }
+  .act--hero .t-body { font-size: .92rem; line-height: 1.55; margin-top: .7rem; }
+  .act--hero .button-row { display: grid; grid-template-columns: 1fr 1fr; gap: .5rem; margin-top: 1rem; }
+  .act--hero .button-row .button-primary { grid-column: 1 / -1; }
+  .act--hero .button-row .button { min-height: 46px; justify-content: center; }
+  .act--hero .button-row .text-call { margin: 0; justify-content: center; flex-wrap: wrap; text-align: center; line-height: 1.3; }
+  .hero-proof { margin-top: .7rem; }
   .act-copy { bottom: calc(100lvh - 100svh + 3.2rem); }
   .act-captions { min-height: 6.6rem; }
   .act .material-lens { top: 12svh; right: var(--gutter); width: 7.5rem; }
   .act-foot { bottom: calc(100lvh - 100svh + 1rem); }
+}
+
+/* Short phones (an original iPhone SE is 568 px tall): the freshness date gives way. */
+@media (max-width: 680px) and (max-height: 620px) {
+  .act--hero .hero-proof small { display: none; }
+  /* The headline and the lead already say Edmonton; the kicker is the one line spare. */
+  .act--hero .t-kicker { display: none; }
+  .act--hero .button-row .button { min-height: 44px; }
+}
+
+/* Landscape phones (a screen only ~340 px tall): the pinned hero keeps the essentials,
+   the headline and the two actions; the lead and the rating wait for the next screen. */
+@media (min-width: 681px) and (max-height: 500px) {
+  .act--hero .t-body,
+  .act--hero .hero-proof { display: none; }
+  .act--hero .t-kicker { margin-bottom: .4rem; }
+  .act--hero .act-copy-inner { max-width: min(48rem, 88%); }
+  .act--hero .act-column { background: linear-gradient(90deg, var(--paper) 0, rgb(var(--paper-rgb) / .96) 62%, rgb(var(--paper-rgb) / .7) 82%, transparent 98%); }
+  .act--hero .button-row { margin-top: .8rem; flex-wrap: nowrap; }
 }
 
 /* Laptop heights (wide and short): the hero's copy keeps clear of the header. */
