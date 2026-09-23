@@ -50,7 +50,9 @@ const samples = [
   .samples-caption strong { font-family: var(--display); font-weight: 500; font-size: clamp(1.3rem, 1.9vw, 2rem); line-height: 1.05; text-transform: uppercase; letter-spacing: .004em; color: var(--ink); }
   .samples-copy { font-size: .9rem; line-height: 1.6; color: var(--ink-body); }
   .samples-caption:global(.is-focus) strong { color: var(--cobalt); }
-  .samples-captions:has(:global(.is-focus)) .samples-caption:not(:global(.is-focus)) { opacity: .42; }
+  /* No :global() here: Astro does not rewrite it inside :has()/:not(), and the class
+     sits on this component's own (scoped) caption elements anyway. */
+  .samples-captions:has(.is-focus) .samples-caption:not(.is-focus) { opacity: .42; }
   @media (max-width: 860px) {
     .samples { grid-template-columns: 1fr; }
     /* aspect-ratio + min-height would widen the stage past a phone's width. */

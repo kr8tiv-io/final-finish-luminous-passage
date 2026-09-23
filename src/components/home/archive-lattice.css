@@ -210,7 +210,9 @@
   left: 50%;
   top: 50%;
   z-index: 4;
-  width: min(100% - 2 * var(--gutter), 34rem);
+  /* 44rem: the larger title (2026-09-22) set "EXPLORE" wider than a 34rem box at
+     1920 px. Still well inside the clearing the wall opens around the words. */
+  width: min(100% - 2 * var(--gutter), 44rem);
   translate: -50% -50%;
   padding: clamp(1.6rem, 3.4vw, 2.6rem) clamp(1.5rem, 3vw, 2.4rem);
   text-align: center;

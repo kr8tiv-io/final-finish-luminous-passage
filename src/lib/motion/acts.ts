@@ -91,7 +91,16 @@ interface Film {
   readonly clock: 'held' | 'pass';
   requested: boolean;
   pending: boolean;
+  /** The time the scroll last asked for, in seconds (kept while the hand-off runs). */
+  target: number | null;
+  /** True from the reveal until the film has glided to the scroll's frame (`handOff`). */
+  catching: boolean;
 }
+
+/** The reveal fade in acts.css (`.act-plate video`, .4s) plus a frame. */
+const HANDOFF_HOLD_MS = 420;
+/** Seconds of film per second while a revealed film glides to the scroll's frame. */
+const HANDOFF_RATE = 1.8;
 
 interface Act {
   readonly el: HTMLElement;
@@ -173,6 +182,8 @@ export function initActs(): Teardown | undefined {
         clock: video.dataset.filmClock === 'held' || kind === 'hero' ? 'held' : 'pass',
         requested: false,
         pending: false,
+        target: null,
+        catching: false,
       };
     });
     return {
@@ -278,23 +289,68 @@ export function initActs(): Teardown | undefined {
     if (video.readyState < 2 || !Number.isFinite(video.duration) || video.duration <= 0) return;
     const fp = film.walk ? smoothstep(clamp01(t)) : clamp01(t);
     const desired = fp * Math.max(0, video.duration - 0.05);
+    film.target = desired;
+    // While the hand-off glides the film forward, it owns currentTime.
+    if (film.catching) return;
     const target = videoSeekTarget({ currentTime: video.currentTime, desiredTime: desired, seeking: video.seeking || film.pending });
     if (target === null) return;
     film.pending = true;
     video.currentTime = target;
   };
 
+  /**
+   * A revealed film glides from frame 0 to the frame the scroll asks for.
+   *
+   * Every poster is its film's frame 0. The video fades in over it while still on
+   * frame 0, so the fade blends two identical pictures; only after the fade does the
+   * film move, at a little under twice real time, to where the scroll already is.
+   * Revealing it already seeked to the scroll's frame crossfaded two different
+   * moments of the pour for 400 ms: a double image, the "ghost of the old animation"
+   * Matt saw on his first scroll (2026-09-22).
+   */
+  const handOff = (act: Act, film: Film) => {
+    const { video } = film;
+    const start = performance.now();
+    let last = start;
+    let at = video.currentTime;
+    const step = (now: number) => {
+      if (!film.catching) return;
+      const dt = Math.min(0.1, (now - last) / 1000);
+      last = now;
+      if (now - start >= HANDOFF_HOLD_MS) {
+        const target = film.target ?? 0;
+        const gap = target - at;
+        at += Math.sign(gap) * Math.min(Math.abs(gap), dt * HANDOFF_RATE);
+        if (!video.seeking && !film.pending && Math.abs(video.currentTime - at) > 0.02) {
+          film.pending = true;
+          video.currentTime = at;
+        }
+        if (Math.abs(target - at) <= 1 / 48 && !video.seeking && !film.pending) {
+          film.catching = false;
+          if (act.trigger) render(act, act.s);
+          return;
+        }
+      }
+      window.requestAnimationFrame(step);
+    };
+    window.requestAnimationFrame(step);
+  };
+
   const wireFilm = (act: Act, film: Film) => {
     const { video } = film;
     const ready = () => {
+      film.catching = true;
+      if (video.currentTime > 0.001 && !video.seeking) video.currentTime = 0;
       video.setAttribute('data-ready', '');
-      // Land on the frame the scroll position asks for, not on frame 0.
+      // Record the frame the scroll asks for (the hand-off glides there after the fade).
       if (act.trigger) render(act, act.s);
+      handOff(act, film);
     };
     const seeked = () => { film.pending = false; };
     video.addEventListener('loadeddata', ready);
     video.addEventListener('seeked', seeked);
     cleanups.push(() => {
+      film.catching = false;
       video.removeEventListener('loadeddata', ready);
       video.removeEventListener('seeked', seeked);
     });

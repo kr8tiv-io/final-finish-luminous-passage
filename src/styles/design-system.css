@@ -21,10 +21,12 @@
   --grid-size: calc((100% - 2 * var(--gutter)) / var(--grid-cols)) 100%;
   /* Display scale: headline sizes are the drama. */
   /* Capped by height as well as width: on a laptop screen (wide but short) a width-only
-     size pushed the hero headline up under the fixed header (Matt, 2026-09-22). */
-  --t-display: min(clamp(3.1rem, 7.4vw, 9.6rem), 11svh);
-  --t-title: min(clamp(2.7rem, 6vw, 7.8rem), 10svh);
-  --t-title-sm: min(clamp(2.2rem, 4.2vw, 5.2rem), 8svh);
+     size pushed the hero headline up under the fixed header (Matt, 2026-09-22). Raised
+     about 13% the same evening ("a little bit larger and more dramatic ... well fitted");
+     output/cohesion/title-fit.mjs checks every headline still fits at seven sizes. */
+  --t-display: min(clamp(3.4rem, 8.4vw, 11rem), 12.5svh);
+  --t-title: min(clamp(3rem, 6.8vw, 8.8rem), 11.4svh);
+  --t-title-sm: min(clamp(2.4rem, 4.7vw, 5.9rem), 9svh);
   --t-h3: clamp(1.55rem, 2.3vw, 2.5rem);
   --t-kicker: clamp(1.05rem, 1.3vw, 1.4rem);
   --ease-editorial: cubic-bezier(.7, 0, .2, 1);
@@ -32,9 +34,9 @@
 @media (max-width: 680px) {
   :root {
     --grid-cols: 4;
-    --t-display: clamp(2.6rem, 12.4vw, 3.9rem);
-    --t-title: clamp(2.3rem, 10.6vw, 3.5rem);
-    --t-title-sm: clamp(2rem, 8.8vw, 2.8rem);
+    --t-display: clamp(2.8rem, 13.6vw, 4.3rem);
+    --t-title: clamp(2.45rem, 11.6vw, 3.85rem);
+    --t-title-sm: clamp(2.1rem, 9.5vw, 3.05rem);
   }
 }
 
@@ -99,8 +101,11 @@ html[data-journey-tier='still'] .site-grain { animation: none; }
 .t-kicker,
 .eyebrow {
   display: flex;
+  /* The words SplitText cascades become flex items; without wrap a long kicker could
+     not break and widened its whole column past a 360 px screen, headline included. */
+  flex-wrap: wrap;
   align-items: center;
-  gap: .9rem;
+  gap: .2rem .9rem;
   margin: 0 0 1.4rem;
   font-family: var(--display);
   font-style: italic;
@@ -122,14 +127,18 @@ body :is(.t-display, .t-title, .t-title-sm, .section-title, .interior-title, .di
   font-family: var(--display);
   font-weight: 500;
   text-transform: uppercase;
-  letter-spacing: .002em;
+  /* A touch tighter than neutral: larger caps read denser and more deliberate. */
+  letter-spacing: -.004em;
   color: var(--ink);
   text-wrap: balance;
   font-kerning: normal;
+  /* A headline box never ends inside its longest word (e.g. "interchangeable." against
+     a 16ch measure): the box grows to the word instead of the word spilling out. */
+  min-width: min-content;
 }
 body :is(.t-display, .display-title) { font-size: var(--t-display); line-height: .92; }
 body :is(.t-title, .chapter-title) { font-size: var(--t-title); line-height: .94; }
-body :is(.t-title-sm, .section-title) { font-size: var(--t-title-sm); line-height: .98; font-weight: 500; letter-spacing: .002em; }
+body :is(.t-title-sm, .section-title) { font-size: var(--t-title-sm); line-height: .98; font-weight: 500; letter-spacing: -.004em; }
 body :is(.t-display, .t-title, .t-title-sm, .section-title, .interior-title, .display-title, .chapter-title) em {
   font-style: italic;
   font-weight: 400;
