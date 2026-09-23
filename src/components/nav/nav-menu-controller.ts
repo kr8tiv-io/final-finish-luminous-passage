@@ -481,6 +481,10 @@ export function initializeNavMenu(header: HTMLElement, toggle: HTMLButtonElement
 
   /* ---------------------------------------------------------------- wiring */
 
+  // The header is persisted across route swaps, so a new controller can inherit
+  // whatever the last one left on it. It starts from a clean, closed header.
+  settleFlip();
+
   toggle.addEventListener('click', () => (open ? close({ restoreFocus: true }) : openMenu()), { signal });
   document.addEventListener('keydown', onKeydown, { signal });
   overlay.addEventListener('pointermove', onPointerMove, { signal });
@@ -505,7 +509,13 @@ export function initializeNavMenu(header: HTMLElement, toggle: HTMLButtonElement
     if (open) close({ restoreFocus: false });
     abort.abort();
     media.revert();
-    transition?.kill();
+    // A link inside the open menu starts the close and the route swap together, and
+    // on a phone the swap lands first. Killing the close mid-flight stranded the
+    // persisted header in `data-menu-closing`, which shows all six labels stacked over
+    // the toggle on the page that arrives (Matt, 2026-09-22: "the page is broken").
+    // Finish the move instead: no leftover geometry, no closing flag.
+    settleFlip();
+    overlay.hidden = true;
     resetParallax();
     // Teardown is the one caller that cannot wait for a frame: the document this
     // controller belongs to is about to be replaced.
