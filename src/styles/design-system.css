@@ -63,6 +63,11 @@
 /* Page content stacks above the paper layers. */
 body > main,
 body > .site-footer { position: relative; z-index: 1; }
+/* The layout canvas stays one layer above the page. While the menu is open it paints
+   the menu's paper and floor in place of the menu's own CSS veil (surface.css, Step
+   18a); at layer 1 it sat under `main`, and the menu opened see-through over the
+   hero (Matt, 2026-09-22). With the menu closed it draws nothing and takes no pointer. */
+.surface-canvas-host { z-index: 2; }
 
 /* ── The grain: a transparent noise over the whole site ───────────────────── */
 /* Plain alpha, no blend mode (Safari repaints a fixed blend layer on every scroll).
