@@ -1,3 +1,77 @@
+# How to use this repository
+
+**This is the Final Finish Epoxy website.** It replaces the Squarespace site at finalfinishepoxy.ca. It is not live on that domain yet.
+
+**Preview of this exact site:** https://lightgrey-wasp-945457.hostingersite.com (temporary Hostinger address)
+
+If you are not technical, hand this README to a web developer. Putting the site live is a short job for any web developer and should not cost much.
+
+### 1. Get the files
+
+- **Easiest:** on GitHub, click **Code → Download ZIP** and unzip it.
+  - The `deployed-site/` folder in the ZIP contains the finished website with real images, videos and 3D models. Nothing needs to be built to use it.
+  - Some source images (`public/images/projects/generated/`, `assets/brand/source/`, `assets/source-project-photos/originals/`) are stored with Git LFS. Unless the repository setting *Include Git LFS objects in archives* is on, those files arrive in the ZIP as small text placeholders. This does not affect `deployed-site/`. It does matter if you want to rebuild from source.
+- **For editing and rebuilding:** use git, which downloads the real LFS files:
+  ```
+  git lfs install
+  git clone https://github.com/kr8tiv-io/final-finish-luminous-passage.git
+  ```
+
+### 2. Put the site online (no build)
+
+Upload **everything inside `deployed-site/`**, including the hidden `.htaccess` files, to the host's web root (usually `public_html`). That folder is a file-for-file copy of the preview site above. Full steps, including pointing the domain, are in [MOVING-THE-SITE.md](MOVING-THE-SITE.md).
+
+The `deployed-site/` copy is the preview build: it tells search engines not to index it, and its quote form shows a "please call" message. Before launching on the real domain, do a production build (step 5) instead.
+
+### 3. Edit text and images
+
+| What | Where |
+|---|---|
+| Pages (Home, About, Contact, Process, Warranty, Finishes, Service area, Projects) | `src/pages/*.astro` |
+| Service pages | `src/pages/services/` |
+| Resource / article pages (60 articles) | `src/content/resources/*.mdx` (plain text with a header block) |
+| Homepage sections | `src/components/home/` |
+| Reviews, project stories, before/after pairs, process steps | `src/data/` |
+| Images, videos, 3D models, fonts, icons | `public/` (`public/images/`, `public/videos/`, `public/3d/`, `public/fonts/`) |
+
+Files in `public/` are published as-is at the same path (`public/images/brand/x.jpg` appears at `/images/brand/x.jpg`). To replace an image, keep the same file name and size. After any edit, rebuild (step 5). Editing `deployed-site/` directly works for small text fixes but is overwritten by the next build.
+
+### 4. Run it on your computer
+
+Install Node.js 22 or newer (https://nodejs.org), then in the project folder:
+```
+npm install
+npm run dev
+```
+Open the address it prints (usually http://localhost:4321).
+
+### 5. Build and upload
+
+Preview / static build (same as `deployed-site/`):
+```
+npm ci
+PUBLIC_SITE_URL=https://your-preview-address npm run build:staging
+npm run package:static-preview
+```
+Upload the contents of `dist/static-preview/`, hidden `.htaccess` files included. (The packager also zips the folder. On Linux, that needs the `zip` command. If it is missing, the folder is still complete.)
+
+Production build for finalfinishepoxy.ca (indexable, working quote form; needs a host that runs Node.js):
+```
+PUBLIC_SITE_URL=https://www.finalfinishepoxy.ca npm run build:production
+SITE_ENV=production PUBLIC_SITE_URL=https://www.finalfinishepoxy.ca npm start
+```
+
+### 6. The quote form
+
+- **On a Node.js host (production build):** the form emails each quote request to `QUOTE_RECIPIENT`. Copy `.env.example` to `.env` and fill in `SMTP_HOST`, `SMTP_PORT`, `SMTP_SECURE`, `SMTP_USER`, `SMTP_PASSWORD`, `QUOTE_RECIPIENT` and `QUOTE_SENDER`. Hostinger email SMTP works. `RESEND_API_KEY` is an optional fallback.
+- **On a static host (`deployed-site/` or `dist/static-preview/`):** there is no server, so the form does not send. It shows a message asking the visitor to call Denis at (780) 991-1651.
+
+### 7. Moving to a new host and the domain
+
+See [MOVING-THE-SITE.md](MOVING-THE-SITE.md).
+
+---
+
 <div align="center">
 
 ![Final Finish Epoxy: the homepage on desktop and on a phone](docs/readme/hero.jpg)

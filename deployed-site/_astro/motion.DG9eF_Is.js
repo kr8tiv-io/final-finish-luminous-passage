@@ -1,0 +1,1 @@
+import{t as e}from"./gsap.DWxn8li7.js";import{a as t,n,t as r}from"./SplitText.CHK23HBx.js";import{n as i,t as a}from"./ScrollTrigger.H-V5NSUw.js";var o=!1;function s(){o||=(e.registerPlugin(t,n,i,a,r),t.create(`alcove`,`M0,0 C0.16,1 0.3,1 1,1`),!0)}export{s as t};

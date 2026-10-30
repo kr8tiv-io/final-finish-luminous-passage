@@ -2,14 +2,22 @@
 
 ## What this is
 - **Live preview of this exact build:** https://lightgrey-wasp-945457.hostingersite.com (a temporary Hostinger address)
-- **This folder:** the complete source code for that site, including all images and 3D models.
+- **This folder:** the complete source code for that site, plus `deployed-site/`, an exact copy of the preview's files.
+
+If you are not technical, give this page to a web developer. This is a short job and should not cost much.
 - The domain finalfinishepoxy.ca still shows the old Squarespace site until its DNS is pointed at the new host.
 
-## Option A: upload the finished site (easiest)
+## Option A: upload `deployed-site/` (no build)
+1. Upload everything inside `deployed-site/`, including the hidden `.htaccess` files, to the host's web root (usually `public_html`).
+2. Check the site on the new host's temporary address.
+
+This is the preview build. Search engines are told not to index it, and the quote form shows a "call" message. For the real domain, use Option C.
+
+## Option B: build the static site yourself
 1. Install Node.js 22 or newer (https://nodejs.org).
 2. In this folder, run:
    - `npm install`
-   - `npm run build:staging`
+   - `PUBLIC_SITE_URL=https://your-new-address npm run build:staging` (the address is required)
    - `npm run package:static-preview`
 3. The ready-to-upload site is in `dist/static-preview/` (a zip of it is made too).
 4. Upload everything in that folder, including the hidden `.htaccess` files, to your host's web root (usually `public_html`).
@@ -17,8 +25,8 @@
 
 Note: the static version has no server, so the quote form shows a "call" message instead of sending. To make the form send, deploy the full Node build (`npm run build:production`, then run the server in `dist/server`) on a host that supports Node.js. See README.md.
 
-## Option B: host it on any Node.js host
-Run `npm install` and `npm run build:production`, then run `node dist/server/entry.mjs` on the host. README.md has more detail.
+## Option C: host it on any Node.js host (working quote form)
+Run `npm install` and `PUBLIC_SITE_URL=https://www.finalfinishepoxy.ca npm run build:production`. Set the SMTP values from `.env.example` on the host, then run `node dist/server/entry.mjs`. README.md has more detail.
 
 ## Point finalfinishepoxy.ca at the new host
 1. In Squarespace, go to Domains, then finalfinishepoxy.ca, then DNS settings.
