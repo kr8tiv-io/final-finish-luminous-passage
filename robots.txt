@@ -1,7 +1,2 @@
-User-agent: Googlebot
-Disallow: /
-
 User-agent: *
-Allow: /
-
-Sitemap: https://www.finalfinishepoxy.ca/sitemap.xml
+Disallow: /

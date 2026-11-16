@@ -1,0 +1,1 @@
+Locked Final Finish flake-ring F logo, 2026-11-16. Matt locked this mark; it supersedes ideation #7 as the brand logo. Masters are the supplied JPEGs. The header uses the blue F mark only, words cropped, transparent ground. Old mark-07 and earlier mark files stay on disk.
