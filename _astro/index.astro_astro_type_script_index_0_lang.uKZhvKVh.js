@@ -49,11 +49,12 @@ function flowPlayFilms(){
   });
   var io=new IntersectionObserver(()=>sync(),{threshold:[0,0.2,0.5,0.8]});
   root.querySelectorAll('[data-act]').forEach(act=>io.observe(act));
-  var ticking=false;
+  var band=new IntersectionObserver(()=>sync(),{rootMargin:'-12% 0px -12% 0px',threshold:0});
+  root.querySelectorAll('[data-act] .act-stage').forEach(stage=>band.observe(stage));
+  var ticking=0;
   var onScroll=()=>{
     if(ticking)return;
-    ticking=true;
-    requestAnimationFrame(()=>{ticking=false;sync()});
+    ticking=setTimeout(()=>{ticking=0;requestAnimationFrame(sync)},180);
   };
   window.addEventListener('scroll',onScroll,{passive:true});
   var mo=new MutationObserver(sync);
@@ -62,6 +63,8 @@ function flowPlayFilms(){
   sync();
   F.push(()=>{
     io.disconnect();
+    band.disconnect();
+    clearTimeout(ticking);
     mo.disconnect();
     window.removeEventListener('scroll',onScroll);
     reduced.removeEventListener('change',sync);
