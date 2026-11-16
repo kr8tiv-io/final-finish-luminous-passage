@@ -1,0 +1,105 @@
+{
+  "schemaVersion": 1,
+  "id": "follow-floor-threshold",
+  "transition": {
+    "from": "garage",
+    "to": "vault"
+  },
+  "units": "metres",
+  "axes": {
+    "up": "Y",
+    "forward": "-Z"
+  },
+  "poster": {
+    "file": "poster.jpg",
+    "width": 960,
+    "height": 540,
+    "timeSeconds": 0.0,
+    "frame": 0,
+    "bytes": 41245,
+    "sha256": "d12a1a3119f91352aaf0d99f9322a0a954fc2e07097b7ce3daf82686ebc68801"
+  },
+  "scene": {
+    "file": "scene.glb",
+    "bytes": 213860,
+    "sha256": "8e6da2e499b8d81dee9a05319000c8c00de4136ef1b215d8113aa654bbf5f890"
+  },
+  "floorMesh": "FFT_Floor_Coated",
+  "camera": {
+    "node": "FFT_Experience_Camera",
+    "clip": "FFT_Garage_To_Vault",
+    "durationSeconds": 4.2,
+    "fps": 30,
+    "horizontalFovDegrees": 56.0,
+    "keyframes": [
+      {
+        "time": 0.0,
+        "position": [
+          0.0,
+          1.62,
+          4.6
+        ],
+        "target": [
+          0.0,
+          1.42,
+          -1.8
+        ]
+      },
+      {
+        "time": 1.5,
+        "position": [
+          0.04,
+          1.61,
+          0.15
+        ],
+        "target": [
+          0.16,
+          1.43,
+          -4.4
+        ]
+      },
+      {
+        "time": 2.7,
+        "position": [
+          0.18,
+          1.6,
+          -2.45
+        ],
+        "target": [
+          0.48,
+          1.43,
+          -7.1
+        ]
+      },
+      {
+        "time": 4.2,
+        "position": [
+          0.7,
+          1.58,
+          -6.35
+        ],
+        "target": [
+          -1.35,
+          1.45,
+          -10.5
+        ]
+      }
+    ]
+  },
+  "bounds": {
+    "min": [
+      -4.0,
+      -0.12,
+      -11.96
+    ],
+    "max": [
+      4.0,
+      3.26,
+      4.8
+    ]
+  },
+  "provenance": {
+    "source": "tools/blender/build_follow_floor_threshold.py",
+    "blenderBuiltWith": "5.2.0 LTS"
+  }
+}

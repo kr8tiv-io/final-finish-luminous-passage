@@ -1,0 +1,1 @@
+var e=[`pearl`,`warm-grey-flake`,`cobalt-metallic`,`salt-pepper-flake`,`paper`,`raven-fb-915`,`shoreline-fb-421`];function t(t){return typeof t==`string`&&e.includes(t)}var n=`ffe:nav-menu-state`,r=`ffe:nav-menu-finish`;export{n,t as r,r as t};

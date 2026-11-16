@@ -1,0 +1,5 @@
+# Content-hashed bundles: safe to cache forever. Everything outside /_astro/
+# keeps the host's default caching so a redeploy of a video or image shows up.
+<IfModule mod_headers.c>
+  Header set Cache-Control "public, max-age=31536000, immutable"
+</IfModule>
