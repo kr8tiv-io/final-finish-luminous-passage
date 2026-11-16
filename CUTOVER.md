@@ -1,36 +1,46 @@
-# Production cutover checklist (www.finalfinishepoxy.ca)
+# Production cutover (www.finalfinishepoxy.ca)
 
-Do not run this against the preview host lightgrey-wasp-945457.hostingersite.com.
-Do not cut over the domain until Matt explicitly says yes.
+Matt approved the domain cutover on 16 Nov 2026 at 2:35 PM America/Costa_Rica.
+This branch is the production build. Do not deploy it to the preview host
+lightgrey-wasp-945457.hostingersite.com. That host stays as the noindex staging
+copy and the restore target.
 
-## On the production build, at cutover (not before)
+## What this build already has
 
-1. Replace `robots.txt` with `robots.production.txt`. That file allows Googlebot, Bingbot, and AI crawlers (GPTBot, ChatGPT-User, Google-Extended, ClaudeBot, Claude-Web, Anthropic-Ai, PerplexityBot, Applebot-Extended, Bytespider, CCBot) and lists `Sitemap: https://www.finalfinishepoxy.ca/sitemap.xml`.
-2. Remove the staging `meta name="robots" content="noindex,nofollow,noarchive"` from every page. Production should allow indexing (`index,follow` or omit the robots meta).
-3. Remove the `.htaccess` line `Header always set X-Robots-Tag "noindex, nofollow"`.
-4. Keep canonicals, Open Graph URLs, JSON-LD, and `sitemap.xml` on `https://www.finalfinishepoxy.ca` (already set).
-5. Confirm DNS and HTTPS for www and the apex point at the new Hostinger site only after Matt's yes.
+1. `robots.txt` allows Googlebot, Bingbot, and AI crawlers, and lists
+   `Sitemap: https://www.finalfinishepoxy.ca/sitemap.xml`.
+2. The staging `noindex,nofollow,noarchive` robots meta is removed from every page.
+3. The `.htaccess` `X-Robots-Tag: noindex, nofollow` header is removed.
+4. Canonicals, Open Graph URLs, JSON-LD, and `sitemap.xml` stay on
+   `https://www.finalfinishepoxy.ca`. That is the hostname the current
+   Squarespace site already 301s to, and it is the best way to carry over
+   existing search listings. The apex `https://finalfinishepoxy.ca/` 301s to www.
+5. 301 redirects from the old Squarespace URLs:
+   - `/home` to `/`
+   - `/blog` and `/blog/why-choose-epoxy-flooring` to `/resources`
+   - `/blog/decorative-options-for-epoxy-flooring` to `/finishes`
+   - `/blog/our-epoxy-flooring-process-from-estimate-to-finish` to `/process`
+   - `/new-dropdown` to `/services`
+   - `/cart` to `/`
+   `/about`, `/contact`, `/services`, `/projects`, and the three service
+   child pages already exist at the same paths.
 
-## Google Search Console (after the domain is serving this build)
+## After DNS is pointed at Hostinger
 
-1. Open the Domain property `kr8tiv.io` is not this site. Use the Final Finish properties for `finalfinishepoxy.ca` (Domain) and `https://www.finalfinishepoxy.ca/` (URL-prefix). Verify if they are not already verified (DNS TXT for the Domain property; the URL-prefix may already be verified).
-2. Submit `https://www.finalfinishepoxy.ca/sitemap.xml`. Confirm it reports Success and 96 URLs (home, services, 21 town pages, 60 resource posts, plus the other core pages).
-3. Request indexing on key templates first (home, /services, /contact, /resources, and one town page, one blog). Daily Request Indexing quota is account-wide.
+1. Install SSL and turn on the HTTPS redirect (the certificate cannot be
+   issued until the domain resolves to Hostinger).
+2. Submit `https://www.finalfinishepoxy.ca/sitemap.xml` in Google Search
+   Console and Bing Webmaster Tools (96 URLs).
+3. IndexNow can be added then. Do not submit the preview host.
+4. Redirect `https://lightgrey-wasp-945457.hostingersite.com/` to
+   `https://www.finalfinishepoxy.ca/` only after the public domain is serving
+   this build. Doing it earlier would send preview traffic to the old
+   Squarespace site.
 
-## Bing Webmaster Tools
+## Quote form
 
-1. Verify `finalfinishepoxy.ca` if it is not already (the production `robots.txt` and the site will be crawlable after cutover).
-2. Submit `https://www.finalfinishepoxy.ca/sitemap.xml`.
-
-## IndexNow
-
-1. Keep or add an IndexNow key file at the site root (for example `/<key>.txt` containing only the key).
-2. POST the sitemap URLs to `https://api.indexnow.org/indexnow`, and also to Bing and Yandex IndexNow endpoints if used, with the key and host `www.finalfinishepoxy.ca`.
-3. Confirm HTTP 200. Do not submit the preview host.
-
-## After cutover checks
-
-- Fetch `https://www.finalfinishepoxy.ca/robots.txt` and confirm it is the production file, not `Disallow: /`.
-- Fetch a page and confirm there is no `noindex` meta and no `X-Robots-Tag: noindex`.
-- Confirm `https://www.finalfinishepoxy.ca/sitemap.xml` and `https://www.finalfinishepoxy.ca/llms.txt` load.
-- Spot-check home, a blog, and the blog index on desktop and a phone width.
+The contact form posts to `/api/quote`. That endpoint is an Astro Node
+handler (`src/pages/api/quote.ts`) and is not part of this static export.
+It already returned 404 on the staging host. Mail goes to
+finalfinishepoxy@gmail.com once a Node or PHP endpoint with SMTP or Resend
+is in place. The visible mailto and phone links still work.

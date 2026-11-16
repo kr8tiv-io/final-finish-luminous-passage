@@ -1,4 +1,4 @@
-# Final Finish Epoxy — temporary preview host.
+# Final Finish Epoxy production host (www.finalfinishepoxy.ca).
 # Static export of the Astro build (dist/client). The node middleware is not
 # running here, so this file carries what src/middleware.ts and
 # dist/prerender-headers.json would otherwise add.
@@ -7,11 +7,27 @@ Options -Indexes -MultiViews
 DirectorySlash On
 AddDefaultCharset UTF-8
 
-# /404 is an on-demand route in the app; the preview ships it as a static page.
+# /404 is an on-demand route in the app; this export ships it as a static page.
 ErrorDocument 404 /404.html
 
-# Step 30 permanent redirects (mirrors PERMANENT_REDIRECTS in src/middleware.ts).
 RewriteEngine On
+
+# Keep the existing public hostname (www). The live Squarespace site already
+# 301s the apex to www, and the sitemap, canonicals, Open Graph URLs, and
+# schema already use https://www.finalfinishepoxy.ca.
+RewriteCond %{HTTP_HOST} ^finalfinishepoxy\.ca$ [NC]
+RewriteRule ^ https://www.finalfinishepoxy.ca%{REQUEST_URI} [R=301,L]
+
+# Old Squarespace URLs -> closest new pages (slash-less, 301).
+RewriteRule ^home/?$ / [R=301,L]
+RewriteRule ^blog/?$ /resources [R=301,L]
+RewriteRule ^blog/why-choose-epoxy-flooring/?$ /resources [R=301,L]
+RewriteRule ^blog/decorative-options-for-epoxy-flooring/?$ /finishes [R=301,L]
+RewriteRule ^blog/our-epoxy-flooring-process-from-estimate-to-finish/?$ /process [R=301,L]
+RewriteRule ^new-dropdown/?$ /services [R=301,L]
+RewriteRule ^cart/?$ / [R=301,L]
+
+# Existing area short links from the Astro middleware (PERMANENT_REDIRECTS).
 RewriteRule ^areas/?$ /service-area [R=301,L]
 RewriteRule ^areas/edmonton/?$ /service-area [R=301,L]
 RewriteRule ^areas/(sherwood-park|st-albert|leduc|fort-saskatchewan|spruce-grove|beaumont)/?$ /service-area/$1 [R=301,L]
@@ -25,8 +41,6 @@ RewriteCond %{REQUEST_FILENAME}/index.html -f
 RewriteRule ^(.+)$ /$1/index.html [L]
 
 <IfModule mod_headers.c>
-  # Preview host: never indexed (robots.txt already disallows everything).
-  Header always set X-Robots-Tag "noindex, nofollow"
   # Same headers the app sends for every prerendered route.
   Header always set Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline' blob:; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; media-src 'self' blob:; connect-src 'self' blob:; font-src 'self' data:; frame-ancestors 'none'; base-uri 'self'; form-action 'self'"
   Header always set X-Frame-Options "DENY"
