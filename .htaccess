@@ -15,7 +15,13 @@ RewriteEngine On
 # Keep the existing public hostname (www). The live Squarespace site already
 # 301s the apex to www, and the sitemap, canonicals, Open Graph URLs, and
 # schema already use https://www.finalfinishepoxy.ca.
+# Use the same scheme so HTTP keeps working in the window after DNS flips
+# and before the Hostinger certificate is issued.
 RewriteCond %{HTTP_HOST} ^finalfinishepoxy\.ca$ [NC]
+RewriteCond %{HTTPS} !=on
+RewriteRule ^ http://www.finalfinishepoxy.ca%{REQUEST_URI} [R=301,L]
+RewriteCond %{HTTP_HOST} ^finalfinishepoxy\.ca$ [NC]
+RewriteCond %{HTTPS} =on
 RewriteRule ^ https://www.finalfinishepoxy.ca%{REQUEST_URI} [R=301,L]
 
 # Old Squarespace URLs -> closest new pages (slash-less, 301).
