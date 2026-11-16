@@ -13,7 +13,8 @@ ErrorDocument 404 /404.html
 # Step 30 permanent redirects (mirrors PERMANENT_REDIRECTS in src/middleware.ts).
 RewriteEngine On
 RewriteRule ^areas/?$ /service-area [R=301,L]
-RewriteRule ^areas/(edmonton|sherwood-park|st-albert|leduc|fort-saskatchewan|spruce-grove|beaumont)/?$ /service-area [R=301,L]
+RewriteRule ^areas/edmonton/?$ /service-area [R=301,L]
+RewriteRule ^areas/(sherwood-park|st-albert|leduc|fort-saskatchewan|spruce-grove|beaumont)/?$ /service-area/$1 [R=301,L]
 
 # Serve the canonical slash-less page URLs (/services, /projects, ...) directly, the
 # way the node server does, instead of letting the directory-slash rule 301 every
